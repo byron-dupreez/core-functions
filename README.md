@@ -1,6 +1,3 @@
-# core-functions
-Core functions and utilities for working with Node/JavaScript primitives and built-in objects, e.g. strings, functions, booleans, Promises, base 64, etc.
-
 # core-functions v1.0.0
 
 Core functions and utilities for working with Node/JavaScript primitives and built-in objects, including strings, functions, booleans, Promises, base 64, etc.
@@ -52,6 +49,6 @@ const appErrors = require('core-functions/app-errors');
 ```
 
 ## Unit tests
-This modules' unit tests were developed with and must be run with [tape](https://www.npmjs.com/package/tape). The unit tests have been tested on [Node.js v4.3.2](https://nodejs.org/en/blog/release/v4.3.2/).  
+This module's unit tests were developed with and must be run with [tape](https://www.npmjs.com/package/tape). The unit tests have been tested on [Node.js v4.3.2](https://nodejs.org/en/blog/release/v4.3.2/).  
 
 See the [package source](https://github.com/byron-dupreez/core-functions) for more details.
