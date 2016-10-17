@@ -9,7 +9,6 @@ Currently includes:
 - functions.js - function utilities
 - promises.js - native Promise utilities
 - base64.js - utilities for encoding from UTF-8 to Base 64 and vice-versa
-- app-errors - a collection of standard application Error subclasses for common HTTP status codes
 
 This module is exported as a [Node.js](https://nodejs.org/) module.
 
@@ -40,12 +39,6 @@ const base64 = require('core-functions/base64');
 
 // To use the Promise utilties, which currently add static methods to the native `Promise` class
 require('core-functions/promises');
-
-// To use the standard application errors & utilties
-const appErrors = require('core-functions/app-errors');
-// const AppError = appErrors.AppError;
-// const BadRequest = appErrors.BadRequest;
-
 ```
 
 ## Unit tests
