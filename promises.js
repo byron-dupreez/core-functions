@@ -11,7 +11,9 @@ module.exports = {
   wrap: wrap,
   /** Returns a function that will wrap and convert a node-style method into a Promise-returning function */
   wrapMethod: wrapMethod,
+  /** Triggers execution of the given (typically synchronous) no-arg function, which may throw an error, within a new promise and returns the new promise */
   try: tryFn,
+  /** Starts a simple timeout Promise, which will resolve after the specified delay in milliseconds */
   delay: delay
 };
 

@@ -2,7 +2,7 @@
 
 const test = require('tape');
 
-const b64 = require('../../core-functions/base64'); //TODO fix after publishing
+const b64 = require('../base64');
 const toBase64 = b64.toBase64;
 const fromBase64 = b64.fromBase64;
 const toBase64FromUtf8 = b64.toBase64FromUtf8;

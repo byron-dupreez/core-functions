@@ -2,6 +2,7 @@
 
 /**
  * Utilities for working with booleans.
+ * @module core-functions/booleans
  * @author Byron du Preez
  */
 module.exports = {
