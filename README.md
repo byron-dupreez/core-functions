@@ -1,4 +1,4 @@
-# core-functions v1.0.0
+# core-functions v1.1.0
 
 Core functions and utilities for working with Node/JavaScript primitives and built-in objects, including strings, functions, booleans, Promises, base 64, etc.
 
@@ -45,3 +45,8 @@ require('core-functions/promises');
 This module's unit tests were developed with and must be run with [tape](https://www.npmjs.com/package/tape). The unit tests have been tested on [Node.js v4.3.2](https://nodejs.org/en/blog/release/v4.3.2/).  
 
 See the [package source](https://github.com/byron-dupreez/core-functions) for more details.
+
+## Changes
+### 1.1.0
+- strings: Added `trimOrEmpty` function
+- strings: Renamed `safeTrim` function to `trim` and changed `safeTrim` to an alias for `trim`

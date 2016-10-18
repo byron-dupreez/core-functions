@@ -16,7 +16,10 @@ module.exports = {
   isNotBlank: isNotBlank,
   /** Trims the given value if it is a string; otherwise returns a non-string value as is */
   trim: trim,
-  /** Alias for trim */
+  /**
+   * Alias for trim
+   * @deprecated since 1.1.0
+   */
   safeTrim: trim,
   /** Trims the given value (if it's a string) or returns an empty string (if it's undefined or null); otherwise returns the non-undefined, non-null, non-string value as is. */
   trimOrEmpty: trimOrEmpty,
