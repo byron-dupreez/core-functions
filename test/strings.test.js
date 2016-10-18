@@ -321,9 +321,9 @@ function checkStringify(wrapInString, t) {
   check('ABC', 'ABC', wrapInString, t);
 }
 
-function checkSafeTrim(wrapInString, t) {
+function checkTrim(wrapInString, t) {
   function check(value, expected, wrapInString, t) {
-    return checkEqual(Strings.safeTrim, value, expected, wrapInString, ` must be ${stringify(expected, undefined)}`, t);
+    return checkEqual(Strings.trim, value, expected, wrapInString, ` must be ${stringify(expected, undefined)}`, t);
   }
 
   // undefined
@@ -331,6 +331,82 @@ function checkSafeTrim(wrapInString, t) {
 
   // null
   check(null, wrapInString ? "null" : null, wrapInString, t);
+
+  // objects
+  check({}, wrapInString ? "[object Object]" : {}, wrapInString, t);
+  check({a: 1, b: 2}, wrapInString ? "[object Object]" : {a: 1, b: 2}, wrapInString, t);
+
+  // booleans
+  check(true, wrapInString ? "true" : true, wrapInString, t);
+  check(false, wrapInString ? "false" : false, wrapInString, t);
+
+  // arrays
+  check([], wrapInString ? "" : [], wrapInString, t);
+  check([1, 2, 3], wrapInString ? "1,2,3" : [1, 2, 3], wrapInString, t);
+
+  // special case numbers
+  check(Number.POSITIVE_INFINITY, wrapInString ? `${Number.POSITIVE_INFINITY}` : Number.POSITIVE_INFINITY, wrapInString, t);
+  check(Number.NEGATIVE_INFINITY, wrapInString ? `${Number.NEGATIVE_INFINITY}` : Number.NEGATIVE_INFINITY, wrapInString, t);
+  check(NaN, wrapInString ? 'NaN' : NaN, wrapInString, t);
+
+  // negative numbers
+  check(Number.MIN_VALUE, wrapInString ? `${Number.MIN_VALUE}` : Number.MIN_VALUE, wrapInString, t);
+  check(Number.MIN_SAFE_INTEGER, wrapInString ? `${Number.MIN_SAFE_INTEGER}` : Number.MIN_SAFE_INTEGER, wrapInString, t);
+  check(-123.456, wrapInString ? '-123.456' : -123.456, wrapInString, t);
+  check(-1, wrapInString ? '-1' : -1, wrapInString, t);
+
+  // zero
+  check(0, wrapInString ? '0' : 0, wrapInString, t); // not sure if this should return blank for 0
+
+  // positive numbers
+  check(1, wrapInString ? '1' : 1, wrapInString, t);
+  check(123.456, wrapInString ? '123.456' : 123.456, wrapInString, t);
+  check(Number.MAX_SAFE_INTEGER, wrapInString ? `${Number.MAX_SAFE_INTEGER}` : Number.MAX_SAFE_INTEGER, wrapInString, t);
+  check(Number.MAX_VALUE, wrapInString ? `${Number.MAX_VALUE}` : Number.MAX_VALUE, wrapInString, t);
+
+  // strings containing numbers
+  check(`${Number.MIN_VALUE}`, `${Number.MIN_VALUE}`, wrapInString, t);
+  check(`${Number.MIN_SAFE_INTEGER}`, `${Number.MIN_SAFE_INTEGER}`, wrapInString, t);
+  check('-123.456', '-123.456', wrapInString, t);
+  check('-1', '-1', wrapInString, t);
+
+  check('0', '0', wrapInString, t);
+
+  check('1', '1', wrapInString, t);
+  check('123.456', '123.456', wrapInString, t);
+  check(`${Number.MAX_SAFE_INTEGER}`, `${Number.MAX_SAFE_INTEGER}`, wrapInString, t);
+  check(`${Number.MAX_VALUE}`, `${Number.MAX_VALUE}`, wrapInString, t);
+
+  // strings containing only whitespace
+  check('', '', wrapInString, t);
+  check(' ', '', wrapInString, t);
+  check('\n', '', wrapInString, t);
+  check('\r', '', wrapInString, t);
+  check('\t', '', wrapInString, t);
+  check('      ', '', wrapInString, t);
+  check('  \n  ', '', wrapInString, t);
+  check('  \r  ', '', wrapInString, t);
+  check('  \t  ', '', wrapInString, t);
+  check(' \n \r \t \n \r \t ', '', wrapInString, t);
+
+  // strings not containing numbers
+  check('a', 'a', wrapInString, t);
+  check('abc', 'abc', wrapInString, t);
+  check('ABC', 'ABC', wrapInString, t);
+  check('   ABC   ', 'ABC', wrapInString, t);
+  check('  A B C  ', 'A B C', wrapInString, t);
+}
+
+function checkTrimOrEmpty(wrapInString, t) {
+  function check(value, expected, wrapInString, t) {
+    return checkEqual(Strings.trimOrEmpty, value, expected, wrapInString, ` must be ${stringify(expected, undefined)}`, t);
+  }
+
+  // undefined
+  check(undefined, wrapInString ? "undefined" : '', wrapInString, t);
+
+  // null
+  check(null, wrapInString ? "null" : '', wrapInString, t);
 
   // objects
   check({}, wrapInString ? "[object Object]" : {}, wrapInString, t);
@@ -437,12 +513,22 @@ test('stringify on Strings', t => {
   t.end();
 });
 
-test('safeTrim on strings', t => {
-  checkSafeTrim(false, t);
+test('trim on strings', t => {
+  checkTrim(false, t);
   t.end();
 });
 
-test('safeTrim on Strings', t => {
-  checkSafeTrim(true, t);
+test('trim on Strings', t => {
+  checkTrim(true, t);
+  t.end();
+});
+
+test('trimOrEmpty on strings', t => {
+  checkTrimOrEmpty(false, t);
+  t.end();
+});
+
+test('trimOrEmpty on Strings', t => {
+  checkTrimOrEmpty(true, t);
   t.end();
 });
