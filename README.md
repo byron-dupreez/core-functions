@@ -1,4 +1,4 @@
-# core-functions v1.1.0
+# core-functions v1.1.1
 
 Core functions and utilities for working with Node/JavaScript primitives and built-in objects, including strings, functions, booleans, Promises, base 64, etc.
 
