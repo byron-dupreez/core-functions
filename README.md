@@ -1,14 +1,19 @@
-# core-functions v1.1.1
+# core-functions v1.2.0
 
-Core functions and utilities for working with Node/JavaScript primitives and built-in objects, including strings, functions, booleans, Promises, base 64, etc.
+Core functions, utilities and classes for working with Node/JavaScript primitives and built-in objects, including 
+strings, functions, booleans, Promises, base 64, Arrays, Objects, standard AppErrors, etc.
 
 Currently includes:
-- strings.js - string utilities
-- numbers.js - number utilities
+- app-errors.js - a collection of standard application AppError subclasses for the more commonly used HTTP status codes
+- arrays.js - Array utilities
+- base64.js - utilities for encoding from UTF-8 to Base 64 and vice-versa
 - booleans.js - boolean utilities
 - functions.js - function utilities
+- numbers.js - number utilities
+- objects.js - Object utilities
 - promises.js - native Promise utilities
-- base64.js - utilities for encoding from UTF-8 to Base 64 and vice-versa
+- strings.js - string utilities
+- timers.js - Timer/timeout utilities
 
 This module is exported as a [Node.js](https://nodejs.org/) module.
 
@@ -21,24 +26,80 @@ $ npm i --save core-functions
 ```
 
 In Node.js:
+
+To use the string utilities
 ```js
-// To use the string utilties
 const Strings = require('core-functions/strings');
-
-// To use the number utilties
+```
+To use the number utilities
+```js
 const Numbers = require('core-functions/numbers');
+```
 
-// To use the boolean utilties
+To use the boolean utilities
+```js
 const Booleans = require('core-functions/booleans');
+```
 
-// To use the function utilties
+To use the function utilities
+```js
 const Functions = require('core-functions/functions');
+```
 
-// To use the Base 64 encoding and decoding utilities
+To use the Base 64 encoding and decoding utilities
+```js
 const base64 = require('core-functions/base64');
+```
 
-// To use the Promise utilties, which currently add static methods to the native `Promise` class
+To use the Promise utilities (as static methods on the native `Promise` class)
+```js
 require('core-functions/promises');
+```
+To use the Promise utilities (as exported functions)
+```js
+const promises = require('core-functions/promises');
+```
+
+To use the Object utilities
+```js
+const Objects = require('core-functions/objects');
+```
+
+To use the Array utilities
+```js
+const Arrays = require('core-functions/arrays');
+```
+
+To use the Timer utilities
+```js
+const timers = require('core-functions/timers');
+```
+
+To use the standard application errors
+```js
+const appErrors = require('../app-errors');
+const AppError = appErrors.AppError;
+
+// 400-series
+const BadRequest = appErrors.BadRequest;
+const Unauthorized = appErrors.Unauthorized;
+const Forbidden = appErrors.Forbidden;
+const NotFound = appErrors.NotFound;
+const RequestTimeout = appErrors.RequestTimeout;
+const TooManyRequests = appErrors.TooManyRequests;
+
+// 500-series
+const InternalServerError = appErrors.InternalServerError;
+const BadGateway = appErrors.BadGateway;
+const ServiceUnavailable = appErrors.ServiceUnavailable;
+const GatewayTimeout = appErrors.GatewayTimeout;
+
+// HTTP status codes with explicit class support and allowed to pass through to API Gateway by default
+const supportedHttpStatusCodes = appErrors.supportedHttpStatusCodes;
+
+// Error conversion functions
+const toAppError = appErrors.toAppError;
+const toAppErrorForApiGateway = appErrors.toAppErrorForApiGateway;
 ```
 
 ## Unit tests
@@ -50,3 +111,19 @@ See the [package source](https://github.com/byron-dupreez/core-functions) for mo
 ### 1.1.0
 - strings: Added `trimOrEmpty` function
 - strings: Renamed `safeTrim` function to `trim` and changed `safeTrim` to an alias for `trim`
+
+### 1.1.1
+- Simple increment of version number to fix issue of 1.1.0 tag pointing to wrong version
+
+### 1.2.0
+- strings: 
+    - Improvements to `stringify` function to better handle functions and arrays
+- promises: 
+    - Added `isPromise` function 
+    - Added optional `cancellable` argument to `delay` function to enable cancellation of delay's timeout
+- Added new modules: 
+    - app-errors 
+    - arrays
+    - objects
+    - timers
+- Added unit tests for existing and new functions and classes.

@@ -7,6 +7,8 @@
  * @author Byron du Preez
  */
 module.exports = {
+  /** Returns true if the given value is a Promise or at least a "then-able"; otherwise false. */
+  isPromise: isPromise,
   /** Returns a function that will wrap and convert a node-style function into a Promise-returning function */
   wrap: wrap,
   /** Returns a function that will wrap and convert a node-style method into a Promise-returning function */
@@ -16,6 +18,20 @@ module.exports = {
   /** Starts a simple timeout Promise, which will resolve after the specified delay in milliseconds */
   delay: delay
 };
+
+const timers = require('./timers');
+
+/**
+ * Returns true if the given value is a Promise or at least a "then-able"; otherwise false.
+ * @param {*} value - the value to check
+ * @returns {boolean|*} true if its a promise (or a "then-able"); false otherwise
+ */
+function isPromise(value) {
+  return value instanceof Promise || (value.then && typeof value.then === 'function');
+}
+if (!Promise.isPromise) { // polyfill-safe guard check
+  Promise.isPromise = isPromise;
+}
 
 /**
  * Wraps and converts the given node-style function into a Promise-returning function, which when invoked must be passed
@@ -53,7 +69,7 @@ module.exports = {
  *
  *     OR instead use the Promise.wrapMethod function below.
  *
- * @param {Function} fn a Node-callback style function to promisify
+ * @param {Function} fn - a Node-callback style function to promisify
  * @returns {Function} a function, which when invoked will return a new Promise that will resolve or reject based on the
  * outcome of the callback
  */
@@ -106,8 +122,8 @@ if (!Promise.wrap) { // polyfill-safe guard check
  *       .then(result => ...)
  *       .catch(err => ...);
  *
- * @param {Object} obj the object on which to execute the given method
- * @param {Function} method a Node-callback style method (of the given object) to promisify
+ * @param {Object} obj - the object on which to execute the given method
+ * @param {Function} method - a Node-callback style method (of the given object) to promisify
  * @returns {Function} a function, which when invoked will return a new Promise that will resolve or reject based on the
  * outcome of the callback
  */
@@ -158,6 +174,9 @@ if (!Promise.wrapMethod) { // polyfill-safe guard check
  *   }
  *
  *   Promise.try(functionToTry);
+ *
+ * @param {Function} fn - the function to execute within a promise
+ * @returns {Promise} the promise to execute the given function
  */
 function tryFn(fn) {
   return new Promise((resolve, reject) => resolve(fn()));
@@ -167,12 +186,44 @@ if (!Promise.try) { // polyfill-safe guard check
 }
 
 /**
- * Starts a simple timeout Promise, which will resolve after the specified delay in milliseconds.
- * @param {number} ms the number of milliseconds to delay
+ * Starts a simple timeout Promise, which will resolve after the specified delay in milliseconds. If any object is
+ * passed into this function as the cancellable argument, then this function will install a cancelTimeout method on it,
+ * which accepts a single optional mustResolve argument and which if subsequently invoked will cancel the timeout and
+ * either resolve the promise (if mustResolve) or reject the promise (default), but ONLY if the timeout
+ * has not triggered yet.
+ *
+ * @param {number} ms - the number of milliseconds to delay
+ * @param {Object|undefined|null} [cancellable] - an arbitrary object onto which a cancelTimeout method will be installed
  * @returns {Promise} the timeout Promise
  */
-function delay(ms) {
-  return new Promise((resolve, reject) => setTimeout(resolve, ms))
+function delay(ms, cancellable) {
+  let triggered = false;
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      triggered = true;
+      resolve(triggered);
+    }, ms);
+
+    // Set up a cancel method on the given cancellable object
+    if (cancellable && typeof cancellable === 'object') {
+      cancellable.cancelTimeout = (mustResolve) => {
+        if (!triggered) {
+          try {
+            clearTimeout(timeout);
+          } catch (err) {
+            console.error('Failed to clear timeout', err);
+          } finally {
+            if (mustResolve) {
+              resolve(triggered);
+            } else {
+              reject(triggered);
+            }
+          }
+        }
+        return triggered;
+      }
+    }
+  });
 }
 if (!Promise.delay) { // polyfill-safe guard check
   Promise.delay = delay;

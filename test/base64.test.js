@@ -1,5 +1,10 @@
 'use strict';
 
+/**
+ * Unit tests for core-functions/base64.js
+ * @author Byron du Preez
+ */
+
 const test = require('tape');
 
 const b64 = require('../base64');
@@ -62,7 +67,7 @@ test('toBase64FromUtf8 and toUtf8FromBase64', t => {
 
   // Despite: TypeError: must start with number, buffer, array or string
 
-  // TODO Arrays don't seem to throw errors, but also don't return original value
+  // Arrays don't seem to throw errors, but they also don't return the original value
   // checkToBase64AndBackToUtf8([], t); // returns ''
   // checkToBase64AndBackToUtf8(['abc', '123'], t); // returns '\x00{'
 

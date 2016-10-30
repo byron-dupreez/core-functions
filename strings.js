@@ -24,7 +24,7 @@ module.exports = {
   /** Trims the given value (if it's a string) or returns an empty string (if it's undefined or null); otherwise returns the non-undefined, non-null, non-string value as is. */
   trimOrEmpty: trimOrEmpty,
   /** Returns the given value as a string with special case handling for various types */
-  stringify: stringify
+  stringify: stringify,
 };
 
 /**
@@ -85,7 +85,9 @@ function trimOrEmpty(value) {
 function stringify(value) {
   return value === undefined ? `${value}` :
     typeof value === 'string' ? value :
-      value instanceof String ? stringify(value.valueOf()) :
-        Numbers.isSpecialNumber(value) || value instanceof Error ? `${value}` : JSON.stringify(value);
+      value instanceof String ? value.valueOf() :
+        Numbers.isSpecialNumber(value) || value instanceof Error ? `${value}` :
+          typeof value === 'function' ? isNotBlank(value.name) ? `[Function: ${value.name}]` : '[Function: anonymous]' :
+            value instanceof Array ? `[${value.map(stringify).join(", ")}]` :
+          JSON.stringify(value);
 }
-
