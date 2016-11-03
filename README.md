@@ -1,14 +1,13 @@
-# core-functions v1.2.0
+# core-functions v2.0.0
 
 Core functions, utilities and classes for working with Node/JavaScript primitives and built-in objects, including 
-strings, functions, booleans, Promises, base 64, Arrays, Objects, standard AppErrors, etc.
+strings, booleans, Promises, base 64, Arrays, Objects, standard AppErrors, etc.
 
 Currently includes:
 - app-errors.js - a collection of standard application AppError subclasses for the more commonly used HTTP status codes
 - arrays.js - Array utilities
 - base64.js - utilities for encoding from UTF-8 to Base 64 and vice-versa
 - booleans.js - boolean utilities
-- functions.js - function utilities
 - numbers.js - number utilities
 - objects.js - Object utilities
 - promises.js - native Promise utilities
@@ -39,11 +38,6 @@ const Numbers = require('core-functions/numbers');
 To use the boolean utilities
 ```js
 const Booleans = require('core-functions/booleans');
-```
-
-To use the function utilities
-```js
-const Functions = require('core-functions/functions');
 ```
 
 To use the Base 64 encoding and decoding utilities
@@ -127,3 +121,7 @@ See the [package source](https://github.com/byron-dupreez/core-functions) for mo
     - objects
     - timers
 - Added unit tests for existing and new functions and classes.
+
+### 2.0.0
+- Removed unnecessary functions.js module
+- Patches to testing.js `checkMethodEqual` and `checkMethodOkNotOk` functions to show method prefixes properly

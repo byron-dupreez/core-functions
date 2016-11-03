@@ -29,6 +29,10 @@ function toFnArgsPrefix(fn, args) {
   return prefixFnArgs ? `${fn.name ? fn.name : '' }${stringify(args)} -> ` : '';
 }
 
+function toMethodArgsPrefix(obj, method, args) {
+  return prefixFnArgs ? `${obj.name ? obj.name : stringify(obj)}.${method.name ? method.name : '<anon>' }${stringify(args)} -> ` : '';
+}
+
 function equal(t, actual, expected, prefix) {
   const msg = `${toPrefix(prefix)}${stringify(actual)} must be ${stringify(expected)}`;
 
@@ -56,7 +60,7 @@ function checkMethodEqual(t, obj, method, args, expected, prefix) {
   // Apply the method
   const actual = method.apply(obj, args);
   // check if actual equals expected
-  equal(t, actual, expected, toFnArgsPrefix(method, args));
+  equal(t, actual, expected, `${toMethodArgsPrefix(obj, method, args)}${toPrefix(prefix)}`);
 }
 
 function okNotOk(t, actual, expected, okSuffix, notOkSuffix, prefix) {
@@ -78,7 +82,7 @@ function checkMethodOkNotOk(t, obj, method, args, expected, okSuffix, notOkSuffi
   // Apply the method
   const actual = method.apply(obj, args);
   // check if actual equals expected
-  okNotOk(t, actual, expected, okSuffix, notOkSuffix, `${toFnArgsPrefix(method, args)}${toPrefix(prefix)}`);
+  okNotOk(t, actual, expected, okSuffix, notOkSuffix, `${toMethodArgsPrefix(obj, method, args)}${toPrefix(prefix)}`);
 }
 
 function immutable(t, obj, propertyName, prefix) {
