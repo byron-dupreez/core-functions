@@ -88,6 +88,6 @@ function stringify(value) {
       value instanceof String ? value.valueOf() :
         Numbers.isSpecialNumber(value) || value instanceof Error ? `${value}` :
           typeof value === 'function' ? isNotBlank(value.name) ? `[Function: ${value.name}]` : '[Function: anonymous]' :
-            value instanceof Array ? `[${value.map(stringify).join(", ")}]` :
-          JSON.stringify(value);
+            Array.isArray(value) ? `[${value.map(stringify).join(", ")}]` :
+              JSON.stringify(value);
 }

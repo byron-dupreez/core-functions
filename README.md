@@ -1,4 +1,4 @@
-# core-functions v2.0.0
+# core-functions v2.0.1
 
 Core functions, utilities and classes for working with Node/JavaScript primitives and built-in objects, including 
 strings, booleans, Promises, base 64, Arrays, Objects, standard AppErrors, etc.
@@ -125,3 +125,6 @@ See the [package source](https://github.com/byron-dupreez/core-functions) for mo
 ### 2.0.0
 - Removed unnecessary functions.js module
 - Patches to testing.js `checkMethodEqual` and `checkMethodOkNotOk` functions to show method prefixes properly
+
+### 2.0.1
+- Replaced all `x instanceof Array` checks with safer `Array.isArray(x)` 

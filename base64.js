@@ -103,7 +103,7 @@ function toUtf8FromBase64(base64, returnUndefinedInsteadOfThrow) {
  * @returns {*|boolean} true if probably encodable/decodable; false otherwise
  */
 function isEncodableDecodable(value) {
-  return isString(value) || value instanceof Buffer || value instanceof Array;
+  return isString(value) || value instanceof Buffer || Array.isArray(value);
 }
 
 /**

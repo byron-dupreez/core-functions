@@ -213,7 +213,7 @@ function toAppErrorForApiGateway(error, message, code, allowedHttpStatusCodes) {
   const appError = toAppError(error, message, code);
 
   // Determine which HTTP status codes are allowed to pass through
-  let allowedStatusCodes = allowedHttpStatusCodes instanceof Array ? allowedHttpStatusCodes.map(toHttpStatus) : undefined;
+  let allowedStatusCodes = Array.isArray(allowedHttpStatusCodes) ? allowedHttpStatusCodes.map(toHttpStatus) : undefined;
 
   // Force inclusion of mandatory 400 and 500
   if (allowedStatusCodes) {

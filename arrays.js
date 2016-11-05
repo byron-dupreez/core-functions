@@ -48,7 +48,7 @@ function isDistinct(array) {
  */
 function isArrayOfType(value, type, strict) {
   const typeOfType = typeof type;
-  if (value instanceof Array && (typeOfType === 'function' || typeOfType === 'string')) {
+  if (Array.isArray(value) && (typeOfType === 'function' || typeOfType === 'string')) {
     if (!strict) {
       // Use non-strict matching
       const nonStrictType = type === String ? "string" : type === Number ? "number" : type === Boolean ? "boolean" : type;

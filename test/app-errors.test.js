@@ -276,7 +276,7 @@ test('toAppErrorForApiGateway', t => {
     // AppErrors must pass through as is
     //console.log(`allowedHttpStatusCodes = ${allowedHttpStatusCodes}`);
     //console.log(`supportedHttpStatusCodes = ${supportedHttpStatusCodes}`);
-    const allowedCodes = allowedHttpStatusCodes instanceof Array ? allowedHttpStatusCodes.concat(400, 500) : supportedHttpStatusCodes;
+    const allowedCodes = Array.isArray(allowedHttpStatusCodes) ? allowedHttpStatusCodes.concat(400, 500) : supportedHttpStatusCodes;
 
     const originalAppError = error instanceof AppError && (!message || error.message === message) &&
       (!code || error.code === code);
