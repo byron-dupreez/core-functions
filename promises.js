@@ -16,7 +16,11 @@ module.exports = {
   /** Triggers execution of the given (typically synchronous) no-arg function, which may throw an error, within a new promise and returns the new promise */
   try: tryFn,
   /** Starts a simple timeout Promise, which will resolve after the specified delay in milliseconds */
-  delay: delay
+  delay: delay,
+  /** Transforms a result into a single Promise by using Promise.all (if result is an array of promises), the promise-result or Promise.resolve */
+  allOrOne: allOrOne,
+  /** Utility function to check if a result is an array of promises */
+  isArrayOfPromises: isArrayOfPromises
 };
 
 const timers = require('./timers');
@@ -27,7 +31,7 @@ const timers = require('./timers');
  * @returns {boolean|*} true if its a promise (or a "then-able"); false otherwise
  */
 function isPromise(value) {
-  return value instanceof Promise || (value.then && typeof value.then === 'function');
+  return value instanceof Promise || (value && value.then && typeof value.then === 'function');
 }
 if (!Promise.isPromise) { // polyfill-safe guard check
   Promise.isPromise = isPromise;
@@ -179,7 +183,15 @@ if (!Promise.wrapMethod) { // polyfill-safe guard check
  * @returns {Promise} the promise to execute the given function
  */
 function tryFn(fn) {
-  return new Promise((resolve, reject) => resolve(fn()));
+  //return new Promise((resolve, reject) => resolve(fn()));
+  try {
+    const promiseOrResult = fn();
+    // If the executed fn returned a promise, just return that; otherwise wrap its non-promise result in a promise
+    //return isPromise(promiseOrResult) ? promiseOrResult : Promise.resolve(promiseOrResult);
+    return allOrOne(promiseOrResult);
+  } catch (err) {
+    return Promise.reject(err);
+  }
 }
 if (!Promise.try) { // polyfill-safe guard check
   Promise.try = tryFn;
@@ -194,6 +206,7 @@ if (!Promise.try) { // polyfill-safe guard check
  *
  * @param {number} ms - the number of milliseconds to delay
  * @param {Object|undefined|null} [cancellable] - an arbitrary object onto which a cancelTimeout method will be installed
+ * @returns {Function|undefined} [cancellable.cancelTimeout] - installs a cancelTimeout method on the given cancellable
  * @returns {Promise} the timeout Promise
  */
 function delay(ms, cancellable) {
@@ -227,4 +240,33 @@ function delay(ms, cancellable) {
 }
 if (!Promise.delay) { // polyfill-safe guard check
   Promise.delay = delay;
+}
+
+/**
+ * Transforms the given result into a single Promise by doing the following: applies Promise.all to the given result and
+ * returns its Promise (if result is an array of promises); or returns the given promise result (if it's already a
+ * Promise); otherwise wraps the given non-promise result in a Promise.resolve.
+ *
+ * @param {Promise|Promise[]|*} result - a promise or an array of promises or a non-promise result
+ * @returns {Promise} a single promise containing the given result or containing the result's results if the result was
+ * an array of promises
+ */
+function allOrOne(result) {
+  return Array.isArray(result) && result.every(r => isPromise(r)) ? Promise.all(result) :
+    isPromise(result) ? result : Promise.resolve(result);
+}
+if (!Promise.allOrOne) { // polyfill-safe guard check
+  Promise.allOrOne = allOrOne;
+}
+
+/**
+ * Returns true if the given result is an array of promises; false otherwise.
+ * @param {*} result - the result to check
+ * @returns {boolean} true if array of promises; false otherwise
+ */
+function isArrayOfPromises(result) {
+  return Array.isArray(result) && result.every(r => isPromise(r))
+}
+if (!Promise.isArrayOfPromises) { // polyfill-safe guard check
+  Promise.isArrayOfPromises = isArrayOfPromises;
 }

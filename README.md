@@ -127,4 +127,13 @@ See the [package source](https://github.com/byron-dupreez/core-functions) for mo
 - Patches to testing.js `checkMethodEqual` and `checkMethodOkNotOk` functions to show method prefixes properly
 
 ### 2.0.1
-- Replaced all `x instanceof Array` checks with safer `Array.isArray(x)` 
+- Replaced all `x instanceof Array` checks with safer `Array.isArray(x)`
+ 
+### 2.0.2
+- Changes to `promises.js`:
+    - Minor patch for `isPromise` to survive undefined and null
+    - Added `isArrayOfPromises` function to check if a result is an array of promises
+    - Added `allOrOne` function to transform a result into a single promise 
+      using `Promise.all`, the promise-result or `Promise.resolve`
+    - Changed implementation of `Promise.try` to use new `Promise.allOrOne`
+    - Added unit tests for `allOrOne` & `isArrayOfPromises` and more tests for `try`
