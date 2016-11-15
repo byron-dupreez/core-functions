@@ -550,7 +550,7 @@ test('Promise.allOrOne', t => {
   t.ok(Promise.isPromise(Promise.allOrOne(thenable)), 'allOrOne(then-able) is a promise');
   t.equal(Promise.allOrOne(thenable), thenable, 'allOrOne(then-able) gives same then-able');
   t.ok(Promise.isPromise(Promise.allOrOne([thenable])), 'allOrOne([then-able]) is a promise');
-  t.ok(Promise.isPromise(Promise.allOrOne([thenable,thenable])), 'allOrOne([then-able,then-able]) is a promise');
+  t.ok(Promise.isPromise(Promise.allOrOne([thenable, thenable])), 'allOrOne([then-able,then-able]) is a promise');
 
   const promise = new Promise((resolve, reject) => resolve('Bob'));
   t.ok(Promise.isPromise(Promise.allOrOne(promise)), 'allOrOne(promise) gives a promise');
@@ -568,7 +568,89 @@ test('Promise.allOrOne', t => {
         t.equal(ps[0], p, 'allOrOne([promise]) contains same promise as [promise]');
         t.end();
       });
-  });
+    });
 
 });
 
+// ---------------------------------------------------------------------------------------------------------------------
+// Promise.every
+// ---------------------------------------------------------------------------------------------------------------------
+
+test('Promise.every', t => {
+  t.plan(11);
+
+  // Empty array or undefined
+  Promise.every([])
+    .then(results => {
+      t.deepEqual(results, [], 'Promise.every([]) must be []');
+    });
+  Promise.every(undefined)
+    .then(results => {
+      t.deepEqual(results, [], 'Promise.every(undefined) must be []');
+    });
+  Promise.every(null)
+    .then(results => {
+      t.deepEqual(results, [], 'Promise.every(null) must be []');
+    });
+
+  // Single Promise
+  const p1 = Promise.resolve('p1');
+  const expected = [{result: 'p1'}];
+
+  Promise.every(p1)
+    .then(results => {
+      t.deepEqual(results, expected, `Promise.every(p1) must be ${stringify(expected)}`);
+    });
+
+  Promise.every([p1])
+    .then(results => {
+      t.deepEqual(results, expected, `Promise.every([p1]) must be ${stringify(expected)}`);
+    });
+
+  // Multiple Promises
+  const p2Error = new Error('p2 error');
+  const p2 = Promise.reject(p2Error);
+  const p3 = Promise.resolve('p3');
+
+  const p4Error = new Error('p4 error');
+  const p4 = Promise.reject(p4Error);
+
+  // Promises as arguments
+  Promise.every(p1, p2)
+    .then(results => {
+      const expected = [{result: 'p1'}, {error: p2Error}];
+      t.deepEqual(results, expected, `Promise.every(p1,p2) must be ${stringify(expected)}`);
+    });
+
+  Promise.every(p1, p2, p3)
+    .then(results => {
+      const expected = [{result: 'p1'}, {error: p2Error}, {result: 'p3'}];
+      t.deepEqual(results, expected, `Promise.every(p1,p2,p3) must be ${stringify(expected)}`);
+    });
+
+  Promise.every(p1, p2, p3, p4)
+    .then(results => {
+      const expected = [{result: 'p1'}, {error: p2Error}, {result: 'p3'}, {error: p4Error},];
+      t.deepEqual(results, expected, `Promise.every(p1,p2,p3,p4) must be ${stringify(expected)}`);
+    });
+
+  // Promises in arrays
+  Promise.every([p1, p2])
+    .then(results => {
+      const expected = [{result: 'p1'}, {error: p2Error}];
+      t.deepEqual(results, expected, `Promise.every([p1,p2]) must be ${stringify(expected)}`);
+    });
+
+  Promise.every([p1, p2, p3])
+    .then(results => {
+      const expected = [{result: 'p1'}, {error: p2Error}, {result: 'p3'}];
+      t.deepEqual(results, expected, `Promise.every([p1,p2,p3]) must be ${stringify(expected)}`);
+    });
+
+  Promise.every([p1, p2, p3, p4])
+    .then(results => {
+      const expected = [{result: 'p1'}, {error: p2Error}, {result: 'p3'}, {error: p4Error},];
+      t.deepEqual(results, expected, `Promise.every([p1,p2,p3,p4]) must be ${stringify(expected)}`);
+    });
+
+});

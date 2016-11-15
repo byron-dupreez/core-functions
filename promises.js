@@ -270,3 +270,40 @@ function isArrayOfPromises(result) {
 if (!Promise.isArrayOfPromises) { // polyfill-safe guard check
   Promise.isArrayOfPromises = isArrayOfPromises;
 }
+
+/**
+ * @typedef {{result:*}|{error:Error}} ResultOrError - An object containing either a result or an error.
+ */
+
+/**
+ * Returns a promise that returns a list of either a result or an error for each of the given promises in the same
+ * sequence as the given promises when every one of the given promises has resolved.
+ * @param {Promise[]|Promise...} promises - a list of promises from which to collect their resolved results or their rejected errors
+ * @returns {Promise.<ResultOrError[]>} promises - a promise of a list of either a result or an error for each of the
+ * given promises in the same sequence as the given promises
+ */
+function every(promises) {
+  const ps = Array.isArray(promises) ? promises : isPromise(promises) ? arguments : [];
+  const n = ps.length;
+  if (n <= 0) {
+    return Promise.resolve([]);
+  }
+  const results = new Array(n);
+
+  function next(i) {
+    return ps[i].then(
+      result =>
+        results[i] = {result: result},
+      err =>
+        results[i] = {error: err})
+      .then(() =>
+        // If remaining list (after i) contains at least one more promise, then continue; otherwise done
+        i < n - 1 ? next(i + 1) : results
+      );
+  }
+
+  return next(0);
+}
+if (!Promise.every) { // polyfill-safe guard check
+  Promise.every = every;
+}

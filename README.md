@@ -1,4 +1,4 @@
-# core-functions v2.0.1
+# core-functions v2.0.3
 
 Core functions, utilities and classes for working with Node/JavaScript primitives and built-in objects, including 
 strings, booleans, Promises, base 64, Arrays, Objects, standard AppErrors, etc.
@@ -102,12 +102,26 @@ This module's unit tests were developed with and must be run with [tape](https:/
 See the [package source](https://github.com/byron-dupreez/core-functions) for more details.
 
 ## Changes
-### 1.1.0
-- strings: Added `trimOrEmpty` function
-- strings: Renamed `safeTrim` function to `trim` and changed `safeTrim` to an alias for `trim`
 
-### 1.1.1
-- Simple increment of version number to fix issue of 1.1.0 tag pointing to wrong version
+### 2.0.3
+- Change to `promises.js`:
+    - Added an `every` function that accepts multiple promises and returns a single promise that returns a list of either a result or an error for each and every one of the given promises
+
+### 2.0.2
+- Changes to `promises.js`:
+    - Minor patch for `isPromise` to survive undefined and null
+    - Added `isArrayOfPromises` function to check if a result is an array of promises
+    - Added `allOrOne` function to transform a result into a single promise 
+      using `Promise.all`, the promise-result or `Promise.resolve`
+    - Changed implementation of `Promise.try` to use new `Promise.allOrOne`
+    - Added unit tests for `allOrOne` & `isArrayOfPromises` and more tests for `try`
+
+### 2.0.1
+- Replaced all `x instanceof Array` checks with safer `Array.isArray(x)`
+ 
+### 2.0.0
+- Removed unnecessary functions.js module
+- Patches to testing.js `checkMethodEqual` and `checkMethodOkNotOk` functions to show method prefixes properly
 
 ### 1.2.0
 - strings: 
@@ -122,18 +136,10 @@ See the [package source](https://github.com/byron-dupreez/core-functions) for mo
     - timers
 - Added unit tests for existing and new functions and classes.
 
-### 2.0.0
-- Removed unnecessary functions.js module
-- Patches to testing.js `checkMethodEqual` and `checkMethodOkNotOk` functions to show method prefixes properly
+### 1.1.1
+- Simple increment of version number to fix issue of 1.1.0 tag pointing to wrong version
 
-### 2.0.1
-- Replaced all `x instanceof Array` checks with safer `Array.isArray(x)`
- 
-### 2.0.2
-- Changes to `promises.js`:
-    - Minor patch for `isPromise` to survive undefined and null
-    - Added `isArrayOfPromises` function to check if a result is an array of promises
-    - Added `allOrOne` function to transform a result into a single promise 
-      using `Promise.all`, the promise-result or `Promise.resolve`
-    - Changed implementation of `Promise.try` to use new `Promise.allOrOne`
-    - Added unit tests for `allOrOne` & `isArrayOfPromises` and more tests for `try`
+### 1.1.0
+- strings: Added `trimOrEmpty` function
+- strings: Renamed `safeTrim` function to `trim` and changed `safeTrim` to an alias for `trim`
+
