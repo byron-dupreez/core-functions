@@ -523,3 +523,37 @@ test('trimOrEmpty on Strings', t => {
   checkTrimOrEmpty(t, true);
   t.end();
 });
+
+test('nthIndexOf', t => {
+  const s = 'arn:aws:dynamodb:us-east-1:111111111111:table/test/stream/2020-10-10T08:18:22.385';
+  //         0----+----1----+----2----+----3----+----4----+----5----+----6----+----7----+----8
+  t.equal(Strings.nthIndexOf(s, ':', -1), -1, `nthIndexOf(':', -1) must be -1`);
+  t.equal(Strings.nthIndexOf(s, ':', 0), -1, `nthIndexOf(':', 0) must be -1`);
+  t.equal(Strings.nthIndexOf(s, ':', 1), 3, `nthIndexOf(':', 1) must be 3`);
+  t.equal(Strings.nthIndexOf(s, ':', 2), 7, `nthIndexOf(':', 2) must be 7`);
+  t.equal(Strings.nthIndexOf(s, ':', 3), 16, `nthIndexOf(':', 3) must be 16`);
+  t.equal(Strings.nthIndexOf(s, ':', 4), 26, `nthIndexOf(':', 4) must be 26`);
+  t.equal(Strings.nthIndexOf(s, ':', 5), 39, `nthIndexOf(':', 5) must be 39`);
+  t.equal(Strings.nthIndexOf(s, ':', 6), 71, `nthIndexOf(':', 6) must be 71`);
+  t.equal(Strings.nthIndexOf(s, ':', 7), 74, `nthIndexOf(':', 7) must be 74`);
+  t.equal(Strings.nthIndexOf(s, ':', 8), -1, `nthIndexOf(':', 8) must be -1`);
+  t.equal(Strings.nthIndexOf(s, ':', 9), -1, `nthIndexOf(':', 9) must be -1`);
+
+  t.equal(Strings.nthIndexOf(s, 'table', 0), -1, `nthIndexOf('table', 0) must be -1`);
+  t.equal(Strings.nthIndexOf(s, 'table', 1), 40, `nthIndexOf('table', 1) must be 40`);
+  t.equal(Strings.nthIndexOf(s, 'table', 2), -1, `nthIndexOf('table', 2) must be -1`);
+
+  t.equal(Strings.nthIndexOf(s, '/', 0), -1, `nthIndexOf('/', 0) must be -1`);
+  t.equal(Strings.nthIndexOf(s, '/', 1), 45, `nthIndexOf('/', 1) must be 45`);
+  t.equal(Strings.nthIndexOf(s, '/', 2), 50, `nthIndexOf('/', 2) must be 50`);
+  t.equal(Strings.nthIndexOf(s, '/', 3), 57, `nthIndexOf('/', 3) must be 57`);
+  t.equal(Strings.nthIndexOf(s, '/', 4), -1, `nthIndexOf('/', 4) must be -1`);
+
+  t.equal(Strings.nthIndexOf(s, '', -1), -1, `nthIndexOf('', -1) must be -1`);
+  t.equal(Strings.nthIndexOf(s, '', 0), -1, `nthIndexOf('', 0) must be -1`);
+  t.equal(Strings.nthIndexOf(s, '', 1), 0, `nthIndexOf('', 1) must be 0`);
+  t.equal(Strings.nthIndexOf(s, '', 2), 0, `nthIndexOf('', 2) must be 0`);
+  t.equal(Strings.nthIndexOf(s, '', 100), 0, `nthIndexOf('', 100) must be 0`);
+
+  t.end();
+});

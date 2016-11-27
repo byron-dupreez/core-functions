@@ -1,4 +1,4 @@
-# core-functions v2.0.3
+# core-functions v2.0.4
 
 Core functions, utilities and classes for working with Node/JavaScript primitives and built-in objects, including 
 strings, booleans, Promises, base 64, Arrays, Objects, standard AppErrors, etc.
@@ -102,6 +102,10 @@ This module's unit tests were developed with and must be run with [tape](https:/
 See the [package source](https://github.com/byron-dupreez/core-functions) for more details.
 
 ## Changes
+
+### 2.0.4
+- Change to `strings.js`:
+    - Added an `nthIndexOf` function that finds index of nth occurrence of a search value in a string
 
 ### 2.0.3
 - Change to `promises.js`:

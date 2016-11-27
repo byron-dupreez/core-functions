@@ -25,6 +25,7 @@ module.exports = {
   trimOrEmpty: trimOrEmpty,
   /** Returns the given value as a string with special case handling for various types */
   stringify: stringify,
+  nthIndexOf: nthIndexOf
 };
 
 /**
@@ -90,4 +91,28 @@ function stringify(value) {
           typeof value === 'function' ? isNotBlank(value.name) ? `[Function: ${value.name}]` : '[Function: anonymous]' :
             Array.isArray(value) ? `[${value.map(stringify).join(", ")}]` :
               JSON.stringify(value);
+}
+
+/**
+ * Returns the index of the nth occurrence of the given searchValue in the given string (if any); otherwise returns -1.
+ * @param {string} s - the string to search
+ * @param {string} searchValue - the value to search for in the string
+ * @param {number} nth - the number of occurrences to traverse through to find the nth occurrence
+ * @returns {number} the index of the nth occurrence of the given searchValue in the given string (if any); otherwise returns -1
+ */
+function nthIndexOf(s, searchValue, nth) {
+  if (nth < 1) return -1;
+  let index = 0;
+  for (let i = 0; i < nth; ++i) {
+    if (i > 0) {
+      index += searchValue.length;
+    }
+
+    index = s.indexOf(searchValue, index);
+
+    if (index === -1) {
+      break;
+    }
+  }
+  return index;
 }
