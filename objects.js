@@ -10,7 +10,8 @@ const Numbers = require('./numbers');
 module.exports = {
   /** Returns the standard valueOf of the given value if defined; otherwise returns the value as is */
   valueOf: valueOf,
-  merge: merge
+  merge: merge,
+  copy: copy
 };
 
 /**
@@ -33,26 +34,68 @@ function valueOf(value) {
  * @param {boolean|undefined} [deep] - Executes a deep merge if the given deep flag is true, otherwise only does a shallow merge
  */
 function merge(from, to, replace, deep) {
-  const fromNames = Object.getOwnPropertyNames(from);
-  const toNames = Object.getOwnPropertyNames(to);
-  for (let i = 0; i < fromNames.length; ++i) {
-    const name = fromNames[i];
+  const history = new WeakMap();
 
-    const fromProp = from[name];
-    const fromPropIsObject = fromProp && typeof fromProp === 'object';
-
-    const existsOnTo = toNames.indexOf(name) !== -1;
-
-    if (existsOnTo) {
-      const toProp = to[name];
-      if (deep && fromPropIsObject && toProp && typeof toProp === 'object') {
-        merge(fromProp, toProp, replace, deep);
-      } else if (replace) {
-        to[name] = fromPropIsObject ? merge(fromProp, {}) : fromProp;
-      }
-    } else {
-      to[name] = fromPropIsObject ? merge(fromProp, {}) : fromProp;
+  function mergeWithHistory(src, dest) {
+    if (history.has(src)) {
+      return history.get(src);
     }
+    // Remember this merge in case the same source appears again within its own graph
+    history.set(src, dest);
+
+    const srcNames = Object.getOwnPropertyNames(src);
+    const destNames = Object.getOwnPropertyNames(dest);
+    for (let i = 0; i < srcNames.length; ++i) {
+      const name = srcNames[i];
+
+      const srcPropertyValue = src[name];
+      const srcPropertyIsObject = srcPropertyValue && typeof srcPropertyValue === 'object';
+
+      const existsOnDest = destNames.indexOf(name) !== -1;
+      console.log(`############ src ${name} = ${srcPropertyValue}${existsOnDest ? ', exists on dest' : ''}, is object? ${srcPropertyIsObject}`);
+
+      if (existsOnDest) {
+        const destPropertyValue = dest[name];
+        if (deep && srcPropertyIsObject && destPropertyValue && typeof destPropertyValue === 'object') {
+          mergeWithHistory(srcPropertyValue, destPropertyValue, replace, deep);
+        } else if (replace) {
+          dest[name] = srcPropertyIsObject ? copy(srcPropertyValue, true) : srcPropertyValue;
+        }
+      } else {
+        dest[name] = srcPropertyIsObject ? copy(srcPropertyValue, true) : srcPropertyValue;
+      }
+    }
+    return dest;
   }
-  return to;
+
+  return mergeWithHistory(from, to);
+}
+
+/**
+ * Copies the enumerable properties of the given object into a new object. Executes a deep copy if the given deep flag
+ * is true, otherwise only does a shallow copy. Returns the new copy of the original object.
+ * @param {Object} object - the object from which to copy enumerable properties into a new object
+ * @param {boolean|undefined} [deep] - Executes a deep copy if the given deep flag is true, otherwise only does a shallow copy
+ */
+function copy(object, deep) {
+  const history = new WeakMap();
+
+  function copyWithHistory(src, dest) {
+    if (history.has(src)) {
+      return history.get(src);
+    }
+    // Remember this copy in case the same source appears again within its own graph
+    history.set(src, dest);
+
+    const names = Object.getOwnPropertyNames(src);
+    for (let i = 0; i < names.length; ++i) {
+      const name = names[i];
+      const property = src[name];
+      const propertyIsObject = property && typeof property === 'object';
+      dest[name] = deep && propertyIsObject ? copyWithHistory(property, {}) : property;
+    }
+    return dest;
+  }
+
+  return copyWithHistory(object, {});
 }
