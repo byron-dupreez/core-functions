@@ -1,4 +1,4 @@
-# core-functions v2.0.6
+# core-functions v2.0.7
 
 Core functions, utilities and classes for working with Node/JavaScript primitives and built-in objects, including 
 strings, booleans, Promises, base 64, Arrays, Objects, standard AppErrors, etc.
@@ -102,6 +102,10 @@ This module's unit tests were developed with and must be run with [tape](https:/
 See the [package source](https://github.com/byron-dupreez/core-functions) for more details.
 
 ## Changes
+
+### 2.0.7
+- Change to `objects.js`:
+    - Removed console.log only added for debugging from `merge` function
 
 ### 2.0.6
 - Change to `objects.js`:

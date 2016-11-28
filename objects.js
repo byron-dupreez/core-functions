@@ -52,7 +52,6 @@ function merge(from, to, replace, deep) {
       const srcPropertyIsObject = srcPropertyValue && typeof srcPropertyValue === 'object';
 
       const existsOnDest = destNames.indexOf(name) !== -1;
-      console.log(`############ src ${name} = ${srcPropertyValue}${existsOnDest ? ', exists on dest' : ''}, is object? ${srcPropertyIsObject}`);
 
       if (existsOnDest) {
         const destPropertyValue = dest[name];
