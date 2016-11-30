@@ -242,6 +242,9 @@ function checkStringify(t, wrapInString) {
   function check(value, expected) {
     return checkEqual(t, Strings.stringify, [wrap(value, wrapInString)], expected, toPrefix(value, wrapInString));
   }
+  function checkWithArgs(value, errorsAsObjects, quoteStrings, expected) {
+    return checkEqual(t, Strings.stringify, [wrap(value, wrapInString), errorsAsObjects, quoteStrings], expected, toPrefix(value, wrapInString));
+  }
 
   // undefined
   check(undefined, 'undefined');
@@ -251,7 +254,8 @@ function checkStringify(t, wrapInString) {
 
   // objects
   check({}, wrapInString ? '[object Object]' : '{}');
-  check({a: 1, b: 2}, wrapInString ? '[object Object]' : `${JSON.stringify({a: 1, b: 2})}`);
+  check({a: 1, b: 2}, wrapInString ? '[object Object]' : JSON.stringify({a: 1, b: 2}));
+  check({a: 1, b: 2, o: {c: 'C'}}, wrapInString ? '[object Object]' : JSON.stringify({a: 1, b: 2, o: {c: 'C'}}));
 
   // booleans
   check(true, 'true');
@@ -310,6 +314,84 @@ function checkStringify(t, wrapInString) {
   check('a', 'a');
   check('abc', 'abc');
   check('ABC', 'ABC');
+  checkWithArgs('ABC', false, true, '"ABC"');
+
+  // errors
+  check(new Error('Planned error'), wrapInString ? 'Error: Planned error' : '{"message":"Planned error","name":"Error"}');
+  checkWithArgs(new Error('Planned error'), true, false, wrapInString ? 'Error: Planned error' : 'Error: Planned error');
+
+  // circular objects
+  const circular0 = {a: 1, o: {b:2}};
+  circular0.circular = circular0;
+  circular0.o.oAgain = circular0.o;
+  check(circular0, wrapInString ? '[object Object]' : '{"a":1,"o":{"b":2,"oAgain":[Circular: this.o]},"circular":[Circular: this]}');
+
+  const circular1 = {a: 1, b: 2, o: {c: 'C', p: {d: 'D'}}};
+  circular1.thisAgain = circular1;
+  circular1.o.thisAgain = circular1;
+  circular1.o.p.thisAgain = circular1;
+
+  circular1.oAgain = circular1.o;
+  circular1.o.oAgain = circular1.o;
+  circular1.o.p.oAgain = circular1.o;
+
+  circular1.pAgain = circular1.o.p;
+  circular1.o.pAgain = circular1.o.p;
+  circular1.o.p.pAgain = circular1.o.p;
+  check(circular1, wrapInString ? '[object Object]' : '{"a":1,"b":2,"o":{"c":"C","p":{"d":"D","thisAgain":[Circular: this],"oAgain":[Circular: this.o],"pAgain":[Circular: this.o.p]},"thisAgain":[Circular: this],"oAgain":[Circular: this.o],"pAgain":[Circular: this.o.p]},"thisAgain":[Circular: this],"oAgain":[Circular: this.o],"pAgain":[Circular: this.o.p]}');
+
+  // circular arrays with circular objects
+  const array2 = ['a', {}, 123];
+  const circular2 = array2[1];
+  circular2.thisAgain = array2;
+  circular2.this1Again = circular2;
+  array2.push(array2);
+
+  check(array2, wrapInString ? 'a,[object Object],123,' : '[a, {"thisAgain":[Circular: this],"this1Again":[Circular: this[1]]}, 123, [Circular: this]]');
+
+  const array3 = ['x', {y:'Y'}, 123];
+  const circular3 = array3[1];
+  circular3.thisAgain = circular3;
+  circular3.arrayAgain = array3;
+  array3.push(array3);
+
+  check(circular3, wrapInString ? '[object Object]' : '{"y":"Y","thisAgain":[Circular: this],"arrayAgain":["x", [Circular: this], 123, [Circular: this.arrayAgain]]}');
+
+  // circular objects with circular arrays
+  const array4 = ['b', {z: "Z"}, 456];
+  const circular4 = {a: 'A', array: array4};
+  circular4.thisAgain = circular4;
+  circular4.arrayAgain = circular4.array;
+
+  array4[1].thisAgain = circular4;
+  array4[1].arrayAgain = circular4.array;
+
+  array4.push(array4);
+
+  check(circular4, wrapInString ? '[object Object]' : '{"a":"A","array":["b", {"z":"Z","thisAgain":[Circular: this],"arrayAgain":[Circular: this.array]}, 456, [Circular: this.array]],"thisAgain":[Circular: this],"arrayAgain":[Circular: this.array]}');
+
+  const array5 = ['c', {x: "X"}, 789];
+  const circular5 = {a: 'A', array: array5};
+  array5[1].thisAgain = array5;
+  array5[1].this1Again = array5[1];
+  array5[1].circular5 = circular5;
+
+  circular5.thisAgain = array5;
+  circular5.this1Again = array5[1];
+  circular5.this1Circular5Again = circular5;
+  circular5.this1Circular5ArrayAgain = circular5.array;
+
+  array5.push(array5);
+
+  check(array5, wrapInString ? 'c,[object Object],789,' : '[c, {"x":"X","thisAgain":[Circular: this],"this1Again":[Circular: this[1]],"circular5":{"a":"A","array":[Circular: this],"thisAgain":[Circular: this],"this1Again":[Circular: this[1]],"this1Circular5Again":[Circular: this[1].circular5],"this1Circular5ArrayAgain":[Circular: this]}}, 789, [Circular: this]]');
+
+  // Functions
+  function func() {}
+  check(func, wrapInString ? 'function func() {}' : '[Function: func]');
+  check({fn:func}, wrapInString ? '[object Object]' : '{"fn":[Function: func]}');
+
+  // undefined object properties
+  check({a:undefined}, wrapInString ? '[object Object]' : '{"a":undefined}');
 }
 
 function checkTrim(t, wrapInString) {

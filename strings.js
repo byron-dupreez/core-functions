@@ -1,7 +1,5 @@
 'use strict';
 
-const Numbers = require('./numbers');
-
 /**
  * Module containing utilities for working with strings.
  * @module core-functions/strings
@@ -77,20 +75,102 @@ function trimOrEmpty(value) {
 }
 
 /**
- * Returns the given value as a string with special case handling for string, String, undefined and special numbers
- * (i.e. Infinity, -Infinity and NaN), because string & String are already strings and {@linkcode JSON#stringify}
- * converts: Infinity, -Infinity and NaN to 'null'; an Error to '{}'; and undefined to undefined (not 'undefined').
+ * Returns the given value as a string with special case handling for undefined, null, strings, numbers, booleans,
+ * Strings, Numbers, Booleans, Errors, Functions, Arrays, Objects and special numbers (i.e. Infinity, -Infinity and NaN)
+ * and also handles circular dependencies. Similar to {@linkcode JSON#stringify}, but shows more about the given value
+ * than JSON.stringify does, for example:
+ * - JSON.stringify(undefined) returns undefined, but this returns 'undefined'
+ * - JSON.stringify({a:undefined}) returns {}, but this returns '{"a":undefined}'
+ * - JSON.stringify(new Error("Boom")) returns '{}', but this returns either '{"message":"Boom","name":"Error"}' (if
+ *   useToStringForErrors is false) or '[Error: Boom]' (if useToStringForErrors is true)
+ * - JSON.stringify(func) with function func() {} returns undefined, but this returns '[Function: func]'
+ * - JSON.stringify({fn: func}) with function func() {} returns '{}', but this returns '{"fn": [Function: func]}'
+ * - JSON.stringify(NaN) returns 'null', but this returns 'NaN'
+ * - JSON.stringify(Infinity) returns 'null', but this returns 'Infinity'
+ * - JSON.stringify(-Infinity) returns 'null', but this returns '-Infinity'
+ * - JSON.stringify applied to objects or arrays with circular dependencies throws an error (TypeError: Converting
+ *   circular structure to JSON), but this returns a string with circular dependencies replaced with [Circular: {name}],
+ *   where name refers to the original object that it references (using 'this' for the outermost object itself).
+ *   For example, given the following code:
+ *     const object = {a: 1, o: {b:2}};
+ *     object.circular = object;
+ *     object.o.oAgain = object.o;
+ *   this function returns '{"a":1,"o":{"b":2,"oAgain":[Circular: this.o]},"circular":[Circular: this]}'
+ *
  * @param {*} value the value to stringify
+ * @param {boolean|undefined} [useToStringForErrors] - whether to stringify errors using toString or as normal objects (default)
+ * @param {boolean|undefined} [quoteStrings] - whether to surround simple string values with double-quotes or not (default)
  * @returns {string} the value as a string
  */
-function stringify(value) {
-  return value === undefined ? `${value}` :
-    typeof value === 'string' ? value :
-      value instanceof String ? value.valueOf() :
-        Numbers.isSpecialNumber(value) || value instanceof Error ? `${value}` :
-          typeof value === 'function' ? isNotBlank(value.name) ? `[Function: ${value.name}]` : '[Function: anonymous]' :
-            Array.isArray(value) ? `[${value.map(stringify).join(", ")}]` :
-              JSON.stringify(value);
+function stringify(value, useToStringForErrors, quoteStrings) {
+  const history = new WeakMap();
+
+  function stringifyWithHistory(value, name, quoteStrings) {
+    // Special cases for undefined and null
+    if (value === undefined) return 'undefined';
+    if (value === null) return 'null';
+
+    const typeOfValue = typeof value;
+
+    // Special cases for strings and Strings
+    if (typeOfValue === 'string') return quoteStrings ? `"${value}"` : value;
+    if (value instanceof String) return quoteStrings ? `"${value.valueOf()}"` : value.valueOf();
+
+    // Special cases for numbers and Numbers (and special numbers)
+    //if (typeOfValue === 'number' || value instanceof Number || Numbers.isSpecialNumber(value)) return `${value}`;
+    if (typeOfValue === 'number' || value instanceof Number) return `${value}`;
+
+    // Special cases for booleans and Booleans
+    if (typeOfValue === 'boolean' || value instanceof Boolean) return `${value}`;
+
+    // Special case for Errors - use toString() if directed, since stringify on most errors, just returns "{}"
+    const valueIsError = value instanceof Error;
+    if (valueIsError && useToStringForErrors) return `${value}`;
+
+    // Special case for Functions - show thm as [Function: {function name}]
+    if (typeOfValue === 'function') return isNotBlank(value.name) ? `[Function: ${value.name}]` : '[Function: anonymous]';
+
+    if (typeOfValue === 'object') {
+      if (history.has(value)) {
+        // Special case for circular values - show thm as [Circular: {property name}]
+        return `[Circular: ${history.get(value)}]`;
+      }
+      history.set(value, name);
+
+      // Special case for Array objects, stringify each of its elements
+      if (Array.isArray(value)) {
+        return `[${value.map((e, i) => stringifyWithHistory(e, `${name}[${i}]`, quoteStrings)).join(", ")}]`;
+      }
+
+      // Stringify the object
+      let names = Object.getOwnPropertyNames(value);
+
+      if (valueIsError) {
+        // Special case for Error objects - include message and name (if any), but exclude stack, which are all normally hidden with JSON.stringify
+        names = names.filter(n => n !== 'stack');
+        if (value.name) {
+          names.push('name');
+        }
+      }
+
+      let result = '{';
+      for (let i = 0; i < names.length; ++i) {
+        const propertyName = names[i];
+        const propertyValue = value[propertyName];
+        if (i > 0) {
+          result += ',';
+        }
+        result += `"${propertyName}":${stringifyWithHistory(propertyValue, `${name}.${propertyName}`, true)}`
+      }
+      result += '}';
+      return result;
+    }
+
+    // If anything else use JSON.stringify on it
+    return JSON.stringify(value);
+  }
+
+  return stringifyWithHistory(value, 'this', quoteStrings);
 }
 
 /**

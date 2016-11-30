@@ -65,9 +65,9 @@ function checkMethodEqual(t, obj, method, args, expected, prefix) {
 
 function okNotOk(t, actual, expected, okSuffix, notOkSuffix, prefix) {
   if (expected) {
-    t.ok(actual, `${toPrefix(prefix)}${stringify(actual)} ${okSuffix}`);
+    t.ok(actual, `${toPrefix(prefix)} ${okSuffix}`);
   } else {
-    t.notOk(actual, `${toPrefix(prefix)}${stringify(actual)} ${notOkSuffix}`);
+    t.notOk(actual, `${toPrefix(prefix)} ${notOkSuffix}`);
   }
 }
 

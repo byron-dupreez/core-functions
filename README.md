@@ -1,4 +1,4 @@
-# core-functions v2.0.7
+# core-functions v2.0.8
 
 Core functions, utilities and classes for working with Node/JavaScript primitives and built-in objects, including 
 strings, booleans, Promises, base 64, Arrays, Objects, standard AppErrors, etc.
@@ -102,6 +102,14 @@ This module's unit tests were developed with and must be run with [tape](https:/
 See the [package source](https://github.com/byron-dupreez/core-functions) for more details.
 
 ## Changes
+
+### 2.0.8
+- Changed `strings.js` module's `stringify` function:
+  - To handle circular dependencies in objects and arrays
+  - To recursively stringify objects & their properties itself, instead of relying on `JSON.stringify`
+  - To add an optional `useToStringForErrors` argument to convert Errors using their `toString` methods (if true) or
+    as objects (if false), but with their `message` and `name` (but not `stack`) properties visible in the result
+  - To add an optional `quoteStrings` argument to return given string values surrounded with double-quotes (if true)
 
 ### 2.0.7
 - Change to `objects.js`:
