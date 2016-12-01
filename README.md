@@ -1,4 +1,4 @@
-# core-functions v2.0.8
+# core-functions v2.0.9
 
 Core functions, utilities and classes for working with Node/JavaScript primitives and built-in objects, including 
 strings, booleans, Promises, base 64, Arrays, Objects, standard AppErrors, etc.
@@ -102,6 +102,19 @@ This module's unit tests were developed with and must be run with [tape](https:/
 See the [package source](https://github.com/byron-dupreez/core-functions) for more details.
 
 ## Changes
+
+
+### 2.0.9
+- Patched and changed `strings.js` module's `stringify` function:
+  - To use objects' `toJSON` methods (if any) by default (prior versions did NOT use them at all)
+  - To add an optional `avoidToJSONMethods` argument to determine whether to avoid using objects' toJSON methods or not (default)
+  - To double-quote any string elements within an array in order to synchronize with the behaviour of `JSON.stringify`
+  - To re-sequence the order of errors' property names when they are stringified as normal objects - in order to have an 
+    error's `name` as the first property, followed by its `message` as the second property, followed by the rest of its 
+    enumerable properties (excluding its `stack` property) 
+  - To differentiate simple references to identical objects within the object graph from true circular dependencies:
+    - Simple references are now marked as `[Reference: {name}]`, whereas the prior version marked them incorrectly as `[Circular: {name}]`
+    - True circular dependencies are still marked as `[Circular: {name}]`
 
 ### 2.0.8
 - Changed `strings.js` module's `stringify` function:

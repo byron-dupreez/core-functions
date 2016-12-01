@@ -95,6 +95,7 @@ function checkIsBlank(t, wrapInString) {
     return checkOkNotOk(t, Strings.isBlank, [wrap(value, wrapInString)], expected, ' is blank', ' is NOT blank',
       toPrefix(value, wrapInString));
   }
+
   // undefined
   check(undefined, !wrapInString); // blank ?
 
@@ -169,6 +170,7 @@ function checkIsNotBlank(t, wrapInString) {
     return checkOkNotOk(t, Strings.isNotBlank, [wrap(value, wrapInString)], expected, ' is not blank', ' is blank',
       toPrefix(value, wrapInString));
   }
+
   // undefined
   check(undefined, wrapInString); // blank ?
 
@@ -242,8 +244,9 @@ function checkStringify(t, wrapInString) {
   function check(value, expected) {
     return checkEqual(t, Strings.stringify, [wrap(value, wrapInString)], expected, toPrefix(value, wrapInString));
   }
-  function checkWithArgs(value, errorsAsObjects, quoteStrings, expected) {
-    return checkEqual(t, Strings.stringify, [wrap(value, wrapInString), errorsAsObjects, quoteStrings], expected, toPrefix(value, wrapInString));
+
+  function checkWithArgs(value, useToStringForErrors, avoidToJSONMethods, quoteStrings, expected) {
+    return checkEqual(t, Strings.stringify, [wrap(value, wrapInString), useToStringForErrors, avoidToJSONMethods, quoteStrings], expected, toPrefix(value, wrapInString));
   }
 
   // undefined
@@ -314,14 +317,15 @@ function checkStringify(t, wrapInString) {
   check('a', 'a');
   check('abc', 'abc');
   check('ABC', 'ABC');
-  checkWithArgs('ABC', false, true, '"ABC"');
+  checkWithArgs('', false, false, true, '""');
+  checkWithArgs('ABC', false, false, true, '"ABC"');
 
   // errors
-  check(new Error('Planned error'), wrapInString ? 'Error: Planned error' : '{"message":"Planned error","name":"Error"}');
-  checkWithArgs(new Error('Planned error'), true, false, wrapInString ? 'Error: Planned error' : 'Error: Planned error');
+  check(new Error('Planned error'), wrapInString ? 'Error: Planned error' : '{"name":"Error","message":"Planned error"}');
+  checkWithArgs(new Error('Planned error'), true, false, false, wrapInString ? 'Error: Planned error' : 'Error: Planned error');
 
   // circular objects
-  const circular0 = {a: 1, o: {b:2}};
+  const circular0 = {a: 1, o: {b: 2}};
   circular0.circular = circular0;
   circular0.o.oAgain = circular0.o;
   check(circular0, wrapInString ? '[object Object]' : '{"a":1,"o":{"b":2,"oAgain":[Circular: this.o]},"circular":[Circular: this]}');
@@ -338,7 +342,7 @@ function checkStringify(t, wrapInString) {
   circular1.pAgain = circular1.o.p;
   circular1.o.pAgain = circular1.o.p;
   circular1.o.p.pAgain = circular1.o.p;
-  check(circular1, wrapInString ? '[object Object]' : '{"a":1,"b":2,"o":{"c":"C","p":{"d":"D","thisAgain":[Circular: this],"oAgain":[Circular: this.o],"pAgain":[Circular: this.o.p]},"thisAgain":[Circular: this],"oAgain":[Circular: this.o],"pAgain":[Circular: this.o.p]},"thisAgain":[Circular: this],"oAgain":[Circular: this.o],"pAgain":[Circular: this.o.p]}');
+  check(circular1, wrapInString ? '[object Object]' : '{"a":1,"b":2,"o":{"c":"C","p":{"d":"D","thisAgain":[Circular: this],"oAgain":[Circular: this.o],"pAgain":[Circular: this.o.p]},"thisAgain":[Circular: this],"oAgain":[Circular: this.o],"pAgain":[Reference: this.o.p]},"thisAgain":[Circular: this],"oAgain":[Reference: this.o],"pAgain":[Reference: this.o.p]}');
 
   // circular arrays with circular objects
   const array2 = ['a', {}, 123];
@@ -347,9 +351,9 @@ function checkStringify(t, wrapInString) {
   circular2.this1Again = circular2;
   array2.push(array2);
 
-  check(array2, wrapInString ? 'a,[object Object],123,' : '[a, {"thisAgain":[Circular: this],"this1Again":[Circular: this[1]]}, 123, [Circular: this]]');
+  check(array2, wrapInString ? 'a,[object Object],123,' : '["a", {"thisAgain":[Circular: this],"this1Again":[Circular: this[1]]}, 123, [Circular: this]]');
 
-  const array3 = ['x', {y:'Y'}, 123];
+  const array3 = ['x', {y: 'Y'}, 123];
   const circular3 = array3[1];
   circular3.thisAgain = circular3;
   circular3.arrayAgain = array3;
@@ -368,7 +372,7 @@ function checkStringify(t, wrapInString) {
 
   array4.push(array4);
 
-  check(circular4, wrapInString ? '[object Object]' : '{"a":"A","array":["b", {"z":"Z","thisAgain":[Circular: this],"arrayAgain":[Circular: this.array]}, 456, [Circular: this.array]],"thisAgain":[Circular: this],"arrayAgain":[Circular: this.array]}');
+  check(circular4, wrapInString ? '[object Object]' : '{"a":"A","array":["b", {"z":"Z","thisAgain":[Circular: this],"arrayAgain":[Circular: this.array]}, 456, [Circular: this.array]],"thisAgain":[Circular: this],"arrayAgain":[Reference: this.array]}');
 
   const array5 = ['c', {x: "X"}, 789];
   const circular5 = {a: 'A', array: array5};
@@ -383,15 +387,80 @@ function checkStringify(t, wrapInString) {
 
   array5.push(array5);
 
-  check(array5, wrapInString ? 'c,[object Object],789,' : '[c, {"x":"X","thisAgain":[Circular: this],"this1Again":[Circular: this[1]],"circular5":{"a":"A","array":[Circular: this],"thisAgain":[Circular: this],"this1Again":[Circular: this[1]],"this1Circular5Again":[Circular: this[1].circular5],"this1Circular5ArrayAgain":[Circular: this]}}, 789, [Circular: this]]');
+  check(array5, wrapInString ? 'c,[object Object],789,' : '["c", {"x":"X","thisAgain":[Circular: this],"this1Again":[Circular: this[1]],"circular5":{"a":"A","array":[Circular: this],"thisAgain":[Circular: this],"this1Again":[Circular: this[1]],"this1Circular5Again":[Circular: this[1].circular5],"this1Circular5ArrayAgain":[Circular: this]}}, 789, [Circular: this]]');
+
+  // reference-only objects
+  const array6 = [{a:1}, {b:"B"}];
+  const references6 = {
+    array6: array6,
+    array6Again: array6,
+    array6aOnly: [array6[0]],
+    array6bOnly: [array6[1]],
+    diffArrayWithSameElems: [array6[0], array6[1]]
+  };
+  check(references6, wrapInString ? '[object Object]' : '{"array6":[{"a":1}, {"b":"B"}],"array6Again":[Reference: this.array6],"array6aOnly":[[Reference: this.array6[0]]],"array6bOnly":[[Reference: this.array6[1]]],"diffArrayWithSameElems":[[Reference: this.array6[0]], [Reference: this.array6[1]]]}');
 
   // Functions
-  function func() {}
-  check(func, wrapInString ? 'function func() {}' : '[Function: func]');
-  check({fn:func}, wrapInString ? '[object Object]' : '{"fn":[Function: func]}');
+  function func() {
+  }
+  //check(func, wrapInString ? 'function func() {}' : '[Function: func]'); // this test breaks if function func() {} is reformatted to multi-line
+  if (wrapInString) {
+    t.ok(Strings.stringify(wrap(func, wrapInString)).startsWith('function func('), `stringify(new String(func)) -> ${Strings.stringify(func)} must start with 'function func('`);
+  } else {
+    check(func, '[Function: func]');
+  }
+  check({fn: func}, wrapInString ? '[object Object]' : '{"fn":[Function: func]}');
 
   // undefined object properties
-  check({a:undefined}, wrapInString ? '[object Object]' : '{"a":undefined}');
+  check({a: undefined}, wrapInString ? '[object Object]' : '{"a":undefined}');
+
+  // objects with toJSON methods
+  const task = {
+    name: "Task1",
+    definition: {
+      name: "Task1",
+      executable: true,
+      execute: () => { },
+      subTaskDefs: [],
+      parent: undefined
+    },
+    executable: true,
+    execute: () => { },
+      _subTasks: [],
+    _subTasksByName: {},
+    parent: undefined,
+    _state: {
+      code: "Unstarted",
+      completed: false,
+      error: undefined,
+      rejected: false,
+      reason: undefined
+    },
+    _attempts: 1,
+    _lastExecutedAt: "2016-12-01T05:09:09.119Z",
+    _result: undefined,
+    _error: undefined,
+    _slaveTasks: [],
+    _frozen: true,
+    toJSON: function toJSON() {
+      return {
+        name: this.name,
+        executable: this.executable,
+        state: this._state,
+        attempts: this._attempts,
+        lastExecutedAt: this._lastExecutedAt,
+        subTasks: this._subTasks
+      };
+    }
+  };
+  // default behaviour must use toJSON method
+  check(task, wrapInString ? '[object Object]' : '{"name":"Task1","executable":true,"state":{"code":"Unstarted","completed":false,"rejected":false},"attempts":1,"lastExecutedAt":"2016-12-01T05:09:09.119Z","subTasks":[]}');
+
+  // explicit !avoidToJSONMethods must use toJSON method
+  checkWithArgs(task, false, false, false, wrapInString ? '[object Object]' : '{"name":"Task1","executable":true,"state":{"code":"Unstarted","completed":false,"rejected":false},"attempts":1,"lastExecutedAt":"2016-12-01T05:09:09.119Z","subTasks":[]}');
+
+  // explicit avoidToJSONMethods must NOT use toJSON method
+  checkWithArgs(task, false, true, false, wrapInString ? '[object Object]' : '{"name":"Task1","definition":{"name":"Task1","executable":true,"execute":[Function: anonymous],"subTaskDefs":[],"parent":undefined},"executable":true,"execute":[Function: anonymous],"_subTasks":[],"_subTasksByName":{},"parent":undefined,"_state":{"code":"Unstarted","completed":false,"error":undefined,"rejected":false,"reason":undefined},"_attempts":1,"_lastExecutedAt":"2016-12-01T05:09:09.119Z","_result":undefined,"_error":undefined,"_slaveTasks":[],"_frozen":true,"toJSON":[Function: toJSON]}');
 }
 
 function checkTrim(t, wrapInString) {

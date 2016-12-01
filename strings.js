@@ -99,13 +99,14 @@ function trimOrEmpty(value) {
  *
  * @param {*} value the value to stringify
  * @param {boolean|undefined} [useToStringForErrors] - whether to stringify errors using toString or as normal objects (default)
+ * @param {boolean|undefined} [avoidToJSONMethods] - whether to avoid using objects' toJSON methods or not (default)
  * @param {boolean|undefined} [quoteStrings] - whether to surround simple string values with double-quotes or not (default)
  * @returns {string} the value as a string
  */
-function stringify(value, useToStringForErrors, quoteStrings) {
+function stringify(value, useToStringForErrors, avoidToJSONMethods, quoteStrings) {
   const history = new WeakMap();
 
-  function stringifyWithHistory(value, name, quoteStrings) {
+  function stringifyWithHistory(value, name, quote) {
     // Special cases for undefined and null
     if (value === undefined) return 'undefined';
     if (value === null) return 'null';
@@ -113,8 +114,8 @@ function stringify(value, useToStringForErrors, quoteStrings) {
     const typeOfValue = typeof value;
 
     // Special cases for strings and Strings
-    if (typeOfValue === 'string') return quoteStrings ? `"${value}"` : value;
-    if (value instanceof String) return quoteStrings ? `"${value.valueOf()}"` : value.valueOf();
+    if (typeOfValue === 'string') return quote ? `"${value}"` : value;
+    if (value instanceof String) return quote ? `"${value.valueOf()}"` : value.valueOf();
 
     // Special cases for numbers and Numbers (and special numbers)
     //if (typeOfValue === 'number' || value instanceof Number || Numbers.isSpecialNumber(value)) return `${value}`;
@@ -127,19 +128,30 @@ function stringify(value, useToStringForErrors, quoteStrings) {
     const valueIsError = value instanceof Error;
     if (valueIsError && useToStringForErrors) return `${value}`;
 
-    // Special case for Functions - show thm as [Function: {function name}]
+    // Special case for Functions - show them as [Function: {function name}]
     if (typeOfValue === 'function') return isNotBlank(value.name) ? `[Function: ${value.name}]` : '[Function: anonymous]';
 
     if (typeOfValue === 'object') {
+      // Special case for objects that have toJSON methods
+      if (!avoidToJSONMethods && typeof value.toJSON === 'function') {
+        return JSON.stringify(value.toJSON());
+      }
+      // Check if already seen this same object before
       if (history.has(value)) {
-        // Special case for circular values - show thm as [Circular: {property name}]
-        return `[Circular: ${history.get(value)}]`;
+        const historyName = history.get(value);
+        if (isCircular(name, historyName)) {
+          // Special case for circular values - show them as [Circular: {property name}]
+          return `[Circular: ${historyName}]`;
+        } else {
+          // Special case for non-circular references to the same object - show them as [Reference: {property name}]
+          return `[Reference: ${historyName}]`;
+        }
       }
       history.set(value, name);
 
       // Special case for Array objects, stringify each of its elements
       if (Array.isArray(value)) {
-        return `[${value.map((e, i) => stringifyWithHistory(e, `${name}[${i}]`, quoteStrings)).join(", ")}]`;
+        return `[${value.map((e, i) => stringifyWithHistory(e, `${name}[${i}]`, true)).join(", ")}]`;
       }
 
       // Stringify the object
@@ -147,10 +159,11 @@ function stringify(value, useToStringForErrors, quoteStrings) {
 
       if (valueIsError) {
         // Special case for Error objects - include message and name (if any), but exclude stack, which are all normally hidden with JSON.stringify
-        names = names.filter(n => n !== 'stack');
-        if (value.name) {
-          names.push('name');
-        }
+        // First exclude name, message and stack
+        names = names.filter(n => n !== 'stack' && n !== 'name' && n !== 'message');
+        // Second re-add name and message to the front of the list
+        if (value.message) names.unshift('message');
+        if (value.name) names.unshift('name');
       }
 
       let result = '{';
@@ -171,6 +184,18 @@ function stringify(value, useToStringForErrors, quoteStrings) {
   }
 
   return stringifyWithHistory(value, 'this', quoteStrings);
+}
+
+function isCircular(name1, name2) {
+  if (name1.startsWith(name2)) {
+    const rest1 = name1.substring(name2.length);
+    return rest1.length === 0 || rest1[0] === '.' || rest1[0] === '['
+  }
+  if (name2.startsWith(name1)) {
+    const rest2 = name2.substring(name1.length);
+    return rest2.length === 0 || rest2[0] === '.' || rest2[0] === '['
+  }
+  return false;
 }
 
 /**
