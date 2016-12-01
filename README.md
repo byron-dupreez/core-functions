@@ -1,4 +1,4 @@
-# core-functions v2.0.9
+# core-functions v2.0.10
 
 Core functions, utilities and classes for working with Node/JavaScript primitives and built-in objects, including 
 strings, booleans, Promises, base 64, Arrays, Objects, standard AppErrors, etc.
@@ -103,6 +103,11 @@ See the [package source](https://github.com/byron-dupreez/core-functions) for mo
 
 ## Changes
 
+
+### 2.0.10
+- Changed `strings.js` module's `stringify` function:
+  - To surround errors, which are converted to strings via their `toString` methods, with square brackets (to indicate
+    that the property does not contain just a string error message)
 
 ### 2.0.9
 - Patched and changed `strings.js` module's `stringify` function:

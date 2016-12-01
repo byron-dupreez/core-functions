@@ -126,7 +126,7 @@ function stringify(value, useToStringForErrors, avoidToJSONMethods, quoteStrings
 
     // Special case for Errors - use toString() if directed, since stringify on most errors, just returns "{}"
     const valueIsError = value instanceof Error;
-    if (valueIsError && useToStringForErrors) return `${value}`;
+    if (valueIsError && useToStringForErrors) return `[${value}]`;
 
     // Special case for Functions - show them as [Function: {function name}]
     if (typeOfValue === 'function') return isNotBlank(value.name) ? `[Function: ${value.name}]` : '[Function: anonymous]';

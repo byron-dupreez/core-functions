@@ -23,7 +23,7 @@ function wrap(value, wrapInString) {
 
 function toPrefix(value, wrapInString) {
   const wrapped = wrap(value, wrapInString);
-  return wrapInString || value instanceof String ? `String(${value}) = (${wrapped ? wrapped.valueOf() : value}) ` : '';
+  return wrapInString || value instanceof String ? `String(${Strings.stringify(value, true, false, true)}) = [${Strings.stringify(wrapped ? wrapped.valueOf() : value, true, false, true)}] ` : '';
 }
 
 function checkIsString(t, wrapInString) {
@@ -322,7 +322,7 @@ function checkStringify(t, wrapInString) {
 
   // errors
   check(new Error('Planned error'), wrapInString ? 'Error: Planned error' : '{"name":"Error","message":"Planned error"}');
-  checkWithArgs(new Error('Planned error'), true, false, false, wrapInString ? 'Error: Planned error' : 'Error: Planned error');
+  checkWithArgs(new Error('Planned error'), true, false, false, wrapInString ? 'Error: Planned error' : '[Error: Planned error]');
 
   // circular objects
   const circular0 = {a: 1, o: {b: 2}};

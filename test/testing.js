@@ -26,15 +26,15 @@ function toPrefix(prefix) {
 }
 
 function toFnArgsPrefix(fn, args) {
-  return prefixFnArgs ? `${fn.name ? fn.name : '' }${stringify(args)} -> ` : '';
+  return prefixFnArgs ? `${fn.name ? fn.name : '' }${stringify(args, true, false, true)} -> ` : '';
 }
 
 function toMethodArgsPrefix(obj, method, args) {
-  return prefixFnArgs ? `${obj.name ? obj.name : stringify(obj)}.${method.name ? method.name : '<anon>' }${stringify(args)} -> ` : '';
+  return prefixFnArgs ? `${obj.name ? obj.name : stringify(obj, true, false, true)}.${method.name ? method.name : '<anon>' }${stringify(args, true, false, true)} -> ` : '';
 }
 
 function equal(t, actual, expected, prefix) {
-  const msg = `${toPrefix(prefix)}${stringify(actual)} must be ${stringify(expected)}`;
+  const msg = `${toPrefix(prefix)}${stringify(actual, true, false, true)} must be ${stringify(expected, true, false, true)}`;
 
   if (Numbers.isNaN(actual)) {
     if (Numbers.isNaN(expected)) {
@@ -89,10 +89,10 @@ function immutable(t, obj, propertyName, prefix) {
   const now = new Date().toISOString();
   try {
     obj[propertyName] = now;
-    t.fail(`${prefix ? prefix : ''}${stringify(obj)} ${propertyName} is supposed to be immutable`);
+    t.fail(`${prefix ? prefix : ''}${stringify(obj, true, false, true)} ${propertyName} is supposed to be immutable`);
   } catch (err) {
     // Expect an error on attempted mutation of immutable property
-    t.pass(`${prefix ? prefix : ''}${stringify(obj)} ${propertyName} is immutable`);
+    t.pass(`${prefix ? prefix : ''}${stringify(obj, true, false, true)} ${propertyName} is immutable`);
     //console.log(`Expected error ${err}`);
   }
 }
