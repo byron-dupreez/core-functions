@@ -61,6 +61,11 @@ class AppError extends Error {
 
     const causeStatus = getHttpStatus(cause);
     Object.defineProperty(this, 'causeStatus', {value: causeStatus, enumerable: true});
+
+    // Use the given error's stack instead of this object's own stack
+    if (cause instanceof Error) {
+      this.stack = cause.stack;
+    }
   }
 }
 

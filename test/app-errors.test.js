@@ -167,6 +167,10 @@ test('toAppError', t => {
   function check(error, type, message, code) {
     const appError = toAppError(error, message, code);
 
+    if (error instanceof Error) {
+      t.equal(appError.stack, error.stack, 'toAppError stack of appError must be stack of original error');
+    }
+
     // AppErrors must pass through as is unless their message and/or code don't match specified ones
     const originalAppError = error instanceof AppError && (!message || error.message === message) && (!code || error.code === code);
     if (originalAppError) {

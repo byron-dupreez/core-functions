@@ -1,4 +1,4 @@
-# core-functions v2.0.10
+# core-functions v2.0.11
 
 Core functions, utilities and classes for working with Node/JavaScript primitives and built-in objects, including 
 strings, booleans, Promises, base 64, Arrays, Objects, standard AppErrors, etc.
@@ -103,6 +103,12 @@ See the [package source](https://github.com/byron-dupreez/core-functions) for mo
 
 ## Changes
 
+
+### 2.0.11
+- Changed `app-errors.js` module's `AppError` constructor:
+  - To preserve and use the more useful stack of its cause (if cause is an Error) instead of its own stack
+- Changed `objects.js` module's `copy` and `merge` functions:
+  - To support copying and merging of Arrays as well
 
 ### 2.0.10
 - Changed `strings.js` module's `stringify` function:
