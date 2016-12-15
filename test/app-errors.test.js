@@ -404,3 +404,26 @@ test('toAppErrorForApiGateway', t => {
 
   t.end();
 });
+
+test('toAppError attempt to recreate NOT instanceof BadRequest bug', t => {
+  const cause = new TypeError('TE1');
+  const br1 = new BadRequest('BR1', undefined, cause);
+  t.ok(br1 instanceof BadRequest, `br1 must be instanceof BadRequest`);
+  t.ok(br1 instanceof Error, `br1 must be instanceof Error`);
+  t.equals(br1.cause, cause.toString(), `br1.cause must be ${cause.toString()}`);
+
+  const br2 = toAppError(br1);
+  t.equals(br2, br1, `br2 must be same instance as br1`);
+  t.ok(br2 instanceof BadRequest, `br2 must be instanceof BadRequest`);
+
+  const br3 = toAppError(br1, 'BR1');
+  t.equals(br3, br1, `br3 must be same instance as br1`);
+  t.ok(br3 instanceof BadRequest, `br3 must be instanceof BadRequest`);
+
+  const br4 = toAppError(br1, 'BR4');
+  t.notEquals(br4, br1, `br4 must NOT be same instance as br1`);
+  t.ok(br4 instanceof BadRequest, `br4 must be instanceof BadRequest`);
+  t.equals(br4.cause, cause.toString(), `br4.cause must be ${cause.toString()}`);
+
+  t.end();
+});

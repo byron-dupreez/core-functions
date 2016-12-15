@@ -1,4 +1,4 @@
-# core-functions v2.0.11
+# core-functions v2.0.12
 
 Core functions, utilities and classes for working with Node/JavaScript primitives and built-in objects, including 
 strings, booleans, Promises, base 64, Arrays, Objects, standard AppErrors, etc.
@@ -103,6 +103,8 @@ See the [package source](https://github.com/byron-dupreez/core-functions) for mo
 
 ## Changes
 
+### 2.0.12
+- Changed `app-errors.js` module to export `getHttpStatus` function
 
 ### 2.0.11
 - Changed `app-errors.js` module's `AppError` constructor:

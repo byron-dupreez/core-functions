@@ -218,15 +218,15 @@ function toAppErrorForApiGateway(error, message, code, allowedHttpStatusCodes) {
   const appError = toAppError(error, message, code);
 
   // Determine which HTTP status codes are allowed to pass through
-  let allowedStatusCodes = Array.isArray(allowedHttpStatusCodes) ? allowedHttpStatusCodes.map(toHttpStatus) : undefined;
+  const allowedStatusCodes = Array.isArray(allowedHttpStatusCodes) ? allowedHttpStatusCodes.map(toHttpStatus) : undefined;
 
   // Force inclusion of mandatory 400 and 500
   if (allowedStatusCodes) {
     if (allowedStatusCodes.indexOf(400) === -1) {
-      allowedStatusCodes = allowedStatusCodes.concat(400);
+      allowedStatusCodes.push(400);
     }
     if (allowedStatusCodes.indexOf(500) === -1) {
-      allowedStatusCodes = allowedStatusCodes.concat(500);
+      allowedStatusCodes.push(500);
     }
   }
   const allowedCodes = allowedStatusCodes ? allowedStatusCodes : supportedCodes;
@@ -394,5 +394,6 @@ module.exports = {
 
   // Error conversion functions
   toAppError: toAppError,
-  toAppErrorForApiGateway: toAppErrorForApiGateway
+  toAppErrorForApiGateway: toAppErrorForApiGateway,
+  getHttpStatus: getHttpStatus
 };
