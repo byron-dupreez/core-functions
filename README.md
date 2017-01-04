@@ -1,4 +1,4 @@
-# core-functions v2.0.12
+# core-functions v2.0.13
 
 Core functions, utilities and classes for working with Node/JavaScript primitives and built-in objects, including 
 strings, booleans, Promises, base 64, Arrays, Objects, standard AppErrors, etc.
@@ -71,7 +71,7 @@ const timers = require('core-functions/timers');
 
 To use the standard application errors
 ```js
-const appErrors = require('../app-errors');
+const appErrors = require('core-functions/app-errors');
 const AppError = appErrors.AppError;
 
 // 400-series
@@ -102,6 +102,9 @@ This module's unit tests were developed with and must be run with [tape](https:/
 See the [package source](https://github.com/byron-dupreez/core-functions) for more details.
 
 ## Changes
+
+### 2.0.13
+- Added `getPropertyValue` function to `objects.js` module
 
 ### 2.0.12
 - Changed `app-errors.js` module to export `getHttpStatus` function

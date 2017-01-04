@@ -1,5 +1,9 @@
 'use strict';
 
+const Strings = require('./strings');
+const trim = Strings.trim;
+const isNotBlank = Strings.isNotBlank;
+
 /**
  * Module containing utilities for working with objects.
  * @module core-functions/objects
@@ -9,7 +13,8 @@ module.exports = {
   /** Returns the standard valueOf of the given value if defined; otherwise returns the value as is */
   valueOf: valueOf,
   merge: merge,
-  copy: copy
+  copy: copy,
+  getPropertyValue: getPropertyValue
 };
 
 /**
@@ -149,4 +154,24 @@ function copy(object, deep) {
   }
 
   return copyWithHistory(object, newDest(object));
+}
+
+/**
+ * Gets the value of the simple or compound named property from the given object. A compound property name is one that
+ * contains multiple property names separated by fullstops.
+ * @param {Object} object - the object from which to get the named property's value
+ * @param {string} propertyName - the simple or compound name of the property
+ * @returns {*} the value of the named property on the given object
+ */
+function getPropertyValue(object, propertyName) {
+  const propertyNames = propertyName.split(".").map(n => trim(n)).filter(name => isNotBlank(name));
+  let value = undefined;
+  for (let i = 0; i < propertyNames.length; ++i) {
+    if (!object || typeof object !== 'object') {
+      return undefined;
+    }
+    value = object[propertyNames[i]];
+    object = value;
+  }
+  return value;
 }

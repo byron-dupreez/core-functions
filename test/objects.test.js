@@ -723,3 +723,18 @@ test('merge array with object', t => {
 
   t.end();
 });
+
+test('getPropertyValue', t => {
+  t.equal(Objects.getPropertyValue(undefined, 'a.b.c'), undefined, `undefined.a.b.c must be undefined`);
+  t.equal(Objects.getPropertyValue(null, 'a.b.c'), undefined, `null.a.b.c must be undefined`);
+  t.equal(Objects.getPropertyValue({}, 'a.b.c'), undefined, `{}.a.b.c must be undefined`);
+
+  const o = {a: 1, b: {c: 'c', d: {e: 'e'}}};
+  t.deepEqual(Objects.getPropertyValue(o, 'a'), 1, 'o.a must be 1');
+  t.deepEqual(Objects.getPropertyValue(o, 'b'), {c: 'c', d: {e: 'e'}}, `o.b must be {c: 'c', d: {e: 'e'}}`);
+  t.deepEqual(Objects.getPropertyValue(o, 'b.c'), 'c', `o.b.c must be 'c'`);
+  t.deepEqual(Objects.getPropertyValue(o, 'b.d'), {e: 'e'}, `o.b.d must be {e: 'e'}`);
+  t.deepEqual(Objects.getPropertyValue(o, 'b.d.e'), 'e', `o.b.d.e must be 'e'`);
+  t.deepEqual(Objects.getPropertyValue(o, 'x.y.z'), undefined, `o.x.y.z must be undefined`);
+  t.end();
+});
