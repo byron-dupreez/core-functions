@@ -14,7 +14,8 @@ module.exports = {
   valueOf: valueOf,
   merge: merge,
   copy: copy,
-  getPropertyValue: getPropertyValue
+  getPropertyValue: getPropertyValue,
+  copyNamedProperties: copyNamedProperties
 };
 
 /**
@@ -174,4 +175,48 @@ function getPropertyValue(object, propertyName) {
     object = value;
   }
   return value;
+}
+
+/**
+ * Copies ONLY the (simple or compound) named properties, which are listed in the given propertyNames array, from the
+ * given source object to a new destination object. Note that the value of any compound named property in the given
+ * propertyNames array will be copied from the source and stored in the new destination object under the compound
+ * property name if compact is true.
+ * @param {Object} src - the source object from which to copy the named properties
+ * @param {string[]} propertyNames - the list of named properties to be copied
+ * @param {boolean|undefined} [compact] - whether to create a flatter, more-compact destination object, which will use
+ * any compound property names as is and eliminate any unnecessary intermediate objects or rather create a more-
+ * conventional, less-compact destination object, which will only have simple property names and all necessary intermediate objects
+ * @param {boolean|undefined} [deep] - executes a deep copy of each property value if the given deep flag is true, otherwise only does a shallow copy
+ * @param {boolean|undefined} [omitPropertyIfUndefined] - whether or not to omit any named property that has an undefined value from the destination object
+ * @returns {Object} a new object containing copies of only the named properties from the source object
+ */
+function copyNamedProperties(src, propertyNames, compact, deep, omitPropertyIfUndefined) {
+  if (!src || typeof src !== 'object') {
+    return src === undefined ? undefined : src === null ? null : {};
+  }
+  const dest = {};
+  for (let i = 0; i < propertyNames.length; ++i) {
+    const propertyName = trim(propertyNames[i]);
+    const propertyValue = getPropertyValue(src, propertyName);
+    if (!omitPropertyIfUndefined || propertyValue !== undefined) {
+      if (compact) {
+        dest[propertyName] = copy(propertyValue, deep);
+      } else {
+        const names = propertyName.split(".").map(n => trim(n)).filter(name => isNotBlank(name));
+        if (names.length > 0) {
+          let d = dest;
+          for (let j = 0; j < names.length - 1; ++j) {
+            const name = names[j];
+            if (!d[name]) {
+              d[name] = {};
+            }
+            d = d[name];
+          }
+          d[names[names.length - 1]] = copy(propertyValue, deep);
+        }
+      }
+    }
+  }
+  return dest;
 }

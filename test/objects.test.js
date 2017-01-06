@@ -194,6 +194,43 @@ test('merge', t => {
   t.end();
 });
 
+test('copy with non-objects & empty object & empty array', t => {
+  // Non-objects
+  t.deepEqual(Objects.copy(undefined, false), undefined, 'shallow copy of undefined is undefined');
+  t.deepEqual(Objects.copy(undefined, true), undefined, 'deep copy of undefined is undefined');
+
+  t.deepEqual(Objects.copy(null, false), null, 'shallow copy of null is null');
+  t.deepEqual(Objects.copy(null, true), null, 'deep copy of null is null');
+
+  t.deepEqual(Objects.copy('', false), '', `shallow copy of '' is ''`);
+  t.deepEqual(Objects.copy('', true), '', `deep copy of '' is ''`);
+
+  t.deepEqual(Objects.copy('abc', false), 'abc', `shallow copy of 'abc' is 'abc'`);
+  t.deepEqual(Objects.copy('abc', true), 'abc', `deep copy of 'abc' is 'abc'`);
+
+  t.deepEqual(Objects.copy(123, false), 123, 'shallow copy of 123 is 123');
+  t.deepEqual(Objects.copy(123, true), 123, 'deep copy of 123 is 123');
+
+  t.deepEqual(Objects.copy(123.456, false), 123.456, 'shallow copy of 123.456 is 123.456');
+  t.deepEqual(Objects.copy(123.456, true), 123.456, 'deep copy of 123.456 is 123.456');
+
+  t.deepEqual(Objects.copy(true, false), true, 'shallow copy of true is true');
+  t.deepEqual(Objects.copy(true, true), true, 'deep copy of true is true');
+
+  t.deepEqual(Objects.copy(false, false), false, 'shallow copy of false is false');
+  t.deepEqual(Objects.copy(false, false), false, 'deep copy of false is false');
+
+  // Empty object
+  t.deepEqual(Objects.copy({}, false), {}, 'shallow copy of {} is {}');
+  t.deepEqual(Objects.copy({}, true), {}, 'deep copy of {} is {}');
+
+  // Empty array
+  t.deepEqual(Objects.copy([], false), [], 'shallow copy of [] is []');
+  t.deepEqual(Objects.copy([], true), [], 'deep copy of [] is []');
+
+  t.end();
+});
+
 test('copy', t => {
   function a() {
   }
@@ -728,6 +765,7 @@ test('getPropertyValue', t => {
   t.equal(Objects.getPropertyValue(undefined, 'a.b.c'), undefined, `undefined.a.b.c must be undefined`);
   t.equal(Objects.getPropertyValue(null, 'a.b.c'), undefined, `null.a.b.c must be undefined`);
   t.equal(Objects.getPropertyValue({}, 'a.b.c'), undefined, `{}.a.b.c must be undefined`);
+  t.equal(Objects.getPropertyValue([], 'a.b.c'), undefined, `[].a.b.c must be undefined`);
 
   const o = {a: 1, b: {c: 'c', d: {e: 'e'}}};
   t.deepEqual(Objects.getPropertyValue(o, 'a'), 1, 'o.a must be 1');
@@ -736,5 +774,79 @@ test('getPropertyValue', t => {
   t.deepEqual(Objects.getPropertyValue(o, 'b.d'), {e: 'e'}, `o.b.d must be {e: 'e'}`);
   t.deepEqual(Objects.getPropertyValue(o, 'b.d.e'), 'e', `o.b.d.e must be 'e'`);
   t.deepEqual(Objects.getPropertyValue(o, 'x.y.z'), undefined, `o.x.y.z must be undefined`);
+  t.end();
+});
+
+test('copyNamedProperties - compact', t => {
+  const compact = true;
+  const deep = true;
+  const omit = true;
+  t.deepEqual(Objects.copyNamedProperties(undefined, ['a.b.c'], compact, deep, omit), undefined, `(undefined, ['a.b.c'], compact, deep, omit) must be undefined`);
+  t.deepEqual(Objects.copyNamedProperties(null, ['a.b.c'], compact, deep, omit), null, `(null, ['a.b.c'], compact, deep, omit) must be null`);
+  t.deepEqual(Objects.copyNamedProperties({}, ['a.b.c'], compact, deep, omit), {}, `({}, ['a.b.c'], compact, deep, omit) must be {}`);
+  t.deepEqual(Objects.copyNamedProperties({}, ['a.b.c'], compact, deep, !omit), {'a.b.c': undefined}, `({}, ['a.b.c'], compact, deep, !omit) must be {'a.b.c': undefined}`);
+  t.deepEqual(Objects.copyNamedProperties([], ['a.b.c'], compact, deep, omit), {}, `([] ['a.b.c'], compact, deep, omit) must be {}`);
+  t.deepEqual(Objects.copyNamedProperties([], ['a.b.c'], compact, deep, !omit), {'a.b.c': undefined}, `([], ['a.b.c'], compact, deep, !omit) must be {'a.b.c': undefined}`);
+
+  const o = {a: 1, b: {c: 'c', d: {e: 'e'}}};
+  t.deepEqual(Objects.copyNamedProperties(o, ['a'], compact, deep, !omit), {a: 1}, `(o, [a], compact, deep, !omit) must be {a: 1}`);
+  t.deepEqual(Objects.copyNamedProperties(o, ['b'], compact, deep, !omit), {b: {c: 'c', d: {e: 'e'}}}, `(o, [b], compact, deep, !omit) must be {b: {c: 'c', d: {e: 'e'}}}`);
+
+  t.notEqual(Objects.copyNamedProperties(o, ['b'], compact, deep, !omit).b, o.b, `(o, [b], compact, deep, !omit).b must NOT be o.b`);
+  t.notEqual(Objects.copyNamedProperties(o, ['b'], !deep, !omit).b, o.b, `(o, [b], !deep, !omit).b must NOT be o.b`);
+
+  t.equal(Objects.copyNamedProperties(o, ['b'], compact, deep, !omit).b.c, o.b.c, `(o, [b], compact, deep, !omit).b.c must equal o.b.c`);
+  t.equal(Objects.copyNamedProperties(o, ['b'], !deep, !omit).b.c, o.b.c, `(o, [b], !deep, !omit).b.c must equal o.b.c`);
+
+  t.notEqual(Objects.copyNamedProperties(o, ['b'], compact, deep, !omit).b.d, o.b.d, `(o, [b], compact, deep, !omit).b.d must NOT be o.b.d`);
+  t.equal(Objects.copyNamedProperties(o, ['b'], !deep, !omit).b.d, o.b.d, `(o, [b], !deep, !omit).b.d must be o.b.d`);
+
+  t.deepEqual(Objects.copyNamedProperties(o, ['b.c'], compact, deep, !omit), {'b.c': 'c'}, `(o, [b.c], compact, deep, !omit) must be {'b.c': 'c'}`);
+  t.deepEqual(Objects.copyNamedProperties(o, ['b.d'], compact, deep, !omit), {'b.d': {e: 'e'}}, `(o, [b.d], compact, deep, !omit) must be {'b.d': {e: 'e'}}`);
+  t.deepEqual(Objects.copyNamedProperties(o, ['b.d.e'], compact, deep, !omit), {'b.d.e': 'e'}, `(o, [b.d.e], compact, deep, !omit) must be {'b.d.e': 'e'}`);
+  t.deepEqual(Objects.copyNamedProperties(o, ['x.y.z'], compact, deep, !omit), {'x.y.z': undefined}, `(o, [x.y.z], compact, deep, !omit) must be {'x.y.z': undefined}`);
+  t.deepEqual(Objects.copyNamedProperties(o, ['x.y.z'], compact, deep, omit), {}, `(o, [x.y.z], compact, deep, omit) must be {}`);
+
+  t.deepEqual(Objects.copyNamedProperties(o, ['a', 'b'], compact, deep, !omit), o, `(o, [a,b], compact, deep, !omit) must equal o`);
+  t.deepEqual(Objects.copyNamedProperties(o, ['a', 'b.c', 'b.d'], compact, deep, !omit), {a: 1, 'b.c': 'c', 'b.d': {e: 'e'}}, `(o, [a,b], compact, deep, !omit) must equal {a: 1, 'b.c': 'c', 'b.d': {e: 'e'}}`);
+  t.deepEqual(Objects.copyNamedProperties(o, ['a', 'b.c', 'b.d.e'], compact, deep, !omit), {a: 1, 'b.c': 'c', 'b.d.e': 'e'}, `(o, [a,b], compact, deep, !omit) must equal {a: 1, 'b.c': 'c', 'b.d.e': 'e'}`);
+
+  t.end();
+});
+
+test('copyNamedProperties - non-compact', t => {
+  const compact = true;
+  const deep = true;
+  const omit = true;
+  t.deepEqual(Objects.copyNamedProperties(undefined, ['a.b.c'], !compact, deep, omit), undefined, `(undefined, ['a.b.c'], !compact, deep, omit) must be undefined`);
+  t.deepEqual(Objects.copyNamedProperties(null, ['a.b.c'], !compact, deep, omit), null, `(null, ['a.b.c'], !compact, deep, omit) must be null`);
+  t.deepEqual(Objects.copyNamedProperties({}, ['a.b.c'], !compact, deep, omit), {}, `({}, ['a.b.c'], !compact, deep, omit) must be {}`);
+  t.deepEqual(Objects.copyNamedProperties({}, ['a.b.c'], !compact, deep, !omit), {a: {b: {c: undefined}}}, `({}, ['a.b.c'], !compact, deep, !omit) must be {a: {b: {c: undefined}}}`);
+  t.deepEqual(Objects.copyNamedProperties([], ['a.b.c'], !compact, deep, omit), {}, `([] ['a.b.c'], !compact, deep, omit) must be {}`);
+  t.deepEqual(Objects.copyNamedProperties([], ['a.b.c'], !compact, deep, !omit), {a: {b: {c: undefined}}}, `([], ['a.b.c'], !compact, deep, !omit) must be {a: {b: {c: undefined}}}`);
+
+  const o = {a: 1, b: {c: 'c', d: {e: 'e'}}};
+  t.deepEqual(Objects.copyNamedProperties(o, ['a'], !compact, deep, !omit), {a: 1}, `(o, [a], !compact, deep, !omit) must be {a: 1}`);
+  t.deepEqual(Objects.copyNamedProperties(o, ['b'], !compact, deep, !omit), {b: {c: 'c', d: {e: 'e'}}}, `(o, [b], !compact, deep, !omit) must be {b: {c: 'c', d: {e: 'e'}}}`);
+
+  t.notEqual(Objects.copyNamedProperties(o, ['b'], !compact, deep, !omit).b, o.b, `(o, [b], !compact, deep, !omit).b must NOT be o.b`);
+  t.notEqual(Objects.copyNamedProperties(o, ['b'], !deep, !omit).b, o.b, `(o, [b], !deep, !omit).b must NOT be o.b`);
+
+  t.equal(Objects.copyNamedProperties(o, ['b'], !compact, deep, !omit).b.c, o.b.c, `(o, [b], !compact, deep, !omit).b.c must equal o.b.c`);
+  t.equal(Objects.copyNamedProperties(o, ['b'], !deep, !omit).b.c, o.b.c, `(o, [b], !deep, !omit).b.c must equal o.b.c`);
+
+  t.notEqual(Objects.copyNamedProperties(o, ['b'], !compact, deep, !omit).b.d, o.b.d, `(o, [b], !compact, deep, !omit).b.d must NOT be o.b.d`);
+  t.equal(Objects.copyNamedProperties(o, ['b'], !deep, !omit).b.d, o.b.d, `(o, [b], !deep, !omit).b.d must be o.b.d`);
+
+  t.deepEqual(Objects.copyNamedProperties(o, ['b.c'], !compact, deep, !omit), {b: {c: 'c'}}, `(o, [b.c], !compact, deep, !omit) must be {b: {c: 'c'}}`);
+  t.deepEqual(Objects.copyNamedProperties(o, ['b.d'], !compact, deep, !omit), {b: {d: {e: 'e'}}}, `(o, [b.d], !compact, deep, !omit) must be {b: {d: {e: 'e'}}}`);
+  t.deepEqual(Objects.copyNamedProperties(o, ['b.d.e'], !compact, deep, !omit), {b: {d: {e: 'e'}}}, `(o, [b.d.e], !compact, deep, !omit) must be {b: {d: {e: 'e'}}}`);
+  t.deepEqual(Objects.copyNamedProperties(o, ['x.y.z'], !compact, deep, !omit), {x: {y: {z: undefined}}}, `(o, [x.y.z], !compact, deep, !omit) must be {x: {y: {z: undefined}}}`);
+  t.deepEqual(Objects.copyNamedProperties(o, ['x.y.z'], !compact, deep, omit), {}, `(o, [x.y.z], !compact, deep, omit) must be {}`);
+
+  t.deepEqual(Objects.copyNamedProperties(o, ['a', 'b'], !compact, deep, !omit), o, `(o, [a,b], !compact, deep, !omit) must equal o`);
+  t.deepEqual(Objects.copyNamedProperties(o, ['a', 'b.c', 'b.d'], !compact, deep, !omit), {a: 1, b: {c: 'c', d: {e: 'e'}}}, `(o, [a,b], !compact, deep, !omit) must equal {a: 1, b: {c: 'c', d: {e: 'e'}}}`);
+  t.deepEqual(Objects.copyNamedProperties(o, ['a', 'b.c', 'b.d.e'], !compact, deep, !omit), {a: 1, b: {c: 'c', d: {e: 'e'}}}, `(o, [a,b], !compact, deep, !omit) must equal {a: 1, b: {c: 'c', d: {e: 'e'}}}`);
+
   t.end();
 });
