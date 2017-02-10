@@ -22,7 +22,7 @@ function toPrefix(value, wrapInString) {
 
 function checkIsString(t, wrapInString) {
   function check(value, expected) {
-    return t.equal(Strings.isString(wrap(value, wrapInString)), expected, `Strings.isString(${toPrefix(value, wrapInString)}) is ${expected ? '' : 'NOT '}a string`); // :
+    return t.equal(!!Strings.isString(wrap(value, wrapInString)), !!expected, `Strings.isString(${toPrefix(value, wrapInString)}) is ${expected ? '' : 'NOT '}a string`);
   }
 
   // undefined
@@ -85,7 +85,7 @@ function checkIsString(t, wrapInString) {
 
 function checkIsBlank(t, wrapInString) {
   function check(value, expected) {
-    return t.equal(Strings.isBlank(wrap(value, wrapInString)), expected, `Strings.isBlank(${toPrefix(value, wrapInString)}) is ${expected ? '' : 'NOT '} blank`); // :
+    return t.equal(!!Strings.isBlank(wrap(value, wrapInString)), !!expected, `Strings.isBlank(${toPrefix(value, wrapInString)}) is ${expected ? '' : 'NOT '}blank`);
   }
 
   // undefined
@@ -159,7 +159,7 @@ function checkIsBlank(t, wrapInString) {
 
 function checkIsNotBlank(t, wrapInString) {
   function check(value, expected) {
-    return t.equal(Strings.isNotBlank(wrap(value, wrapInString)), expected, `Strings.isNotBlank(${toPrefix(value, wrapInString)}) is ${expected ? 'NOT ' : ''} blank`); // :
+    return t.equal(!!Strings.isNotBlank(wrap(value, wrapInString)), !!expected, `Strings.isNotBlank(${toPrefix(value, wrapInString)}) is ${expected ? 'NOT ' : ''}blank`);
   }
 
   // undefined
@@ -467,7 +467,10 @@ function checkStringify(t, wrapInString) {
 
 function checkTrim(t, wrapInString) {
   function check(value, expected) {
-    return t.equal(Strings.trim(wrap(value, wrapInString)), expected, `Strings.trim(${toPrefix(value, wrapInString)} must be ${expected}`);
+    if (Number.isNaN(Strings.trim(wrap(value, wrapInString)) && Number.isNaN(expected))) {
+      return t.pass(`Strings.trim(${toPrefix(value, wrapInString)} must be ${expected}`);
+    }
+    return t.deepEqual(Strings.trim(wrap(value, wrapInString)), expected, `Strings.trim(${toPrefix(value, wrapInString)} must be ${expected}`);
   }
 
   // undefined
@@ -543,7 +546,10 @@ function checkTrim(t, wrapInString) {
 
 function checkTrimOrEmpty(t, wrapInString) {
   function check(value, expected) {
-    return t.equal(Strings.trimOrEmpty(wrap(value, wrapInString)), expected, `Strings.trimOrEmpty(${toPrefix(value, wrapInString)} must be ${expected}`);
+    if (Number.isNaN(Strings.trimOrEmpty(wrap(value, wrapInString)) && Number.isNaN(expected))) {
+      return t.pass(`Strings.trimOrEmpty(${toPrefix(value, wrapInString)} must be ${expected}`);
+    }
+    return t.deepEqual(Strings.trimOrEmpty(wrap(value, wrapInString)), expected, `Strings.trimOrEmpty(${toPrefix(value, wrapInString)} must be ${expected}`);
   }
 
   // undefined
@@ -813,7 +819,7 @@ test('stringify on console & Console', t => {
 
   const customConsole = new console.Console(process.stdout, process.stderr);
   t.notEqual(customConsole, console, `customConsole must not be console`);
-  t.equal(Strings.stringify(customConsole), '[Console {}]', `stringify(customConsole) must be '[Console {}]'`);
+  t.deepEqual(Strings.stringify(customConsole), '[Console {}]', `stringify(customConsole) must be '[Console {}]'`);
   t.end();
 });
 
