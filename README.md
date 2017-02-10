@@ -1,18 +1,21 @@
-# core-functions v2.0.14
+# core-functions v3.0.0
 
 Core functions, utilities and classes for working with Node/JavaScript primitives and built-in objects, including 
-strings, booleans, Promises, base 64, Arrays, Objects, standard AppErrors, etc.
+strings, numbers, booleans, Dates, Promises, base 64, Arrays, Objects, standard AppErrors, sorting utilities, etc.
 
 Currently includes:
 - app-errors.js - a collection of standard application AppError subclasses for the more commonly used HTTP status codes
 - arrays.js - Array utilities
 - base64.js - utilities for encoding from UTF-8 to Base 64 and vice-versa
 - booleans.js - boolean utilities
+- dates.js - Date utilities
 - numbers.js - number utilities
 - objects.js - Object utilities
 - promises.js - native Promise utilities
+- sorting.js - sorting utilities
 - strings.js - string utilities
 - timers.js - Timer/timeout utilities
+- tries.js - Try, Success and Failure classes representing the outcome of a function execution
 
 This module is exported as a [Node.js](https://nodejs.org/) module.
 
@@ -45,13 +48,19 @@ To use the Base 64 encoding and decoding utilities
 const base64 = require('core-functions/base64');
 ```
 
-To use the Promise utilities (as static methods on the native `Promise` class)
+To use the Date utilities
 ```js
-require('core-functions/promises');
+const Dates = require('core-functions/dates');
 ```
-To use the Promise utilities (as exported functions)
+
+To use the sorting utilities
 ```js
-const promises = require('core-functions/promises');
+const sorting = require('core-functions/sorting');
+```
+
+To use the Promise utilities
+```js
+const Promises = require('core-functions/promises');
 ```
 
 To use the Object utilities
@@ -67,6 +76,48 @@ const Arrays = require('core-functions/arrays');
 To use the Timer utilities
 ```js
 const timers = require('core-functions/timers');
+```
+
+To use the `Try`, `Success` and `Failure` classes
+```js
+const tries = require('./tries');
+const Try = tries.Try;
+const Success = tries.Success;
+const Failure = tries.Failure;
+
+// Simulate getting a Success outcome from successful execution of a function, which returns a value
+const outcome = Try.try(() => 'Abc');
+// outcome = new Success('Abc')
+assert(outcome.isSuccess());
+assert(outcome.value === 'Abc');
+
+// using map function to convert a Success('Abc') outcome's value into a Success('AbcXyz')
+const outcome1 = outcome.map(v => v + 'Xyz');
+assert(outcome1.isSuccess());
+assert(outcome1.value === 'AbcXyz');
+
+// Simulate getting a Failure outcome from unsuccessful execution of a function, which throws an error
+const testErr = new Error("Err"); // an arbitrary error for the example
+const outcome2 = Try.try(() => {throw testErr});
+// outcome2 is equivalent to new Failed(new Error("Err"))
+assert(outcome2.isFailure());
+assert(outcome2.error === testErr);
+
+// using recover function to convert a Failed outcome's error into a Success(123)
+const outcome3 = outcome2.recover(err => 123);
+assert(outcome3.isSuccess());
+assert(outcome3.value === 123);
+
+// ... or using map function to handle both successes & failures cases at the same time (similar to Promise.then)
+const outcome4 = outcome.map(
+  value => {
+    return value * 42;
+  },
+  err => {
+    console.log(err.stack);
+    return -1;
+  }  
+);
 ```
 
 To use the standard application errors
@@ -103,6 +154,88 @@ See the [package source](https://github.com/byron-dupreez/core-functions) for mo
 
 ## Changes
 
+### 3.0.0
+- Non-backward compatible changes & fixes to `promises.js` module:
+  - Removed all poly-filling & injection of `promises` module functions onto native `Promise` class
+  - Changed behaviour of the `try` function to NOT use `Promise.all` when the given function returns an array of promises,
+    so that it instead preserves ALL of the executed function's returned promises, "wrapped" in a `Promise.resolve`
+  - Changed behaviour of the `allOrOne` and `every` functions to both accept any mixture of promise and/or non-promise 
+    values, in order to bring their behaviour in line with that of the standard `Promise.all` method
+  - Changed the `every` function to ONLY accept an array of `promises` (i.e. it no longer supports var args containing 
+    promises) and added a new `cancellable` parameter to enable the wait for every promise to complete to be short-
+    circuited at the earliest possible opportunity and the `every` function will then instead return a rejected 
+    `CancelledError` from which the `resolvedOutcomes` and `unresolvedPromises` can be retrieved
+  - Changed the `every` function's returned resolutions from literal objects containing `result` or `error` properties 
+    to use the new `tries` modules's `Success`, `Failure` and `Try` classes instead (NB: Success has a `value` property, 
+    and not a `result` property, so this change is not backward-compatible)
+  - Fixed defect that was causing the `every` function to return an empty array when the first argument was not a promise
+  - Renamed existing `isPromise` function to `isPromiseLike` & added new `isPromise` function that ONLY returns true for native promises
+  - Removed the `isArrayOfPromises` function, which was no longer useful & would have had to change after `isPromise` changed
+  - Added a new `one` function to convert a single promise into a native Promise that resolves to a `Success` or `Failure` outcome
+  - Added a new `toPromise` function to attempt to convert a promise-like into a native promise
+    - Used it in the new `one` function
+    - Changed the `every` function to use it to ensure that the first promise in the chain becomes a native Promise
+- Added new `tries.js` module:
+  - Added `Try` superclass and `Success` and `Failure` subclasses modelled after their same-named Scala counterparts
+- Added new `dates.js` module:
+  - Added `simpleISODateTimeRegex` & `simpleISODateRegex` regular expressions
+  - Added `extendedISODateTimeRegex` & `extendedISODateRegex` regular expressions
+  - Added `isSimpleISODateTimeLike` & `isSimpleISODateLike` functions
+  - Added `isSimpleISODateTime` & `isSimpleISODate` functions
+  - Added `isExtendedISODateTimeLike` & `isExtendedISODateLike` functions
+  - Added `isExtendedISODateTime` & `isExtendedISODate` functions
+  - Added `toSimpleISODateTime` & `toSimpleISODate` functions
+  - Added `toDateTime` & `toExtendedISODate` functions
+  - Added `isValidDate` function
+- Added new `sorting.js` module:
+  - Added `SortType` "enum" object to defined the types of sorting supported
+  - Added `compareNumbers`, `compareStrings`, `compareBooleans`, `compareDates`, `compareIntegerLikes` & 
+    `compareUndefinedOrNull` compare functions to be used with Array `sort` method
+  - Added `toSortable` function, which resolves the appropriate sort type and compare function to use for a given array 
+    of values intended to be sorted and also maps the values into an array of consistent, sortable types of values
+  - Added `sortSortable` function (primarily for testing), which simply sorts a "Sortable" object's `sortableValues` 
+    using its `compare` function 
+- Changes to `numbers.js` module:
+  - Added `integerRegex`, `numberRegex`, `zeroRegex`, `leadingZeroesRegex` & `trailingZeroesRegex` regular expressions
+  - Added `isInteger` & `isSafeInteger` functions
+  - Added `isNumberLike`, `isIntegerLike` & `isZeroLike` functions
+  - Added `toNumberLike`, `toDecimalLike`, `toDecimalLikeOrNaN`, `toIntegerLike`, `toIntegerLikeOrNaN` & 
+    `toNumberOrIntegerLike` functions 
+  - Added `removeLeadingZeroes`, `removeTrailingZeroes`, `zeroPadLeft` & `removeSignIfZero` functions
+  - Added `nearlyEqual` function for testing numbers for approximate equality
+- Changes to `strings.js` module:  
+  - Added `stringifyKeyValuePairs` function
+  - Added null-safe `toLowerCase` function
+  - Changes to `stringify` function:
+    - Added special cases to better support Dates, Promises, Maps & WeakMaps
+    - Improved conversion of Errors - changed default behaviour to use a variation of Error toString() instead of always 
+      treating Errors as Objects (the latter behaviour is now available by passing opts.avoidErrorToString as true)
+    - Replaced `useToStringForErrors`, `avoidToJSONMethods` & `quoteStrings` parameters with a single, optional `opts` 
+      parameter with optional `avoidErrorToString` (NB: renamed and changed default behaviour to use toString() for 
+      Errors), `avoidToJSONMethods` and `quoteStrings` properties.
+    - Added support for also handling any legacy arguments passed instead of a new `opts` object, which means this 
+      API change is still backward-compatible
+    - Added new `useJSONStringify`, `replacer` & `space` opts properties to enable `stringify`'s behaviour to be 
+      switched to simply use `JSON.stringify` instead via its new `opts` argument
+- Changes to `objects.js` module:
+  - Added `toKeyValuePairs` function
+  - Changes to `merge` function:
+    - Replaced `replace` & `deep` parameters with a single, optional `opts` parameter with optional `replace` & `deep` 
+      properties
+    - Added support for also handling any legacy arguments passed instead of a new `opts` object, which means this 
+      API change is still backward-compatible  
+  - Changes to `copy` function:
+    - Replaced `deep` parameter with a single, optional `opts` parameter with an optional `deep` property
+    - Added support for also handling any legacy `deep` boolean argument passed instead of a new `opts` object, which 
+      means this API change is still backward-compatible  
+  - Changes to `copyNamedProperties` function:
+    - Replaced `compact`, `deep` & `omitPropertyIfUndefined` parameters with a single, optional `opts` parameter with 
+      optional `replace`, `deep` & `omitIfUndefined` properties
+    - Added support for also handling any legacy arguments passed instead of a new `opts` object, which means this 
+      API change is still backward-compatible
+- Added new `type-defs` "module" to gather the various type definitions into one place
+- Removed `test/testing.js`
+  
 ### 2.0.14
 - Added `copyNamedProperties` function to `objects.js` module
 

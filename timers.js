@@ -13,15 +13,6 @@ module.exports = {
 };
 
 /**
- * @typedef {Object} Timeout - A timeout object created by {@linkcode setTimeout} or {@linkcode setInterval}, which can
- * be cancelled by using the {@linkcode clearTimeout} or {@linkcode clearInterval} functions respectively.
- *
- * @property {boolean} _called - a "private" flag that indicates if the Timeout has been triggered already or not
- * @property {Function|null} _repeat - a "private" function that appears to be present on interval timeouts and null
- * on normal timeouts
- */
-
-/**
  * Attempts to cancel the given normal timeout, which was created by a call to {@linkcode setTimeout} using the
  * {@linkcode clearTimeout} function as instructed (and if the timeout looks like an interval timeout also using the
  * {@linkcode clearInterval} function).

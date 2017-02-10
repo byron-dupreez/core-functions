@@ -39,23 +39,26 @@ const isBlank = Strings.isBlank;
 const trimOrEmpty = Strings.trimOrEmpty;
 const stringify = Strings.stringify;
 
-const testing = require('./testing');
-// const okNotOk = testing.okNotOk;
-// const checkOkNotOk = testing.checkOkNotOk;
-// const checkMethodOkNotOk = testing.checkMethodOkNotOk;
-const equal = testing.equal;
-// const checkEqual = testing.checkEqual;
-// const checkMethodEqual = testing.checkMethodEqual;
-const immutable = testing.immutable;
-
+function immutable(t, obj, propertyName, prefix) {
+  const now = new Date().toISOString();
+  const opts = {quoteStrings: true};
+  try {
+    obj[propertyName] = now;
+    t.fail(`${prefix ? prefix : ''}${stringify(obj, opts)} ${propertyName} is supposed to be immutable`);
+  } catch (err) {
+    // Expect an error on attempted mutation of immutable property
+    t.pass(`${prefix ? prefix : ''}${stringify(obj, opts)} ${propertyName} is immutable`);
+    //console.log(`Expected error ${err}`);
+  }
+}
 
 test('AppError must be initialized ', t => {
   function check(appError, message, code, httpStatus, cause, causeStatus) {
-    equal(t, appError.message, message, `${appError} message`);
-    equal(t, appError.code, code, `${appError} code`);
-    equal(t, appError.httpStatus, httpStatus, `${appError} httpStatus`);
-    equal(t, appError.cause, cause, `${appError} cause`);
-    equal(t, appError.causeStatus, causeStatus, `${appError} causeStatus`);
+    t.equal(appError.message, message, `${appError} message must be ${message}`);
+    t.equal(appError.code, code, `${appError} code must be ${appError}`);
+    t.equal(appError.httpStatus, httpStatus, `${appError} httpStatus must be ${httpStatus}`);
+    t.equal(appError.cause, cause, `${appError} cause must be ${cause}`);
+    t.equal(appError.causeStatus, causeStatus, `${appError} causeStatus must be ${causeStatus}`);
   }
 
   check(new AppError('AE msg', 'AE code', 417, new Error('AE cause')), 'AE msg', 'AE code', 417, 'Error: AE cause', undefined);
@@ -99,11 +102,11 @@ test('AppError must be immutable', t => {
 
 test('AppError constructor permutations', t => {
   function check(appError, message, code, httpStatus, cause, causeStatus) {
-    equal(t, appError.message, message, `${appError} message`);
-    equal(t, appError.code, code, `${appError} code`);
-    equal(t, appError.httpStatus, httpStatus, `${appError} httpStatus`);
-    equal(t, appError.cause, cause, `${appError} cause`);
-    equal(t, appError.causeStatus, causeStatus, `${appError} causeStatus`);
+    t.equal(appError.message, message, `${appError} message must be ${message}`);
+    t.equal(appError.code, code, `${appError} code must be ${code}`);
+    t.equal(appError.httpStatus, httpStatus, `${appError} httpStatus must be ${httpStatus}`);
+    t.equal(appError.cause, cause, `${appError} cause must be ${cause}`);
+    t.equal(appError.causeStatus, causeStatus, `${appError} causeStatus must be ${causeStatus}`);
   }
 
   // No data gives empties and name as code
@@ -178,12 +181,12 @@ test('toAppError', t => {
     }
 
     t.ok(appError instanceof type, `toAppError(${stringify(error)}) -> (${appError}) must be instanceof ${type.name}`);
-    equal(t, appError.name, type.name, `toAppError(${stringify(error)}) -> (${appError}) name`);
+    t.equal(appError.name, type.name, `toAppError(${stringify(error)}) -> (${appError}) name must be ${type.name}`);
 
     if (isBlank(message)) {
-      equal(t, appError.message, trimOrEmpty(error.message), `toAppError(${stringify(error)}, ${message}, ${code}) -> (${appError}) message`);
+      t.equal(appError.message, trimOrEmpty(error.message), `toAppError(${stringify(error)}, ${message}, ${code}) -> (${appError}) message must be ${trimOrEmpty(error.message)}`);
     } else if (isNotBlank(message)) {
-      equal(t, appError.message, stringify(trimOrEmpty(message)), `toAppError(${stringify(error)}, ${message}, ${code}) -> (${appError}) message`);
+      t.equal(appError.message, stringify(trimOrEmpty(message)), `toAppError(${stringify(error)}, ${message}, ${code}) -> (${appError}) message must be ${stringify(trimOrEmpty(message))}`);
     }
 
     //console.log(`******************* error     (${error instanceof Error ? error.name : ''}) ${error instanceof AppError ? JSON.stringify(appError) : stringify(error)}`);
@@ -196,9 +199,9 @@ test('toAppError', t => {
           error.cause.code ? error.cause.code : error.cause.name ? error.cause.name :
             error.name ? error.name : appError.name :
           error.name ? error.name : appError.name;
-      equal(t, appError.code, expectedCode, `toAppError(${stringify(error)}, ${message}, ${code}) -> (${appError}) code`);
+      t.equal(appError.code, expectedCode, `toAppError(${stringify(error)}, ${message}, ${code}) -> (${appError}) code must be ${expectedCode}`);
     } else if (isNotBlank(code)) {
-      equal(t, appError.code, stringify(trimOrEmpty(code)), `toAppError(${stringify(error)}, ${message}, ${code}) -> (${appError}) code`);
+      t.equal(appError.code, stringify(trimOrEmpty(code)), `toAppError(${stringify(error)}, ${message}, ${code}) -> (${appError}) code must be ${stringify(trimOrEmpty(code))}`);
     }
 
     return appError;
@@ -290,12 +293,12 @@ test('toAppErrorForApiGateway', t => {
     }
 
     t.ok(appError instanceof type, `toAppErrorForApiGateway(${stringify(error)}) -> (${appError}) must be instanceof ${type.name}`);
-    equal(t, appError.name, type.name, `toAppErrorForApiGateway(${stringify(error)}) -> (${appError}) name`);
+    t.equal(appError.name, type.name, `toAppErrorForApiGateway(${stringify(error)}) -> (${appError}) name must be ${type.name}`);
 
     if (isBlank(message)) {
-      equal(t, appError.message, trimOrEmpty(error.message), `toAppErrorForApiGateway(${stringify(error)}, ${message}, ${code}) -> (${appError}) message`);
+      t.equal(appError.message, trimOrEmpty(error.message), `toAppErrorForApiGateway(${stringify(error)}, ${message}, ${code}) -> (${appError}) message must be ${trimOrEmpty(error.message)}`);
     } else if (isNotBlank(message)) {
-      equal(t, appError.message, stringify(trimOrEmpty(message)), `toAppErrorForApiGateway(${stringify(error)}, ${message}, ${code}) -> (${appError}) message`);
+      t.equal(appError.message, stringify(trimOrEmpty(message)), `toAppErrorForApiGateway(${stringify(error)}, ${message}, ${code}) -> (${appError}) message must be ${stringify(trimOrEmpty(message))}`);
     }
 
     // console.log(`******************* error     (${error instanceof Error ? error.name : ''}) ${error instanceof AppError ? JSON.stringify(appError) : stringify(error)}`);
@@ -308,9 +311,9 @@ test('toAppErrorForApiGateway', t => {
         appError0.cause ?
           appError0.cause.code ? appError0.cause.code : appError0.cause.name ? appError0.cause.name : appError0.name :
           appError0.name;
-      equal(t, appError.code, trimOrEmpty(expectedCode), `toAppErrorForApiGateway(${stringify(error)}, ${message}, ${code}) -> (${appError}) code`);
+      t.equal(appError.code, trimOrEmpty(expectedCode), `toAppErrorForApiGateway(${stringify(error)}, ${message}, ${code}) -> (${appError}) code must be ${trimOrEmpty(expectedCode)}`);
     } else if (isNotBlank(code)) {
-      equal(t, appError.code, stringify(trimOrEmpty(code)), `toAppErrorForApiGateway(${stringify(error)}, ${message}, ${code}) -> (${appError}) code`);
+      t.equal(appError.code, stringify(trimOrEmpty(code)), `toAppErrorForApiGateway(${stringify(error)}, ${message}, ${code}) -> (${appError}) code must be ${stringify(trimOrEmpty(code))}`);
     }
 
     return appError;

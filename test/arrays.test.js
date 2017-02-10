@@ -15,26 +15,21 @@ const distinct = Arrays.distinct;
 const isDistinct = Arrays.isDistinct;
 const isArrayOfType = Arrays.isArrayOfType;
 
-const testing = require('./testing');
-// const okNotOk = testing.okNotOk;
-const checkOkNotOk = testing.checkOkNotOk;
-// const checkMethodOkNotOk = testing.checkMethodOkNotOk;
-// const equal = testing.equal;
-const checkEqual = testing.checkEqual;
-// const checkMethodEqual = testing.checkMethodEqual;
-
 function wrap(value) {
   switch (typeof value) {
-    case 'string': return new String(value);
-    case 'number': return new Number(value);
-    case 'boolean': return new Boolean(value);
+    case 'string': //noinspection JSPrimitiveTypeWrapperUsage
+      return new String(value);
+    case 'number': //noinspection JSPrimitiveTypeWrapperUsage
+      return new Number(value);
+    case 'boolean': //noinspection JSPrimitiveTypeWrapperUsage
+      return new Boolean(value);
     default: return value;
   }
 }
 
 test('isDistinct', t => {
   function check(array, expected) {
-    checkOkNotOk(t, Arrays.isDistinct, [array], expected, 'must be distinct', 'must NOT be distinct');
+    t.equal(Arrays.isDistinct(array), expected, `Arrays.isDistinct(${stringify(array)}) must ${expected ? '' : 'NOT '}be distinct`);
   }
   // empty array
   check([], true, t);
@@ -68,7 +63,7 @@ test('isDistinct', t => {
 
 test('distinct', t => {
   function check(array, expected) {
-    checkEqual(t, Arrays.distinct, [array], expected);
+    t.deepEqual(Arrays.distinct(array), expected, `Arrays.distinct(array) must be ${stringify(expected)}`);
   }
 
   // empty array
@@ -105,8 +100,7 @@ test('distinct', t => {
 
 function checkIsArrayOfType(t, strict) {
   function check(array, type, expected) {
-    checkOkNotOk(t, Arrays.isArrayOfType, [array, type, strict], expected, `must be an array of ${stringify(type)}`,
-      `must NOT be an array of ${stringify(type)}`);
+    t.equal(Arrays.isArrayOfType(array, type, strict), expected, `Arrays.isDistinct(${stringify(array)}, ${type}, ${strict}) must ${expected ? '' : 'NOT '}be an array of ${stringify(type)}`);
   }
   // empty array
   check([], "string", true);

@@ -32,8 +32,7 @@ function isBoolean(value) {
  * @returns {boolean} true if really true or false; false otherwise
  */
 function isTrueOrFalse(value) {
-  //TODO redundant (effectively an alias for isBoolean, since end results are same), but maybe do a micro-benchmark on the two to decide which to keep
-  //return value === true || value === false || (value instanceof Boolean && isTrueOrFalse(value.valueOf()));
+  //Redundant - effectively an alias for isBoolean, since end results are same, but maybe do a micro-benchmark on the two to decide which to keep
   return value === true || value === false || value instanceof Boolean;
 }
 

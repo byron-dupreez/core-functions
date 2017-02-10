@@ -9,27 +9,20 @@ const test = require('tape');
 
 const Strings = require('../strings');
 
-const testing = require('./testing');
-// const okNotOk = testing.okNotOk;
-const checkOkNotOk = testing.checkOkNotOk;
-// const checkMethodOkNotOk = testing.checkMethodOkNotOk;
-// const equal = testing.equal;
-const checkEqual = testing.checkEqual;
-// const checkMethodEqual = testing.checkMethodEqual;
-
 function wrap(value, wrapInString) {
+  //noinspection JSPrimitiveTypeWrapperUsage
   return wrapInString && !(value instanceof String) ? new String(value) : value;
 }
 
 function toPrefix(value, wrapInString) {
   const wrapped = wrap(value, wrapInString);
-  return wrapInString || value instanceof String ? `String(${Strings.stringify(value, true, false, true)}) = [${Strings.stringify(wrapped ? wrapped.valueOf() : value, true, false, true)}] ` : '';
+  const opts = {quoteStrings: true};
+  return wrapInString || value instanceof String ? `String(${Strings.stringify(value, opts)}) = [${Strings.stringify(wrapped ? wrapped.valueOf() : value, opts)}] ` : '';
 }
 
 function checkIsString(t, wrapInString) {
   function check(value, expected) {
-    return checkOkNotOk(t, Strings.isString, [wrap(value, wrapInString)], expected, ' is a string', ' is NOT a string',
-      toPrefix(value, wrapInString));
+    return t.equal(Strings.isString(wrap(value, wrapInString)), expected, `Strings.isString(${toPrefix(value, wrapInString)}) is ${expected ? '' : 'NOT '}a string`); // :
   }
 
   // undefined
@@ -92,8 +85,7 @@ function checkIsString(t, wrapInString) {
 
 function checkIsBlank(t, wrapInString) {
   function check(value, expected) {
-    return checkOkNotOk(t, Strings.isBlank, [wrap(value, wrapInString)], expected, ' is blank', ' is NOT blank',
-      toPrefix(value, wrapInString));
+    return t.equal(Strings.isBlank(wrap(value, wrapInString)), expected, `Strings.isBlank(${toPrefix(value, wrapInString)}) is ${expected ? '' : 'NOT '} blank`); // :
   }
 
   // undefined
@@ -167,8 +159,7 @@ function checkIsBlank(t, wrapInString) {
 
 function checkIsNotBlank(t, wrapInString) {
   function check(value, expected) {
-    return checkOkNotOk(t, Strings.isNotBlank, [wrap(value, wrapInString)], expected, ' is not blank', ' is blank',
-      toPrefix(value, wrapInString));
+    return t.equal(Strings.isNotBlank(wrap(value, wrapInString)), expected, `Strings.isNotBlank(${toPrefix(value, wrapInString)}) is ${expected ? 'NOT ' : ''} blank`); // :
   }
 
   // undefined
@@ -241,94 +232,102 @@ function checkIsNotBlank(t, wrapInString) {
 }
 
 function checkStringify(t, wrapInString) {
-  function check(value, expected) {
-    return checkEqual(t, Strings.stringify, [wrap(value, wrapInString)], expected, toPrefix(value, wrapInString));
+  function checkNoOpts(value, expected) {
+    return t.equal(Strings.stringify(wrap(value, wrapInString)), expected, `Strings.stringify(${toPrefix(value, wrapInString)} must be ${expected}`);
   }
 
-  function checkWithArgs(value, useToStringForErrors, avoidToJSONMethods, quoteStrings, expected) {
-    return checkEqual(t, Strings.stringify, [wrap(value, wrapInString), useToStringForErrors, avoidToJSONMethods, quoteStrings], expected, toPrefix(value, wrapInString));
+  function checkWithOpts(value, opts, expected) {
+    return t.equal(Strings.stringify(wrap(value, wrapInString), opts), expected, `Strings.stringify(${toPrefix(value, wrapInString)} must be ${expected}`);
   }
 
   // undefined
-  check(undefined, 'undefined');
+  checkNoOpts(undefined, 'undefined');
 
   // null
-  check(null, 'null');
+  checkNoOpts(null, 'null');
 
   // objects
-  check({}, wrapInString ? '[object Object]' : '{}');
-  check({a: 1, b: 2}, wrapInString ? '[object Object]' : JSON.stringify({a: 1, b: 2}));
-  check({a: 1, b: 2, o: {c: 'C'}}, wrapInString ? '[object Object]' : JSON.stringify({a: 1, b: 2, o: {c: 'C'}}));
+  checkNoOpts({}, wrapInString ? '[object Object]' : '{}');
+  checkNoOpts({a: 1, b: 2}, wrapInString ? '[object Object]' : JSON.stringify({a: 1, b: 2}));
+  checkNoOpts({a: 1, b: 2, o: {c: 'C'}}, wrapInString ? '[object Object]' : JSON.stringify({a: 1, b: 2, o: {c: 'C'}}));
 
   // booleans
-  check(true, 'true');
-  check(false, 'false');
+  checkNoOpts(true, 'true');
+  checkNoOpts(false, 'false');
 
   // arrays
-  check([], wrapInString ? '' : '[]');
-  check([1, 2, 3], wrapInString ? '1,2,3' : '[1, 2, 3]');
+  checkNoOpts([], wrapInString ? '' : '[]');
+  checkNoOpts([1, 2, 3], wrapInString ? '1,2,3' : '[1, 2, 3]');
 
   // special case numbers
-  check(Number.POSITIVE_INFINITY, `${Number.POSITIVE_INFINITY}`);
-  check(Number.NEGATIVE_INFINITY, `${Number.NEGATIVE_INFINITY}`);
-  check(NaN, 'NaN');
+  checkNoOpts(Number.POSITIVE_INFINITY, `${Number.POSITIVE_INFINITY}`);
+  checkNoOpts(Number.NEGATIVE_INFINITY, `${Number.NEGATIVE_INFINITY}`);
+  checkNoOpts(NaN, 'NaN');
 
   // negative numbers
-  check(Number.MIN_VALUE, `${Number.MIN_VALUE}`);
-  check(Number.MIN_SAFE_INTEGER, `${Number.MIN_SAFE_INTEGER}`);
-  check(-123.456, '-123.456');
-  check(-1, '-1');
+  checkNoOpts(Number.MIN_VALUE, `${Number.MIN_VALUE}`);
+  checkNoOpts(Number.MIN_SAFE_INTEGER, `${Number.MIN_SAFE_INTEGER}`);
+  checkNoOpts(-123.456, '-123.456');
+  checkNoOpts(-1, '-1');
 
   // zero
-  check(0, '0'); // not sure if this should return blank for 0
+  checkNoOpts(0, '0'); // not sure if this should return blank for 0
 
   // positive numbers
-  check(1, '1');
-  check(123.456, '123.456');
-  check(Number.MAX_SAFE_INTEGER, `${Number.MAX_SAFE_INTEGER}`);
-  check(Number.MAX_VALUE, `${Number.MAX_VALUE}`);
+  checkNoOpts(1, '1');
+  checkNoOpts(123.456, '123.456');
+  checkNoOpts(Number.MAX_SAFE_INTEGER, `${Number.MAX_SAFE_INTEGER}`);
+  checkNoOpts(Number.MAX_VALUE, `${Number.MAX_VALUE}`);
 
   // strings containing numbers
-  check(`${Number.MIN_VALUE}`, `${Number.MIN_VALUE}`);
-  check(`${Number.MIN_SAFE_INTEGER}`, `${Number.MIN_SAFE_INTEGER}`);
-  check('-123.456', '-123.456');
-  check('-1', '-1');
+  checkNoOpts(`${Number.MIN_VALUE}`, `${Number.MIN_VALUE}`);
+  checkNoOpts(`${Number.MIN_SAFE_INTEGER}`, `${Number.MIN_SAFE_INTEGER}`);
+  checkNoOpts('-123.456', '-123.456');
+  checkNoOpts('-1', '-1');
 
-  check('0', '0');
+  checkNoOpts('0', '0');
 
-  check('1', '1');
-  check('123.456', '123.456');
-  check(`${Number.MAX_SAFE_INTEGER}`, `${Number.MAX_SAFE_INTEGER}`);
-  check(`${Number.MAX_VALUE}`, `${Number.MAX_VALUE}`);
+  checkNoOpts('1', '1');
+  checkNoOpts('123.456', '123.456');
+  checkNoOpts(`${Number.MAX_SAFE_INTEGER}`, `${Number.MAX_SAFE_INTEGER}`);
+  checkNoOpts(`${Number.MAX_VALUE}`, `${Number.MAX_VALUE}`);
 
   // strings containing only whitespace
-  check('', '');
-  check(' ', ' ');
-  check('\n', '\n');
-  check('\r', '\r');
-  check('\t', '\t');
-  check('      ', '      ');
-  check('  \n  ', '  \n  ');
-  check('  \r  ', '  \r  ');
-  check('  \t  ', '  \t  ');
-  check(' \n \r \t \n \r \t ', ' \n \r \t \n \r \t ');
+  checkNoOpts('', '');
+  checkNoOpts(' ', ' ');
+  checkNoOpts('\n', '\n');
+  checkNoOpts('\r', '\r');
+  checkNoOpts('\t', '\t');
+  checkNoOpts('      ', '      ');
+  checkNoOpts('  \n  ', '  \n  ');
+  checkNoOpts('  \r  ', '  \r  ');
+  checkNoOpts('  \t  ', '  \t  ');
+  checkNoOpts(' \n \r \t \n \r \t ', ' \n \r \t \n \r \t ');
 
   // strings not containing numbers
-  check('a', 'a');
-  check('abc', 'abc');
-  check('ABC', 'ABC');
-  checkWithArgs('', false, false, true, '""');
-  checkWithArgs('ABC', false, false, true, '"ABC"');
+  checkNoOpts('a', 'a');
+  checkNoOpts('abc', 'abc');
+  checkNoOpts('ABC', 'ABC');
+  checkWithOpts('', {quoteStrings: true}, '""');
+  checkWithOpts('ABC', {quoteStrings: true}, '"ABC"');
 
   // errors
-  check(new Error('Planned error'), wrapInString ? 'Error: Planned error' : '{"name":"Error","message":"Planned error"}');
-  checkWithArgs(new Error('Planned error'), true, false, false, wrapInString ? 'Error: Planned error' : '[Error: Planned error]');
+  checkNoOpts(new Error('Planned error'), wrapInString ? 'Error: Planned error' : '[Error: Planned error]');
+  checkWithOpts(new Error('Planned error'), {avoidErrorToString: false}, wrapInString ? 'Error: Planned error' : '[Error: Planned error]');
+  checkWithOpts(new Error('Planned error'), {avoidErrorToString: true}, wrapInString ? 'Error: Planned error' : '{"name":"Error","message":"Planned error"}');
+
+  const error = new TypeError('Planned error');
+  error.extra1 = 'Extra 1';
+  error.extra2 = 'Extra 2';
+  checkNoOpts(error, wrapInString ? 'TypeError: Planned error' : '[TypeError: Planned error {"extra1":"Extra 1","extra2":"Extra 2"}]');
+  checkWithOpts(error, {avoidErrorToString: false}, wrapInString ? 'TypeError: Planned error' : '[TypeError: Planned error {"extra1":"Extra 1","extra2":"Extra 2"}]');
+  checkWithOpts(error, {avoidErrorToString: true}, wrapInString ? 'TypeError: Planned error' : '{"name":"TypeError","message":"Planned error","extra1":"Extra 1","extra2":"Extra 2"}');
 
   // circular objects
   const circular0 = {a: 1, o: {b: 2}};
   circular0.circular = circular0;
   circular0.o.oAgain = circular0.o;
-  check(circular0, wrapInString ? '[object Object]' : '{"a":1,"o":{"b":2,"oAgain":[Circular: this.o]},"circular":[Circular: this]}');
+  checkNoOpts(circular0, wrapInString ? '[object Object]' : '{"a":1,"o":{"b":2,"oAgain":[Circular: this.o]},"circular":[Circular: this]}');
 
   const circular1 = {a: 1, b: 2, o: {c: 'C', p: {d: 'D'}}};
   circular1.thisAgain = circular1;
@@ -342,7 +341,7 @@ function checkStringify(t, wrapInString) {
   circular1.pAgain = circular1.o.p;
   circular1.o.pAgain = circular1.o.p;
   circular1.o.p.pAgain = circular1.o.p;
-  check(circular1, wrapInString ? '[object Object]' : '{"a":1,"b":2,"o":{"c":"C","p":{"d":"D","thisAgain":[Circular: this],"oAgain":[Circular: this.o],"pAgain":[Circular: this.o.p]},"thisAgain":[Circular: this],"oAgain":[Circular: this.o],"pAgain":[Reference: this.o.p]},"thisAgain":[Circular: this],"oAgain":[Reference: this.o],"pAgain":[Reference: this.o.p]}');
+  checkNoOpts(circular1, wrapInString ? '[object Object]' : '{"a":1,"b":2,"o":{"c":"C","p":{"d":"D","thisAgain":[Circular: this],"oAgain":[Circular: this.o],"pAgain":[Circular: this.o.p]},"thisAgain":[Circular: this],"oAgain":[Circular: this.o],"pAgain":[Reference: this.o.p]},"thisAgain":[Circular: this],"oAgain":[Reference: this.o],"pAgain":[Reference: this.o.p]}');
 
   // circular arrays with circular objects
   const array2 = ['a', {}, 123];
@@ -351,7 +350,7 @@ function checkStringify(t, wrapInString) {
   circular2.this1Again = circular2;
   array2.push(array2);
 
-  check(array2, wrapInString ? 'a,[object Object],123,' : '["a", {"thisAgain":[Circular: this],"this1Again":[Circular: this[1]]}, 123, [Circular: this]]');
+  checkNoOpts(array2, wrapInString ? 'a,[object Object],123,' : '["a", {"thisAgain":[Circular: this],"this1Again":[Circular: this[1]]}, 123, [Circular: this]]');
 
   const array3 = ['x', {y: 'Y'}, 123];
   const circular3 = array3[1];
@@ -359,7 +358,7 @@ function checkStringify(t, wrapInString) {
   circular3.arrayAgain = array3;
   array3.push(array3);
 
-  check(circular3, wrapInString ? '[object Object]' : '{"y":"Y","thisAgain":[Circular: this],"arrayAgain":["x", [Circular: this], 123, [Circular: this.arrayAgain]]}');
+  checkNoOpts(circular3, wrapInString ? '[object Object]' : '{"y":"Y","thisAgain":[Circular: this],"arrayAgain":["x", [Circular: this], 123, [Circular: this.arrayAgain]]}');
 
   // circular objects with circular arrays
   const array4 = ['b', {z: "Z"}, 456];
@@ -372,7 +371,7 @@ function checkStringify(t, wrapInString) {
 
   array4.push(array4);
 
-  check(circular4, wrapInString ? '[object Object]' : '{"a":"A","array":["b", {"z":"Z","thisAgain":[Circular: this],"arrayAgain":[Circular: this.array]}, 456, [Circular: this.array]],"thisAgain":[Circular: this],"arrayAgain":[Reference: this.array]}');
+  checkNoOpts(circular4, wrapInString ? '[object Object]' : '{"a":"A","array":["b", {"z":"Z","thisAgain":[Circular: this],"arrayAgain":[Circular: this.array]}, 456, [Circular: this.array]],"thisAgain":[Circular: this],"arrayAgain":[Reference: this.array]}');
 
   const array5 = ['c', {x: "X"}, 789];
   const circular5 = {a: 'A', array: array5};
@@ -387,10 +386,10 @@ function checkStringify(t, wrapInString) {
 
   array5.push(array5);
 
-  check(array5, wrapInString ? 'c,[object Object],789,' : '["c", {"x":"X","thisAgain":[Circular: this],"this1Again":[Circular: this[1]],"circular5":{"a":"A","array":[Circular: this],"thisAgain":[Circular: this],"this1Again":[Circular: this[1]],"this1Circular5Again":[Circular: this[1].circular5],"this1Circular5ArrayAgain":[Circular: this]}}, 789, [Circular: this]]');
+  checkNoOpts(array5, wrapInString ? 'c,[object Object],789,' : '["c", {"x":"X","thisAgain":[Circular: this],"this1Again":[Circular: this[1]],"circular5":{"a":"A","array":[Circular: this],"thisAgain":[Circular: this],"this1Again":[Circular: this[1]],"this1Circular5Again":[Circular: this[1].circular5],"this1Circular5ArrayAgain":[Circular: this]}}, 789, [Circular: this]]');
 
   // reference-only objects
-  const array6 = [{a:1}, {b:"B"}];
+  const array6 = [{a: 1}, {b: "B"}];
   const references6 = {
     array6: array6,
     array6Again: array6,
@@ -398,21 +397,22 @@ function checkStringify(t, wrapInString) {
     array6bOnly: [array6[1]],
     diffArrayWithSameElems: [array6[0], array6[1]]
   };
-  check(references6, wrapInString ? '[object Object]' : '{"array6":[{"a":1}, {"b":"B"}],"array6Again":[Reference: this.array6],"array6aOnly":[[Reference: this.array6[0]]],"array6bOnly":[[Reference: this.array6[1]]],"diffArrayWithSameElems":[[Reference: this.array6[0]], [Reference: this.array6[1]]]}');
+  checkNoOpts(references6, wrapInString ? '[object Object]' : '{"array6":[{"a":1}, {"b":"B"}],"array6Again":[Reference: this.array6],"array6aOnly":[[Reference: this.array6[0]]],"array6bOnly":[[Reference: this.array6[1]]],"diffArrayWithSameElems":[[Reference: this.array6[0]], [Reference: this.array6[1]]]}');
 
   // Functions
   function func() {
   }
+
   //check(func, wrapInString ? 'function func() {}' : '[Function: func]'); // this test breaks if function func() {} is reformatted to multi-line
   if (wrapInString) {
     t.ok(Strings.stringify(wrap(func, wrapInString)).startsWith('function func('), `stringify(new String(func)) -> ${Strings.stringify(func)} must start with 'function func('`);
   } else {
-    check(func, '[Function: func]');
+    checkNoOpts(func, '[Function: func]');
   }
-  check({fn: func}, wrapInString ? '[object Object]' : '{"fn":[Function: func]}');
+  checkNoOpts({fn: func}, wrapInString ? '[object Object]' : '{"fn":[Function: func]}');
 
   // undefined object properties
-  check({a: undefined}, wrapInString ? '[object Object]' : '{"a":undefined}');
+  checkNoOpts({a: undefined}, wrapInString ? '[object Object]' : '{"a":undefined}');
 
   // objects with toJSON methods
   const task = {
@@ -420,13 +420,15 @@ function checkStringify(t, wrapInString) {
     definition: {
       name: "Task1",
       executable: true,
-      execute: () => { },
+      execute: () => {
+      },
       subTaskDefs: [],
       parent: undefined
     },
     executable: true,
-    execute: () => { },
-      _subTasks: [],
+    execute: () => {
+    },
+    _subTasks: [],
     _subTasksByName: {},
     parent: undefined,
     _state: {
@@ -454,18 +456,18 @@ function checkStringify(t, wrapInString) {
     }
   };
   // default behaviour must use toJSON method
-  check(task, wrapInString ? '[object Object]' : '{"name":"Task1","executable":true,"state":{"code":"Unstarted","completed":false,"rejected":false},"attempts":1,"lastExecutedAt":"2016-12-01T05:09:09.119Z","subTasks":[]}');
+  checkNoOpts(task, wrapInString ? '[object Object]' : '{"name":"Task1","executable":true,"state":{"code":"Unstarted","completed":false,"rejected":false},"attempts":1,"lastExecutedAt":"2016-12-01T05:09:09.119Z","subTasks":[]}');
 
   // explicit !avoidToJSONMethods must use toJSON method
-  checkWithArgs(task, false, false, false, wrapInString ? '[object Object]' : '{"name":"Task1","executable":true,"state":{"code":"Unstarted","completed":false,"rejected":false},"attempts":1,"lastExecutedAt":"2016-12-01T05:09:09.119Z","subTasks":[]}');
+  checkWithOpts(task, {avoidToJSONMethods: false}, wrapInString ? '[object Object]' : '{"name":"Task1","executable":true,"state":{"code":"Unstarted","completed":false,"rejected":false},"attempts":1,"lastExecutedAt":"2016-12-01T05:09:09.119Z","subTasks":[]}');
 
   // explicit avoidToJSONMethods must NOT use toJSON method
-  checkWithArgs(task, false, true, false, wrapInString ? '[object Object]' : '{"name":"Task1","definition":{"name":"Task1","executable":true,"execute":[Function: anonymous],"subTaskDefs":[],"parent":undefined},"executable":true,"execute":[Function: anonymous],"_subTasks":[],"_subTasksByName":{},"parent":undefined,"_state":{"code":"Unstarted","completed":false,"error":undefined,"rejected":false,"reason":undefined},"_attempts":1,"_lastExecutedAt":"2016-12-01T05:09:09.119Z","_result":undefined,"_error":undefined,"_slaveTasks":[],"_frozen":true,"toJSON":[Function: toJSON]}');
+  checkWithOpts(task, {avoidToJSONMethods: true}, wrapInString ? '[object Object]' : '{"name":"Task1","definition":{"name":"Task1","executable":true,"execute":[Function: anonymous],"subTaskDefs":[],"parent":undefined},"executable":true,"execute":[Function: anonymous],"_subTasks":[],"_subTasksByName":{},"parent":undefined,"_state":{"code":"Unstarted","completed":false,"error":undefined,"rejected":false,"reason":undefined},"_attempts":1,"_lastExecutedAt":"2016-12-01T05:09:09.119Z","_result":undefined,"_error":undefined,"_slaveTasks":[],"_frozen":true,"toJSON":[Function: toJSON]}');
 }
 
 function checkTrim(t, wrapInString) {
   function check(value, expected) {
-    return checkEqual(t, Strings.trim, [wrap(value, wrapInString)], expected, toPrefix(value, wrapInString));
+    return t.equal(Strings.trim(wrap(value, wrapInString)), expected, `Strings.trim(${toPrefix(value, wrapInString)} must be ${expected}`);
   }
 
   // undefined
@@ -541,7 +543,7 @@ function checkTrim(t, wrapInString) {
 
 function checkTrimOrEmpty(t, wrapInString) {
   function check(value, expected) {
-    return checkEqual(t, Strings.trimOrEmpty, [wrap(value, wrapInString)], expected, toPrefix(value, wrapInString));
+    return t.equal(Strings.trimOrEmpty(wrap(value, wrapInString)), expected, `Strings.trimOrEmpty(${toPrefix(value, wrapInString)} must be ${expected}`);
   }
 
   // undefined
@@ -708,3 +710,110 @@ test('nthIndexOf', t => {
 
   t.end();
 });
+
+test('stringify on Maps', t => {
+  let entries = [];
+  let expected = `[Map {}]`;
+  t.equal(Strings.stringify(new Map(entries)), expected, `stringify on Map(${Strings.stringify(entries)}) must be ${expected}`);
+
+  entries = [['a', 123]];
+  expected = `[Map {"a" => 123}]`;
+  t.equal(Strings.stringify(new Map(entries)), expected, `stringify on Map(${Strings.stringify(entries)}) must be ${expected}`);
+
+  entries = [['b', 789], [{o: 1}, 'Xyz']];
+  expected = `[Map {"b" => 789, {"o":1} => "Xyz"}]`;
+  t.equal(Strings.stringify(new Map(entries)), expected, `stringify on Map(${Strings.stringify(entries)}) must be ${expected}`);
+
+  // Map containing a Map
+  let map = new Map([['a', 3.14]]);
+  entries = [['b', 789], [{o: 1}, 'Xyz'], ['m', map], [map, map]];
+  expected = `[Map {"b" => 789, {"o":1} => "Xyz", "m" => [Map {"a" => 3.14}], [Reference: this[2].VAL] => [Reference: this[2].VAL]}]`;
+  t.equal(Strings.stringify(new Map(entries)), expected, `stringify on Map(${Strings.stringify(entries)}) must be ${expected}`);
+
+  t.end();
+});
+
+test('stringify on WeakMaps', t => {
+  let entries = [];
+  let expected = `[WeakMap]`;
+  t.equal(Strings.stringify(new WeakMap(entries)), expected, `stringify on WeakMap(${Strings.stringify(entries)}) must be ${expected}`);
+
+  entries = [[{'a': 1}, 123]];
+  expected = `[WeakMap]`;
+  t.equal(Strings.stringify(new WeakMap(entries)), expected, `stringify on WeakMap(${Strings.stringify(entries)}) must be ${expected}`);
+
+  entries = [[{'b': 2}, 789], [{o: 1}, 'Xyz']];
+  expected = `[WeakMap]`;
+  t.equal(Strings.stringify(new WeakMap(entries)), expected, `stringify on WeakMap(${Strings.stringify(entries)}) must be ${expected}`);
+
+  // Map containing a WeakMap
+  let map = new WeakMap([[{'a': 1}, 3.14]]);
+  entries = [['b', 789], [{o: 1}, 'Xyz'], ['m', map], [map, map]];
+  expected = `[Map {"b" => 789, {"o":1} => "Xyz", "m" => [WeakMap], [Reference: this[2].VAL] => [Reference: this[2].VAL]}]`;
+  t.equal(Strings.stringify(new Map(entries)), expected, `stringify on Map(${Strings.stringify(entries)}) must be ${expected}`);
+
+  t.end();
+});
+
+test('stringify on Promises', t => {
+  // Attempts to get Node's util.js inspect function (if available)
+  const inspect = (() => {
+    try {
+      return require('util').inspect;
+    } catch (_) {
+      return undefined;
+    }
+  })();
+
+  let p = Promise.resolve('Hi');
+  let expected = inspect ? `[Promise { 'Hi' }]` : `[Promise]`;
+  t.equal(Strings.stringify(p), expected, `stringify(Promise.resolve('Hi')) -> ${Strings.stringify(p)} must be ${expected}`);
+
+  p = Promise.resolve('Hi "Bob"');
+  expected = inspect ? `[Promise { 'Hi "Bob"' }]` : `[Promise]`;
+  t.equal(Strings.stringify(p), expected, `stringify(Promise.resolve('Hi "Bob"')) -> ${Strings.stringify(p)} must be ${expected}`);
+
+  // Long string that "breaks" to next line
+  const promised1 = 'shardId-000000000000:49545115243490985018280067714973144582180062593244200961';
+  p = Promise.resolve(promised1);
+  expected = inspect ? `[Promise { '${promised1}' }]` : `[Promise]`;
+  t.equal(Strings.stringify(p), expected, `stringify(Promise.resolve(${promised1})) -> ${Strings.stringify(p)} must be ${expected}`);
+
+  const promised2 = 'shardId-111111111111:49545115243490985018280067714973144582180062593244200962';
+  let promised = [promised1, promised2];
+  p = Promise.resolve(promised);
+  expected = inspect ? `[Promise { [ '${promised1}', '${promised2}' ] }]` : `[Promise]`;
+  t.equal(Strings.stringify(p), expected, `stringify(Promise.resolve(${promised})) -> ${Strings.stringify(p)} must be ${expected}`);
+
+  promised = {a: 1, p: Promise.resolve('Another promise')};
+  p = Promise.resolve(Promise.resolve(promised));
+  expected = inspect ? `[Promise { { a: 1, p: Promise { 'Another promise' } } }]` : `[Promise]`;
+  t.equal(Strings.stringify(p), expected, `stringify(Promise.resolve(Promise.resolve(${Strings.stringify(promised)}))) -> ${Strings.stringify(p)} must be ${expected}`);
+
+  promised = {a: 1, p: Promise.resolve(promised2)};
+  p = Promise.resolve(Promise.resolve(promised));
+  // if (inspect) {
+  //   const inspectOpts = {depth: null, breakLength: Infinity};
+  //   console.log(`####################### inspect(p}) = ${inspect(p)}`);
+  //   console.log(`####################### inspect(p, ${Strings.stringify(inspectOpts)}) = ${inspect(p, inspectOpts)}`);
+  // }
+  expected = inspect ? `[Promise { { a: 1, p: Promise { '${promised2}' } } }]` : `[Promise]`;
+  t.equal(Strings.stringify(p), expected, `stringify(Promise.resolve(Promise.resolve(${Strings.stringify(promised)}))) -> ${Strings.stringify(p)} must be ${expected}`);
+
+  p = Promise.resolve({a: 1}).then(r => r);
+  expected = inspect ? `[Promise { <pending> }]` : `[Promise]`;
+  t.equal(Strings.stringify(p), expected, `stringify(Promise.resolve({a:1}).then(r => r)) -> ${Strings.stringify(p)} must be ${expected}`);
+
+  t.end();
+});
+
+test('stringify on console & Console', t => {
+  console.log(`console = ${Strings.stringify(console)}`);
+  t.equal(Strings.stringify(console), '[Console]', `stringify(console) must be '[Console]'`);
+
+  const customConsole = new console.Console(process.stdout, process.stderr);
+  t.notEqual(customConsole, console, `customConsole must not be console`);
+  t.equal(Strings.stringify(customConsole), '[Console {}]', `stringify(customConsole) must be '[Console {}]'`);
+  t.end();
+});
+

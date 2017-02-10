@@ -15,7 +15,8 @@ module.exports = {
   merge: merge,
   copy: copy,
   getPropertyValue: getPropertyValue,
-  copyNamedProperties: copyNamedProperties
+  copyNamedProperties: copyNamedProperties,
+  toKeyValuePairs: toKeyValuePairs
 };
 
 /**
@@ -29,15 +30,29 @@ function valueOf(value) {
 }
 
 /**
- * Merges the enumerable properties of the given 'from' object into the given 'to' object, only replacing same named
- * properties in the 'to' object if the given replace flag is true. Executes a deep merge if the given deep flag is true,
- * otherwise only does a shallow merge. Returns the updated 'to' object.
+ * Merges the properties of the given 'from' object into the given 'to' object, only replacing same named properties in
+ * the 'to' object if opts.replace is true. Executes a deep merge if opts.deep is true, otherwise only does a shallow
+ * merge. Returns the updated 'to' object.
+ *
+ * Legacy parameters were (from, to, replace, deep), so for backward compatibility, convert any boolean opts or
+ * (undefined opts and boolean 4th argument) into an appropriate object opts.
+ *
  * @param {Object} from - the 'from' object from which to get enumerable properties to be merged into the 'to' object
  * @param {Object} to - the 'to' object to which to add or deep merge (or optionally replace) properties from the 'from' object
- * @param {boolean|undefined} [replace] - whether to replace properties in the 'to' object with same named properties in the from object or not
- * @param {boolean|undefined} [deep] - Executes a deep merge if the given deep flag is true, otherwise only does a shallow merge
+ * @param {Object|undefined} [opts] - optional opts to use
+ * @param {boolean|undefined} [opts.replace] - whether to replace properties in the 'to' object with same named properties in the from object or not (defaults to not)
+ * @param {boolean|undefined} [opts.deep] - Executes a deep merge if true, otherwise only does a shallow merge (defaults to shallow)
  */
-function merge(from, to, replace, deep) {
+function merge(from, to, opts) {
+  // Legacy parameters were (from, to, replace, deep), so for backward compatibility, convert any boolean opts or
+  // (undefined opts and boolean 4th argument) into an appropriate object opts
+  if (typeof opts === "boolean" || (!opts && typeof arguments[3] === "boolean")) {
+    opts = {replace: !!opts, deep: !!arguments[3]};
+  }
+  // Resolve the options from opts
+  const replace = !!opts && opts.replace === true;
+  const deep = !!opts && opts.deep === true;
+
   if (!from || typeof from !== 'object') throw new TypeError(`from must be a non-null object`);
   if (!to || typeof to !== 'object') throw new TypeError(`to must be a non-null object`);
 
@@ -64,14 +79,14 @@ function merge(from, to, replace, deep) {
         if (deep && srcElementIsObject && destElement && typeof destElement === 'object') {
           mergeWithHistory(srcElement, destElement, replace, deep);
         } else if (replace) {
-          dest[i] = srcElementIsObject ? copy(srcElement, true) : srcElement;
+          dest[i] = srcElementIsObject ? copy(srcElement, {deep: true}) : srcElement;
         }
       }
       // If src was longer than dest, then append copies of any remaining elements of src (if any) to the end of dest
       for (let j = n; j < src.length; ++j) {
         const srcElement = src[j];
         const srcElementIsObject = srcElement && typeof srcElement === 'object';
-        dest.push(srcElementIsObject ? copy(srcElement, true) : srcElement);
+        dest.push(srcElementIsObject ? copy(srcElement, {deep: true}) : srcElement);
       }
     }
 
@@ -95,10 +110,10 @@ function merge(from, to, replace, deep) {
         if (deep && srcPropertyIsObject && destProperty && typeof destProperty === 'object') {
           mergeWithHistory(srcProperty, destProperty, replace, deep);
         } else if (replace) {
-          dest[name] = srcPropertyIsObject ? copy(srcProperty, true) : srcProperty;
+          dest[name] = srcPropertyIsObject ? copy(srcProperty, {deep: true}) : srcProperty;
         }
       } else {
-        dest[name] = srcPropertyIsObject ? copy(srcProperty, true) : srcProperty;
+        dest[name] = srcPropertyIsObject ? copy(srcProperty, {deep: true}) : srcProperty;
       }
     }
     return dest;
@@ -108,16 +123,24 @@ function merge(from, to, replace, deep) {
 }
 
 /**
- * Copies the enumerable properties of the given object into a new object. Executes a deep copy if the given deep flag
- * is true, otherwise only does a shallow copy. Returns the new copy of the original object or the original object if it
- * was NOT a non-null instance of Object.
+ * Copies the properties of the given object into a new object. Executes a deep copy if opts.deep is true, otherwise
+ * only does a shallow copy. Returns the new copy of the original object or the original "object" if it was NOT a non-
+ * null instance of Object.
+ *
+ * Legacy parameters were (object, deep), so for backward compatibility, use any true opts as if it was true opts.deep
+ *
  * @param {Object} object - the object from which to copy enumerable properties into a new object
- * @param {boolean|undefined} [deep] - Executes a deep copy if the given deep flag is true, otherwise only does a shallow copy
+ * @param {Object|boolean|undefined} [opts] - optional opts to use (if opts is true, handles it as if opts.deep were true & does a deep copy)
+ * @param {boolean|undefined} [opts.deep] - Executes a deep copy if opts.deep is true, otherwise only does a shallow copy (defaults to shallow)
  */
-function copy(object, deep) {
+function copy(object, opts) {
   if (!object || typeof object !== 'object') {
     return object;
   }
+  // Resolve the options from opts
+  // Legacy parameters were (object, deep), so for backward compatibility, use any true opts as if it was true opts.deep
+  const deep = (!!opts && opts.deep === true) || opts === true;
+
   const history = new WeakMap();
 
   function newDest(object) {
@@ -182,26 +205,42 @@ function getPropertyValue(object, propertyName) {
  * given source object to a new destination object. Note that the value of any compound named property in the given
  * propertyNames array will be copied from the source and stored in the new destination object under the compound
  * property name if compact is true.
+ *
+ * Legacy parameters were (src, propertyNames, compact, deep, omitPropertyIfUndefined), so for backward compatibility,
+ * convert any boolean opts or (no opts, but boolean 4th or 5th arg) into an appropriate object opts.
+ *
  * @param {Object} src - the source object from which to copy the named properties
  * @param {string[]} propertyNames - the list of named properties to be copied
- * @param {boolean|undefined} [compact] - whether to create a flatter, more-compact destination object, which will use
+ * @param {Object|undefined} [opts] - optional opts to use
+ * @param {boolean|undefined} [opts.compact] - whether to create a flatter, more-compact destination object, which will use
  * any compound property names as is and eliminate any unnecessary intermediate objects or rather create a more-
  * conventional, less-compact destination object, which will only have simple property names and all necessary intermediate objects
- * @param {boolean|undefined} [deep] - executes a deep copy of each property value if the given deep flag is true, otherwise only does a shallow copy
- * @param {boolean|undefined} [omitPropertyIfUndefined] - whether or not to omit any named property that has an undefined value from the destination object
+ * @param {boolean|undefined} [opts.deep] - executes a deep copy of each property value if the given deep flag is true, otherwise only does a shallow copy
+ * @param {boolean|undefined} [opts.omitIfUndefined] - whether or not to omit any named property that has an undefined value from the destination object
  * @returns {Object} a new object containing copies of only the named properties from the source object
  */
-function copyNamedProperties(src, propertyNames, compact, deep, omitPropertyIfUndefined) {
+function copyNamedProperties(src, propertyNames, opts) {
   if (!src || typeof src !== 'object') {
     return src === undefined ? undefined : src === null ? null : {};
   }
+  // Legacy parameters were (src, propertyNames, compact, deep, omitPropertyIfUndefined), so for backward compatibility,
+  // convert any boolean opts or (no opts, but boolean 4th or 5th arg) into an appropriate object opts
+  if (typeof opts === "boolean" || (!opts && (typeof arguments[3] === "boolean" || typeof arguments[4] === "boolean"))) {
+    opts = {compact: !!opts, deep: !!arguments[3], omitIfUndefined: !!arguments[4]};
+  }
+  // Resolve the options from opts
+  const compact = !!opts && opts.compact === true;
+  const deep = !!opts && opts.deep === true;
+  const deepOpts = {deep: deep};
+  const omitIfUndefined = !!opts && opts.omitIfUndefined === true;
+
   const dest = {};
   for (let i = 0; i < propertyNames.length; ++i) {
     const propertyName = trim(propertyNames[i]);
     const propertyValue = getPropertyValue(src, propertyName);
-    if (!omitPropertyIfUndefined || propertyValue !== undefined) {
+    if (!omitIfUndefined || propertyValue !== undefined) {
       if (compact) {
-        dest[propertyName] = copy(propertyValue, deep);
+        dest[propertyName] = copy(propertyValue, deepOpts);
       } else {
         const names = propertyName.split(".").map(n => trim(n)).filter(name => isNotBlank(name));
         if (names.length > 0) {
@@ -213,10 +252,20 @@ function copyNamedProperties(src, propertyNames, compact, deep, omitPropertyIfUn
             }
             d = d[name];
           }
-          d[names[names.length - 1]] = copy(propertyValue, deep);
+          d[names[names.length - 1]] = copy(propertyValue, deepOpts);
         }
       }
     }
   }
   return dest;
+}
+
+/**
+ * Extracts an array of key value pairs from the given object. Each key value pair is represented as an array containing
+ * a key property name followed by its associated value.
+ * @param {Object} object - an object
+ * @returns {KeyValuePair[]} an array of key value pairs
+ */
+function toKeyValuePairs(object) {
+  return object && typeof object === 'object' ? Object.getOwnPropertyNames(object).map(key => [key, object[key]]) : [];
 }

@@ -9,15 +9,7 @@ const test = require('tape');
 
 const timers = require('../timers');
 
-const Strings = require('../strings');
-
-const testing = require('./testing');
-// const okNotOk = testing.okNotOk;
-const checkOkNotOk = testing.checkOkNotOk;
-// const checkMethodOkNotOk = testing.checkMethodOkNotOk;
-// const equal = testing.equal;
-const checkEqual = testing.checkEqual;
-// const checkMethodEqual = testing.checkMethodEqual;
+// const Strings = require('../strings');
 
 test('Cancel normal timeout with cancelTimeout', t => {
   const timeout = setTimeout(() => {

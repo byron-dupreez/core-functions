@@ -9,17 +9,10 @@ const test = require('tape');
 
 const Booleans = require('../booleans');
 
-const Strings = require('../strings');
-
-const testing = require('./testing');
-// const okNotOk = testing.okNotOk;
-const checkOkNotOk = testing.checkOkNotOk;
-// const checkMethodOkNotOk = testing.checkMethodOkNotOk;
-// const equal = testing.equal;
-const checkEqual = testing.checkEqual;
-// const checkMethodEqual = testing.checkMethodEqual;
+// const Strings = require('../strings');
 
 function wrap(value, wrapInBoolean) {
+  //noinspection JSPrimitiveTypeWrapperUsage
   return wrapInBoolean && !(value instanceof Boolean) ? new Boolean(value) : value;
 }
 
@@ -30,8 +23,7 @@ function toPrefix(value, wrapInBoolean) {
 
 function checkIsBooleans(t, wrapInBoolean) {
   function check(value, expected) {
-    return checkOkNotOk(t, Booleans.isBoolean, [wrap(value, wrapInBoolean)], expected, ' is a boolean',
-      ' is NOT a boolean', toPrefix(value, wrapInBoolean));
+    return t.equal(Booleans.isBoolean(wrap(value, wrapInBoolean)), expected, `Booleans.isBoolean(${toPrefix(value, wrapInBoolean)}) is ${expected ? '' : 'NOT '}a boolean`); // :
   }
   // undefined
   check(undefined, wrapInBoolean);
@@ -96,8 +88,7 @@ function checkIsBooleans(t, wrapInBoolean) {
 
 function checkIsTrueOrFalses(t, wrapInBoolean) {
   function check(value, expected) {
-    return checkOkNotOk(t, Booleans.isTrueOrFalse, [wrap(value, wrapInBoolean)], expected, ' is true or false',
-      ' is NOT true or false', toPrefix(value, wrapInBoolean));
+    return t.equal(Booleans.isTrueOrFalse(wrap(value, wrapInBoolean)), expected, `Booleans.isTrueOrFalse(${toPrefix(value, wrapInBoolean)}) is ${expected ? '' : 'NOT '}true or false`); // :
   }
   // undefined
   check(undefined, wrapInBoolean);

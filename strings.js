@@ -23,12 +23,27 @@ module.exports = {
   trimOrEmpty: trimOrEmpty,
   /** Returns the given value as a string with special case handling for various types */
   stringify: stringify,
-  nthIndexOf: nthIndexOf
+  nthIndexOf: nthIndexOf,
+  toLowerCase: toLowerCase,
+  stringifyKeyValuePairs: stringifyKeyValuePairs
 };
+
+const inspectOpts = {depth: null, breakLength: Infinity}; // unfortunately breakLength is only available in later Node versions than 4.3.2
+const breakRegex = /\s*[\n\r]+\s*/g;
+const promiseInspectRegex = /^(Promise \{)([\s\n\r]+)(.*)([\s\n\r]+)(})$/;
+
+// Attempts to get Node's util.js inspect function (if available)
+const inspect = (() => {
+  try {
+    return require('util').inspect;
+  } catch (_) {
+    return undefined;
+  }
+})();
 
 /**
  * Returns true if the given value is a string; false otherwise.
- * @param {*} value the value to check
+ * @param {*} value - the value to check
  * @return {boolean} true if its a string; false otherwise
  */
 function isString(value) {
@@ -37,7 +52,7 @@ function isString(value) {
 
 /**
  * Returns true if the given string is blank (i.e. undefined, null, empty or contains only whitespace); false otherwise.
- * @param {string|String} s the string to check
+ * @param {string|String} s - the string to check
  * @return {boolean} true if blank; false otherwise
  */
 function isBlank(s) {
@@ -47,7 +62,7 @@ function isBlank(s) {
 /**
  * Returns true if the given string is NOT blank (i.e. NOT undefined, null, empty or contains only whitespace); false
  * otherwise.
- * @param {string|String} s the string to check
+ * @param {string|String} s - the string to check
  * @return {boolean} true if NOT blank; false otherwise
  */
 function isNotBlank(s) {
@@ -56,7 +71,7 @@ function isNotBlank(s) {
 
 /**
  * Trims the given value if it is a string; otherwise returns a non-string value as is.
- * @param {*} value the value to trim
+ * @param {*} value - the value to trim
  * @returns {string|*} the trimmed string or the original non-string value
  */
 function trim(value) {
@@ -66,7 +81,7 @@ function trim(value) {
 /**
  * Trims the given value (if it's a string) or returns an empty string (if it's undefined or null); otherwise returns
  * the non-undefined, non-null, non-string value as is.
- * @param {*} value the value to trim
+ * @param {*} value - the value to trim
  * @returns {string|*} the trimmed string; an empty string; or the original non-undefined, non-null, non-string value
  */
 function trimOrEmpty(value) {
@@ -76,13 +91,18 @@ function trimOrEmpty(value) {
 
 /**
  * Returns the given value as a string with special case handling for undefined, null, strings, numbers, booleans,
- * Strings, Numbers, Booleans, Errors, Functions, Arrays, Objects and special numbers (i.e. Infinity, -Infinity and NaN)
- * and also handles circular dependencies. Similar to {@linkcode JSON#stringify}, but shows more about the given value
- * than JSON.stringify does, for example:
- * - JSON.stringify(undefined) returns undefined, but this returns 'undefined'
+ * Strings, Numbers, Booleans, Dates, Promises, Errors, Functions, Arrays, Maps, WeakMaps, Objects and special numbers
+ * (i.e. Infinity, -Infinity and NaN) and also handles circular dependencies. However, if opts.useJSONStringify is true,
+ * then does NONE of this and instead just returns JSON.stringify(value, opts.replacer, opts.space) ignoring other opts.
+ *
+ * Similar to {@linkcode JSON#stringify}, but shows more about the given value than JSON.stringify does, for example:
+ * - JSON.stringify(undefined) returns undefined literally, but this returns 'undefined'
  * - JSON.stringify({a:undefined}) returns {}, but this returns '{"a":undefined}'
- * - JSON.stringify(new Error("Boom")) returns '{}', but this returns either '{"message":"Boom","name":"Error"}' (if
- *   useToStringForErrors is false) or '[Error: Boom]' (if useToStringForErrors is true)
+ * - JSON.stringify(new Error("Boom")) returns '{}', but this returns EITHER:
+ *   - '[Error: Boom]' (or '[Error: Boom {<extras>}]') WHEN opts.avoidErrorToString is false (default); OR
+ *   - '{"name": "Error", "message": "Boom"}' (or '{"name": "Error", "message": "Boom", <extras>}') WHEN
+ *      opts.avoidErrorToString is true,
+ *   where <extras> above is any and all extra properties on the Error object OTHER than name, message and stack
  * - JSON.stringify(func) with function func() {} returns undefined, but this returns '[Function: func]'
  * - JSON.stringify({fn: func}) with function func() {} returns '{}', but this returns '{"fn": [Function: func]}'
  * - JSON.stringify(NaN) returns 'null', but this returns 'NaN'
@@ -98,12 +118,27 @@ function trimOrEmpty(value) {
  *   this function returns '{"a":1,"o":{"b":2,"oAgain":[Circular: this.o]},"circular":[Circular: this]}'
  *
  * @param {*} value the value to stringify
- * @param {boolean|undefined} [useToStringForErrors] - whether to stringify errors using toString or as normal objects (default)
- * @param {boolean|undefined} [avoidToJSONMethods] - whether to avoid using objects' toJSON methods or not (default)
- * @param {boolean|undefined} [quoteStrings] - whether to surround simple string values with double-quotes or not (default)
+ * @param {StringifyOpts|undefined} [opts] - optional options to control how the value gets stringified
  * @returns {string} the value as a string
  */
-function stringify(value, useToStringForErrors, avoidToJSONMethods, quoteStrings) {
+function stringify(value, opts) {
+  // Legacy parameters were (value, useToStringForErrors, avoidToJSONMethods, quoteStrings), so for backward compatibility,
+  // convert any boolean opts or (no opts, but boolean 4th or 5th arg) into an appropriate object opts
+  if (typeof opts === "boolean" || (!opts && (typeof arguments[3] === "boolean" || typeof arguments[4] === "boolean"))) {
+    opts = {avoidErrorToString: !opts, avoidToJSONMethods: !!arguments[3], quoteStrings: !!arguments[4]};
+  }
+  // Resolve any options requested
+  const useJSONStringify = !!opts && opts.useJSONStringify == true;
+  if (useJSONStringify) {
+    const replacer = opts && opts.replacer ? opts.replacer : undefined;
+    const space = opts && opts.space ? opts.space : undefined;
+    return JSON.stringify(value, replacer, space);
+  }
+
+  const avoidErrorToString = !!opts && opts.avoidErrorToString == true;
+  const avoidToJSONMethods = !!opts && opts.avoidToJSONMethods == true;
+  const quoteStrings = !!opts && opts.quoteStrings == true;
+
   const history = new WeakMap();
 
   function stringifyWithHistory(value, name, quote) {
@@ -124,18 +159,10 @@ function stringify(value, useToStringForErrors, avoidToJSONMethods, quoteStrings
     // Special cases for booleans and Booleans
     if (typeOfValue === 'boolean' || value instanceof Boolean) return `${value}`;
 
-    // Special case for Errors - use toString() if directed, since stringify on most errors, just returns "{}"
-    const valueIsError = value instanceof Error;
-    if (valueIsError && useToStringForErrors) return `[${value}]`;
-
     // Special case for Functions - show them as [Function: {function name}]
     if (typeOfValue === 'function') return isNotBlank(value.name) ? `[Function: ${value.name}]` : '[Function: anonymous]';
 
     if (typeOfValue === 'object') {
-      // Special case for objects that have toJSON methods
-      if (!avoidToJSONMethods && typeof value.toJSON === 'function') {
-        return JSON.stringify(value.toJSON());
-      }
       // Check if already seen this same object before
       if (history.has(value)) {
         const historyName = history.get(value);
@@ -149,24 +176,80 @@ function stringify(value, useToStringForErrors, avoidToJSONMethods, quoteStrings
       }
       history.set(value, name);
 
+      // Special case for console, which is otherwise very verbose
+      if (value instanceof console.Console) {
+        return value === console ? '[Console]' : '[Console {}]';
+      }
+
+      // Special case for Dates - show them as ISO strings rather than default toString()
+      if (value instanceof Date) {
+        const date = value.toJSON();
+        return date ? date : '[Invalid Date]';
+      }
+
+      // Special case for Promises
+      if (value instanceof Promise) {
+        // Attempts to use Node's util.js inspect function (if available), which returns more-useful strings like:
+        // 'Promise { <pending> }'; 'Promise { "Abc" }'
+        return inspect ? `[${cleanInspectedPromise(inspect(value, inspectOpts))}]` : '[Promise]';
+      }
+
+      // Special case for WeakMaps, which cannot be enumerated
+      if (value instanceof WeakMap) {
+        return `[WeakMap]`
+      }
+      // Special case for Maps, which currently do not have a useful toString() and are also not handled well by JSON.stringify
+      if (value instanceof Map) {
+        let result = '[Map {';
+        let first = true;
+        let i = 0;
+        for (let kv of value.entries()) {
+          const k = kv[0], v = kv[1];
+          result += `${!first ? ', ' : ''}${stringifyWithHistory(k, `${name}[${i}].KEY`, true)} => ${stringifyWithHistory(v, `${name}[${i}].VAL`, true)}`;
+          first = false;
+          ++i;
+        }
+        result += '}]';
+        return result;
+      }
+
       // Special case for Array objects, stringify each of its elements
       if (Array.isArray(value)) {
         return `[${value.map((e, i) => stringifyWithHistory(e, `${name}[${i}]`, true)).join(", ")}]`;
       }
 
-      // Stringify the object
-      let names = Object.getOwnPropertyNames(value);
-
-      if (valueIsError) {
-        // Special case for Error objects - include message and name (if any), but exclude stack, which are all normally hidden with JSON.stringify
-        // First exclude name, message and stack
-        names = names.filter(n => n !== 'stack' && n !== 'name' && n !== 'message');
-        // Second re-add name and message to the front of the list
-        if (value.message) names.unshift('message');
-        if (value.name) names.unshift('name');
+      // Special case for objects that have toJSON methods
+      if (!avoidToJSONMethods && typeof value.toJSON === 'function') {
+        return JSON.stringify(value.toJSON());
       }
 
-      let result = '{';
+      // Stringify the object
+      let names = Object.getOwnPropertyNames(value);
+      let prefix = '{';
+      let suffix = '}';
+
+      // Special cases for Errors
+      if (value instanceof Error) {
+        // First exclude name, message and stack from the list of names
+        names = names.filter(n => n !== 'stack' && n !== 'name' && n !== 'message');
+        if (avoidErrorToString) {
+          // Special case for Errors when opts.avoidErrorToString is true - treat Error as if it was just an object, but
+          // include name and message (if any) at the front of the list of names (but still exclude stack)
+          if (value.message) names.unshift('message');
+          if (value.name) names.unshift('name');
+        } else {
+          // Special case for Errors when opts.avoidErrorToString is true- use the Error's toString(), but also include
+          // any extra properties OTHER than message, name and stack in the output
+          if (names.length <= 0) {
+            return `[${value}]`; // If no extra properties then just use Error's toString()
+          }
+          // Change the prefix to include the Error's toString() info and continue as normal
+          prefix = `[${value} {`;
+          suffix = '}]';
+        }
+      }
+
+      let result = prefix;
       for (let i = 0; i < names.length; ++i) {
         const propertyName = names[i];
         const propertyValue = value[propertyName];
@@ -175,7 +258,7 @@ function stringify(value, useToStringForErrors, avoidToJSONMethods, quoteStrings
         }
         result += `"${propertyName}":${stringifyWithHistory(propertyValue, `${name}.${propertyName}`, true)}`
       }
-      result += '}';
+      result += suffix;
       return result;
     }
 
@@ -220,4 +303,36 @@ function nthIndexOf(s, searchValue, nth) {
     }
   }
   return index;
+}
+
+/**
+ * Converts the given value to lower-case if it is a string; otherwise returns a non-string value as is.
+ * @param {*} value - the value to convert to lower-case
+ * @returns {string|*} the lower-case string or the original non-string value
+ */
+function toLowerCase(value) {
+  return typeof value === 'string' || value instanceof String ? value.toLowerCase() : value;
+}
+
+/**
+ * Creates a string version of the given key value pairs array, with its keys and values separated by the given
+ * keyValueSeparator and its pairs separated by the given pairSeparator.
+ * @param {KeyValuePair[]} keyValuePairs - an array of key value pairs
+ * @param {StringifyKeyValuePairsOpts|undefined} [opts] - optional options to control how the array of key value pairs get stringified
+ * @returns {string} a string version of the given key value pairs array
+ */
+function stringifyKeyValuePairs(keyValuePairs, opts) {
+  const keyValueSeparator = opts && typeof opts.keyValueSeparator === 'string' ? opts.keyValueSeparator : ':';
+  const pairSeparator = opts && typeof opts.pairSeparator === 'string' ? opts.pairSeparator : ',';
+  return keyValuePairs && keyValuePairs.length > 0 ?
+    keyValuePairs.map(kv => `${kv[0]}${keyValueSeparator}${stringify(kv[1], opts)}`).join(pairSeparator) : '';
+}
+
+/**
+ * Workaround to avoid default behaviour that inserts new line(s) when length too long (>60?) by removing any carriage
+ * returns and line feeds.
+ * @param {string} inspectedPromise - util.inspect result for a Promise instance
+ */
+function cleanInspectedPromise(inspectedPromise) {
+  return inspectedPromise.replace(breakRegex, ' ').replace(promiseInspectRegex, '$1 $3 $5'); //.replace(/"/g, '\\"').replace(/\\'/g, '"')
 }
