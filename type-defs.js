@@ -9,6 +9,12 @@
  * @typedef {Try} Failure - A Failure represents a failed execution of a function and contains the error thrown by the function
  * @property {Error|*} error - the error thrown
  */
+/**
+ * @typedef {Success|Failure} Outcome - represents a Success or Failure outcome
+ */
+/**
+ * @typedef {(Success|Failure)[]} Outcomes - represents a list of Success or Failure outcomes
+ */
 
 /**
  * @typedef {Promise|Object} PromiseLike - a native Promise or a promise-like ("then-able") object

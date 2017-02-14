@@ -334,5 +334,8 @@ function stringifyKeyValuePairs(keyValuePairs, opts) {
  * @param {string} inspectedPromise - util.inspect result for a Promise instance
  */
 function cleanInspectedPromise(inspectedPromise) {
-  return inspectedPromise.replace(breakRegex, ' ').replace(promiseInspectRegex, '$1 $3 $5'); //.replace(/"/g, '\\"').replace(/\\'/g, '"')
+  breakRegex.lastIndex = 0; //NB: MUST RESET lastIndex to zero for global regular expressions (i.e. /.../g )!
+  const promiseText = inspectedPromise.replace(breakRegex, ' ').replace(promiseInspectRegex, '$1 $3 $5');
+  breakRegex.lastIndex = 0; //NB: MUST RESET lastIndex to zero for global regular expressions (i.e. /.../g )!
+  return promiseText;
 }

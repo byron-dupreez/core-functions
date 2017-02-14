@@ -1,4 +1,4 @@
-# core-functions v3.0.0
+# core-functions v3.0.1
 
 Core functions, utilities and classes for working with Node/JavaScript primitives and built-in objects, including 
 strings, numbers, booleans, Dates, Promises, base 64, Arrays, Objects, standard AppErrors, sorting utilities, etc.
@@ -153,6 +153,19 @@ This module's unit tests were developed with and must be run with [tape](https:/
 See the [package source](https://github.com/byron-dupreez/core-functions) for more details.
 
 ## Changes
+
+### 3.0.1
+- Changes to `promises` module:
+  - Renamed `CancelledError` constructor `unresolvedPromises` parameter to more generic `unresolvedInputs`
+  - Added `unresolvedInputs` property to `CancelledError` class and kept `unresolvedPromises` as an alias for it
+  - Fixed bug in `completed` property of `CancelledError` class, which was incorrectly reporting completed as true when 
+    no unresolved inputs or promises were provided
+  - Added new `chain` function
+- Changes to `strings` module:
+  - Fixed potential shared global regular expression issues in `cleanInspectedPromise` function
+- Changes to `type-defs` module:
+  - Added `Outcome` & `Outcomes` type definitions
+- Deleted arbitrary `copy.sh` script
 
 ### 3.0.0
 - Non-backward compatible changes & fixes to `promises.js` module:

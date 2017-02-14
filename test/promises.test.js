@@ -1379,3 +1379,365 @@ test("Promises.toPromise(t3) with 'then-able' t3 that throws an error synchronou
     });
 });
 
+// ---------------------------------------------------------------------------------------------------------------------
+// Promises.chain
+// ---------------------------------------------------------------------------------------------------------------------
+
+test("Promises.chain() with invalid arguments", t => {
+  const notFunctionRegex = /The `chain` function only accepts `f` as a function/;
+  const notArrayRegex = /The `chain` function only accepts `inputs` as an array/;
+  t.throws(() => Promises.chain(), notFunctionRegex, `Promises.chain() must throw a 'not a function' Error`);
+  t.throws(() => Promises.chain(undefined, undefined), notFunctionRegex, `Promises.chain(undefined, undefined) must throw a 'not a function' Error`);
+  t.throws(() => Promises.chain(undefined, []), notFunctionRegex, `Promises.chain(undefined, []) must throw a 'not a function' Error`);
+  t.throws(() => Promises.chain(e => e, undefined), notArrayRegex, `Promises.chain(e => e, undefined) must throw a 'not an array' Error`);
+  t.throws(() => Promises.chain(e => e, 123), notArrayRegex, `Promises.chain(e => e, 123) must throw a 'not an array' Error`);
+  t.end();
+});
+
+test('Promises.chain(e => e, [])', t => {
+  const chain = Promises.chain(e => e, []);
+
+  t.ok(chain, `Promises.chain(e => e, []) must return a value`);
+  t.ok(chain instanceof Promise, `Promises.chain(e => e, []) must return an instance of Promise`);
+
+  chain.then(
+    value => {
+      t.deepEqual(value, [], `Promises.chain(e => e, []) must return a promise of an empty array`);
+      t.end();
+    },
+    err => {
+      t.end(`Promises.chain(e => e, [1, 2, 3]) must not fail with an error` + err.stack);
+    }
+  );
+});
+
+test('Promises.chain(e => e, [1])', t => {
+  const chain = Promises.chain(e => e, [1]);
+
+  t.ok(chain, `Promises.chain(e => e, [1]) must return a value`);
+  t.ok(chain instanceof Promise, `Promises.chain(e => e, [1]) must return an instance of Promise`);
+
+  chain.then(
+    value => {
+      t.deepEqual(value, [new Success(1)], `Promises.chain(e => e, [1]) must return a promise of [new Success(1)]`);
+      t.end();
+    },
+    err => {
+      t.end(`Promises.chain(e => e, [1]) must not fail with an error` + err.stack);
+    }
+  );
+});
+
+test('Promises.chain(e => e, [1, 2, 3])', t => {
+  const chain = Promises.chain(e => e, [1, 2, 3]);
+
+  t.ok(chain, `Promises.chain(e => e, [1, 2, 3]) must return a value`);
+  t.ok(chain instanceof Promise, `Promises.chain(e => e, [1, 2, 3]) must return an instance of Promise`);
+
+  chain.then(
+    value => {
+      t.deepEqual(value, [new Success(1), new Success(2), new Success(3)], `Promises.chain(e => e, [1, 2, 3]) must return a promise of [new Success(1), new Success(2), new Success(3)]`);
+      t.end();
+    },
+    err => {
+      t.end(`Promises.chain(e => e, [1, '2', 3]) must not fail with an error` + err.stack);
+    }
+  );
+});
+
+test('Promises.chain(e => e * 20, [5])', t => {
+  const chain = Promises.chain(e => e * 20, [5]);
+
+  t.ok(chain, `Promises.chain(e => e * 20, [5]) must return a value`);
+  t.ok(chain instanceof Promise, `Promises.chain(e => e * 20, [5]) must return an instance of Promise`);
+
+  chain.then(
+    value => {
+      t.deepEqual(value, [new Success(100)], `Promises.chain(e => e * 20, [5]) must return a promise of [new Success(100)]`);
+      t.end();
+    },
+    err => {
+      t.end(`Promises.chain(e => e * 20, [5]) must not fail with an error` + err.stack);
+    }
+  );
+});
+
+test('Promises.chain(e => e * 20, [1, 2, 3])', t => {
+  const chain = Promises.chain(e => e * 20, [1, 2, 3]);
+
+  t.ok(chain, `Promises.chain(e => e * 20, [1, 2, 3]) must return a value`);
+  t.ok(chain instanceof Promise, `Promises.chain(e => e * 20, [1, 2, 3]) must return an instance of Promise`);
+
+  chain.then(
+    value => {
+      t.deepEqual(value, [new Success(20), new Success(40), new Success(60)], `Promises.chain(e => e * 20, [1, 2, 3]) must return a promise of [new Success(20), new Success(40), new Success(60)]`);
+      t.end();
+    },
+    err => {
+      t.end(`Promises.chain(e => e * 20, [1, '2', 3]) must not fail with an error` + err.stack);
+    }
+  );
+});
+
+test("Promises.chain(f, [1,2,3,4]) with 4 inputs & 4 calls returning 4 successful promises will resolve 4 Success outcomes", t => {
+  const delayCancellables = [{}, {}, {}, {}];
+  const f = (e, i, es) => genDelayedPromise(null, e, 1, delayCancellables[i]);
+
+  const chain = Promises.chain(f, [1, '2', {c: 3}, [4]]);
+
+  t.ok(chain, `Promises.chain(f, [1, '2', {c:3}, [4]]) must return a value`);
+  t.ok(chain instanceof Promise, `Promises.chain(f, [1, '2', {c:3}, [4]]) must return an instance of Promise`);
+
+  chain.then(
+    outcomes => {
+      t.pass(`Promises.chain(f, [1, '2', {c:3}, [4]]) must resolve with outcomes`);
+      // Cancel the delays too (just for clean-up)
+      t.ok(delayCancellables[0].cancelTimeout(true), `delayCancellables[0].cancelTimeout() should have timed-out`);
+      t.ok(delayCancellables[1].cancelTimeout(true), `delayCancellables[1].cancelTimeout() should have timed-out`);
+      t.ok(delayCancellables[2].cancelTimeout(true), `delayCancellables[2].cancelTimeout() should have timed-out`);
+      t.ok(delayCancellables[3].cancelTimeout(true), `delayCancellables[3].cancelTimeout() should have timed-out`);
+      t.ok(Array.isArray(outcomes), `Promises.chain(f, [1, '2', {c:3}, [4]]) returned outcomes must be an Array`);
+      t.equal(outcomes.length, 4, `Promises.chain(f, [1, '2', {c:3}, [4]]) must return 4 outcomes`);
+      const expectedOutcomes = [new Success(1), new Success('2'), new Success({c: 3}), new Success([4])];
+      t.deepEqual(outcomes, expectedOutcomes, `Promises.chain(f, [1, '2', {c:3}, [4]]) outcomes must be ${stringify(expectedOutcomes)}`);
+      t.end();
+    },
+    err => {
+      t.end(`Promises.chain(f, [1, '2', {c:3}, [4]]) must NOT reject with an error: ${stringify(err)}`);
+    }
+  );
+});
+
+test("Promises.chain(f, [1,2,3,4]) with 4 inputs & 4 calls returning 3 rejecting promises will resolve 1 Success & 3 Failure outcomes", t => {
+  const delayCancellables = [{}, {}, {}, {}];
+  const errs = [new Error('Crash 0'), new Error('Crash 1'), new Error('Crash 2'), new Error('Crash 3')];
+  const f = (e, i, es) => genDelayedPromise(i === 3 ? null : errs[i], e, 1, delayCancellables[i]);
+
+  const chain = Promises.chain(f, [1, '2', {c: 3}, [4]]);
+
+  t.ok(chain, `Promises.chain(f, [1, '2', {c:3}, [4]]) must return a value`);
+  t.ok(chain instanceof Promise, `Promises.chain(f, [1, '2', {c:3}, [4]]) must return an instance of Promise`);
+
+  chain.then(
+    outcomes => {
+      t.pass(`Promises.chain(f, [1, '2', {c:3}, [4]]) must resolve with outcomes`);
+      // Cancel the delays too (just for clean-up)
+      t.ok(delayCancellables[0].cancelTimeout(true), `delayCancellables[0].cancelTimeout() should have timed-out`);
+      t.ok(delayCancellables[1].cancelTimeout(true), `delayCancellables[1].cancelTimeout() should have timed-out`);
+      t.ok(delayCancellables[2].cancelTimeout(true), `delayCancellables[2].cancelTimeout() should have timed-out`);
+      t.ok(delayCancellables[3].cancelTimeout(true), `delayCancellables[3].cancelTimeout() should have timed-out`);
+      t.ok(Array.isArray(outcomes), `Promises.chain(f, [1, '2', {c:3}, [4]]) returned outcomes must be an Array`);
+      t.equal(outcomes.length, 4, `Promises.chain(f, [1, '2', {c:3}, [4]]) must return 4 outcomes`);
+      const expectedOutcomes = [new Failure(errs[0]), new Failure(errs[1]), new Failure(errs[2]), new Success([4])];
+      t.deepEqual(outcomes, expectedOutcomes, `Promises.chain(f, [1, '2', {c:3}, [4]]) outcomes must be ${stringify(expectedOutcomes)}`);
+      t.end();
+    },
+    err => {
+      t.end(`Promises.chain(f, [1, '2', {c:3}, [4]]) must NOT reject with an error: ${stringify(err)}`);
+    }
+  );
+});
+
+test("Promises.chain(f, [1,2,3,4]) with 4 inputs & 4 calls returning 4 rejecting promises will resolve 4 Failure outcomes", t => {
+  const delayCancellables = [{}, {}, {}, {}];
+  const errs = [new Error('Crash 0'), new Error('Crash 1'), new Error('Crash 2'), new Error('Crash 3')];
+  const f = (e, i, es) => genDelayedPromise(errs[i], e, 1, delayCancellables[i]);
+
+  const chain = Promises.chain(f, [1, '2', {c: 3}, [4]]);
+
+  t.ok(chain, `Promises.chain(f, [1, '2', {c:3}, [4]]) must return a value`);
+  t.ok(chain instanceof Promise, `Promises.chain(f, [1, '2', {c:3}, [4]]) must return an instance of Promise`);
+
+  chain.then(
+    outcomes => {
+      t.pass(`Promises.chain(f, [1, '2', {c:3}, [4]]) must resolve with outcomes`);
+      // Cancel the delays too (just for clean-up)
+      t.ok(delayCancellables[0].cancelTimeout(true), `delayCancellables[0].cancelTimeout() should have timed-out`);
+      t.ok(delayCancellables[1].cancelTimeout(true), `delayCancellables[1].cancelTimeout() should have timed-out`);
+      t.ok(delayCancellables[2].cancelTimeout(true), `delayCancellables[2].cancelTimeout() should have timed-out`);
+      t.ok(delayCancellables[3].cancelTimeout(true), `delayCancellables[3].cancelTimeout() should have timed-out`);
+      t.ok(Array.isArray(outcomes), `Promises.chain(f, [1, '2', {c:3}, [4]]) returned outcomes must be an Array`);
+      t.equal(outcomes.length, 4, `Promises.chain(f, [1, '2', {c:3}, [4]]) must return 4 outcomes`);
+      const expectedOutcomes = [new Failure(errs[0]), new Failure(errs[1]), new Failure(errs[2]), new Failure(errs[3])];
+      t.deepEqual(outcomes, expectedOutcomes, `Promises.chain(f, [1, '2', {c:3}, [4]]) outcomes must be ${stringify(expectedOutcomes)}`);
+      t.end();
+    },
+    err => {
+      t.end(`Promises.chain(f, [1, '2', {c:3}, [4]]) must NOT reject with an error: ${stringify(err)}`);
+    }
+  );
+});
+
+// =====================================================================================================================
+// Promises.chain with cancellations
+// =====================================================================================================================
+
+test("Promises.chain(f, [1,2,3,4]) cancelled immediately will resolve only with the first outcome", t => {
+  const cancellable = {};
+
+  const delayCancellables = [{}, {}, {}, {}];
+  const f = (e, i, es) => genDelayedPromise(null, e, 1, delayCancellables[i]);
+
+  const chain = Promises.chain(f, [1, '2', {c: 3}, [4]], cancellable);
+
+  t.ok(chain, `Promises.chain(f, [1, '2', {c:3}, [4]]) must return a value`);
+  t.ok(chain instanceof Promise, `Promises.chain(f, [1, '2', {c:3}, [4]]) must return an instance of Promise`);
+
+  chain.then(
+    results => {
+      t.end(`Promises.chain(f, [1, '2', {c:3}, [4]]) when cancelled, must NOT complete successfully with results: ${stringify(results)}`);
+    },
+    err => {
+      t.pass(`Promises.chain(f, [1, '2', {c:3}, [4]]) when cancelled must reject with an error`);
+      // Cancel the delays too (just for clean-up)
+      t.ok(delayCancellables[0].cancelTimeout(true), `delayCancellables[0].cancelTimeout() should have timed-out`);
+      t.notOk(delayCancellables[1].cancelTimeout, `delayCancellables[1].cancelTimeout should NOT be defined yet`);
+      t.notOk(delayCancellables[2].cancelTimeout, `delayCancellables[2].cancelTimeout should NOT be defined yet`);
+      t.notOk(delayCancellables[3].cancelTimeout, `delayCancellables[3].cancelTimeout should NOT be defined yet`);
+      t.ok(err instanceof CancelledError, `Promises.chain(f, [1, '2', {c:3}, [4]]) rejected error ${stringify(err)} must be instanceof CancelledError`);
+      t.notOk(err.completed, `CancelledError.completed must be false`);
+      const expectedResolvedOutcomes = [new Success(1)];
+      t.deepEqual(err.resolvedOutcomes, expectedResolvedOutcomes, `Promises.chain(f, [1, '2', {c:3}, [4]]) resolvedOutcomes must be ${stringify(expectedResolvedOutcomes)}`);
+      const expectedUnresolvedInputs = ['2', {c: 3}, [4]];
+      t.deepEqual(err.unresolvedInputs, expectedUnresolvedInputs, `Promises.chain([1, '2', {c:3}, [4]]) unresolvedInputs must be ${stringify(expectedUnresolvedInputs)}`);
+      t.end();
+    }
+  );
+  t.ok(typeof cancellable.cancel === "function", `cancellable.cancel must be installed`);
+  const completed = cancellable.cancel();
+  t.notOk(completed, `Promises.chain(f, [1, '2', {c:3}, [4]]) must not be completed yet`);
+});
+
+test("Promises.chain(f, [1,2,3,4]) cancelled during call 1 will resolve only with the first outcome", t => {
+  const cancellable = {};
+
+  const delayCancellables = [{}, {}, {}, {}];
+  const f = (e, i, es) => genDelayedPromise(null, e, 1, delayCancellables[i], i === 0 ? cancellable : undefined);
+
+  const chain = Promises.chain(f, [1, '2', {c: 3}, [4]], cancellable);
+
+  t.ok(chain, `Promises.chain(f, [1, '2', {c:3}, [4]]) must return a value`);
+  t.ok(chain instanceof Promise, `Promises.chain(f, [1, '2', {c:3}, [4]]) must return an instance of Promise`);
+
+  chain.then(
+    results => {
+      t.end(`Promises.chain(f, [1, '2', {c:3}, [4]]) when cancelled, must NOT complete successfully with results: ${stringify(results)}`);
+    },
+    err => {
+      t.pass(`Promises.chain(f, [1, '2', {c:3}, [4]]) when cancelled must reject with an error`);
+      // Cancel the delays too (just for clean-up)
+      t.ok(delayCancellables[0].cancelTimeout(true), `delayCancellables[0].cancelTimeout() should have timed-out`);
+      t.notOk(delayCancellables[1].cancelTimeout, `delayCancellables[1].cancelTimeout should NOT be defined yet`);
+      t.notOk(delayCancellables[2].cancelTimeout, `delayCancellables[2].cancelTimeout should NOT be defined yet`);
+      t.notOk(delayCancellables[3].cancelTimeout, `delayCancellables[3].cancelTimeout should NOT be defined yet`);
+      t.ok(err instanceof CancelledError, `Promises.chain(f, [1, '2', {c:3}, [4]]) rejected error ${stringify(err)} must be instanceof CancelledError`);
+      t.notOk(err.completed, `CancelledError.completed must be false`);
+      const expectedResolvedOutcomes = [new Success(1)];
+      t.deepEqual(err.resolvedOutcomes, expectedResolvedOutcomes, `Promises.chain(f, [1, '2', {c:3}, [4]]) resolvedOutcomes must be ${stringify(expectedResolvedOutcomes)}`);
+      const expectedUnresolvedInputs = ['2', {c: 3}, [4]];
+      t.deepEqual(err.unresolvedInputs, expectedUnresolvedInputs, `Promises.chain([1, '2', {c:3}, [4]]) unresolvedInputs must be ${stringify(expectedUnresolvedInputs)}`);
+      t.end();
+    }
+  );
+  t.ok(typeof cancellable.cancel === "function", `cancellable.cancel must be installed`);
+});
+
+test("Promises.chain(f, [1,2,3,4]) cancelled during call 2 will resolve only the first & second outcomes", t => {
+  const cancellable = {};
+
+  const delayCancellables = [{}, {}, {}, {}];
+  const f = (e, i, es) => genDelayedPromise(null, e, 1, delayCancellables[i], i === 1 ? cancellable : undefined);
+
+  const chain = Promises.chain(f, [1, '2', {c: 3}, [4]], cancellable);
+
+  t.ok(chain, `Promises.chain(f, [1, '2', {c:3}, [4]]) must return a value`);
+  t.ok(chain instanceof Promise, `Promises.chain(f, [1, '2', {c:3}, [4]]) must return an instance of Promise`);
+
+  chain.then(
+    results => {
+      t.end(`Promises.chain(f, [1, '2', {c:3}, [4]]) when cancelled, must NOT complete successfully with results: ${stringify(results)}`);
+    },
+    err => {
+      t.pass(`Promises.chain(f, [1, '2', {c:3}, [4]]) when cancelled must reject with an error`);
+      // Cancel the delays too (just for clean-up)
+      t.ok(delayCancellables[0].cancelTimeout(true), `delayCancellables[0].cancelTimeout() should have timed-out`);
+      t.ok(delayCancellables[1].cancelTimeout(true), `delayCancellables[1].cancelTimeout() should have timed-out`);
+      t.notOk(delayCancellables[2].cancelTimeout, `delayCancellables[2].cancelTimeout should NOT be defined yet`);
+      t.notOk(delayCancellables[3].cancelTimeout, `delayCancellables[3].cancelTimeout should NOT be defined yet`);
+      t.ok(err instanceof CancelledError, `Promises.chain(f, [1, '2', {c:3}, [4]]) rejected error ${stringify(err)} must be instanceof CancelledError`);
+      t.notOk(err.completed, `CancelledError.completed must be false`);
+      const expectedResolvedOutcomes = [new Success(1), new Success('2')];
+      t.deepEqual(err.resolvedOutcomes, expectedResolvedOutcomes, `Promises.chain(f, [1, '2', {c:3}, [4]]) resolvedOutcomes must be ${stringify(expectedResolvedOutcomes)}`);
+      const expectedUnresolvedInputs = [{c: 3}, [4]];
+      t.deepEqual(err.unresolvedInputs, expectedUnresolvedInputs, `Promises.chain([1, '2', {c:3}, [4]]) unresolvedInputs must be ${stringify(expectedUnresolvedInputs)}`);
+      t.end();
+    }
+  );
+  t.ok(typeof cancellable.cancel === "function", `cancellable.cancel must be installed`);
+});
+
+test("Promises.chain(f, [1,2,3,4]) cancelled during call 3 will resolve the first, second & third outcomes", t => {
+  const cancellable = {};
+
+  const delayCancellables = [{}, {}, {}, {}];
+  const f = (e, i, es) => genDelayedPromise(null, e, 1, delayCancellables[i], i === 2 ? cancellable : undefined);
+
+  const chain = Promises.chain(f, [1, '2', {c: 3}, [4]], cancellable);
+
+  t.ok(chain, `Promises.chain(f, [1, '2', {c:3}, [4]]) must return a value`);
+  t.ok(chain instanceof Promise, `Promises.chain(f, [1, '2', {c:3}, [4]]) must return an instance of Promise`);
+
+  chain.then(
+    results => {
+      t.end(`Promises.chain(f, [1, '2', {c:3}, [4]]) when cancelled, must NOT complete successfully with results: ${stringify(results)}`);
+    },
+    err => {
+      t.pass(`Promises.chain(f, [1, '2', {c:3}, [4]]) when cancelled must reject with an error`);
+      // Cancel the delays too (just for clean-up)
+      t.ok(delayCancellables[0].cancelTimeout(true), `delayCancellables[0].cancelTimeout() should have timed-out`);
+      t.ok(delayCancellables[1].cancelTimeout(true), `delayCancellables[1].cancelTimeout() should have timed-out`);
+      t.ok(delayCancellables[2].cancelTimeout(true), `delayCancellables[2].cancelTimeout() should have timed-out`);
+      t.notOk(delayCancellables[3].cancelTimeout, `delayCancellables[3].cancelTimeout should NOT be defined yet`);
+      t.ok(err instanceof CancelledError, `Promises.chain(f, [1, '2', {c:3}, [4]]) rejected error ${stringify(err)} must be instanceof CancelledError`);
+      t.notOk(err.completed, `CancelledError.completed must be false`);
+      const expectedResolvedOutcomes = [new Success(1), new Success('2'), new Success({c: 3})];
+      t.deepEqual(err.resolvedOutcomes, expectedResolvedOutcomes, `Promises.chain(f, [1, '2', {c:3}, [4]]) resolvedOutcomes must be ${stringify(expectedResolvedOutcomes)}`);
+      const expectedUnresolvedInputs = [[4]];
+      t.deepEqual(err.unresolvedInputs, expectedUnresolvedInputs, `Promises.chain([1, '2', {c:3}, [4]]) unresolvedInputs must be ${stringify(expectedUnresolvedInputs)}`);
+      t.end();
+    }
+  );
+  t.ok(typeof cancellable.cancel === "function", `cancellable.cancel must be installed`);
+});
+
+test("Promises.chain(f, [1,2,3,4]) cancelled too late during call 4 will resolve all 4 outcomes", t => {
+  const cancellable = {};
+
+  const delayCancellables = [{}, {}, {}, {}];
+  const f = (e, i, es) => genDelayedPromise(null, e, 1, delayCancellables[i], i === 3 ? cancellable : undefined);
+
+  const chain = Promises.chain(f, [1, '2', {c: 3}, [4]], cancellable);
+
+  t.ok(chain, `Promises.chain(f, [1, '2', {c:3}, [4]]) must return a value`);
+  t.ok(chain instanceof Promise, `Promises.chain(f, [1, '2', {c:3}, [4]]) must return an instance of Promise`);
+
+  chain.then(
+    outcomes => {
+      t.pass(`Promises.chain(f, [1, '2', {c:3}, [4]]) when cancelled too late must still resolve with all outcomes`);
+      // Cancel the delays too (just for clean-up)
+      t.ok(delayCancellables[0].cancelTimeout(true), `delayCancellables[0].cancelTimeout() should have timed-out`);
+      t.ok(delayCancellables[1].cancelTimeout(true), `delayCancellables[1].cancelTimeout() should have timed-out`);
+      t.ok(delayCancellables[2].cancelTimeout(true), `delayCancellables[2].cancelTimeout() should have timed-out`);
+      t.ok(delayCancellables[3].cancelTimeout(true), `delayCancellables[3].cancelTimeout() should have timed-out`);
+      t.ok(Array.isArray(outcomes), `Promises.chain(f, [1, '2', {c:3}, [4]]) returned outcomes must be an Array`);
+      t.equal(outcomes.length, 4, `Promises.chain(f, [1, '2', {c:3}, [4]]) must return 4 outcomes`);
+      const expectedOutcomes = [new Success(1), new Success('2'), new Success({c: 3}), new Success([4])];
+      t.deepEqual(outcomes, expectedOutcomes, `Promises.chain(f, [1, '2', {c:3}, [4]]) outcomes must be ${stringify(expectedOutcomes)}`);
+      t.end();
+    },
+    err => {
+      t.end(`Promises.chain(f, [1, '2', {c:3}, [4]]) when cancelled too late, must NOT reject with an error: ${stringify(err)}`);
+    }
+  );
+  t.ok(typeof cancellable.cancel === "function", `cancellable.cancel must be installed`);
+});
