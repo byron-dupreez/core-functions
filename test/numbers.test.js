@@ -11,6 +11,7 @@ const Numbers = require('../numbers');
 
 const isInteger = Numbers.isInteger;
 const isSafeInteger = Numbers.isSafeInteger;
+const toInteger = Numbers.toInteger;
 
 const isNumberLike = Numbers.isNumberLike;
 const isIntegerLike = Numbers.isIntegerLike;
@@ -1204,6 +1205,64 @@ test('nearlyEqual', t => {
 
   t.notOk(nearlyEqual(-Infinity, -Number.MAX_VALUE), `-Infinity is NOT nearly equal to -Number.MAX_VALUE`);
   t.notOk(nearlyEqual(-Number.MAX_VALUE, -Infinity), `-Number.MAX_VALUE is NOT nearly equal to -Infinity`);
+
+  t.end();
+});
+
+test('toInteger', t => {
+  // With strings
+  t.equal(toInteger('-1.2e22'), -1.2e+22, `toInteger('-1.2e22') must be -1.2e+22`);
+  t.equal(toInteger(`${Number.MIN_SAFE_INTEGER}`), Number.MIN_SAFE_INTEGER, `toInteger('Number.MIN_SAFE_INTEGER') must be Number.MIN_SAFE_INTEGER`);
+  t.equal(toInteger('-12345.59'), -12345, `toInteger('-12345.59') must be -12345`);
+  t.equal(toInteger('-12345'), -12345, `toInteger('-12345') must be -12345`);
+  t.equal(toInteger('-2'), -2, `toInteger('-2') must be -2`);
+  t.equal(toInteger('-1.999'), -1, `toInteger('-1.999') must be -1`);
+  t.equal(toInteger('-1.5'), -1, `toInteger('-1.5') must be -1`);
+  t.equal(toInteger('-1.01'), -1, `toInteger('-1.01') must be -1`);
+  t.equal(toInteger('-1'), -1, `toInteger('-1') must be -1`);
+  t.equal(toInteger('-0.999'), 0, `toInteger('-0.999') must be 0`);
+  t.equal(toInteger('-0.5'), 0, `toInteger('-0.5') must be 0`);
+  t.equal(toInteger('-0.01'), 0, `toInteger('-0.01') must be 0`);
+  t.equal(toInteger('0'), 0, `toInteger('0') must be 0`);
+  t.equal(toInteger('0.01'), 0, `toInteger('0.01') must be 0`);
+  t.equal(toInteger('0.5'), 0, `toInteger('0.5') must be 0`);
+  t.equal(toInteger('0.999'), 0, `toInteger('0.999') must be 0`);
+  t.equal(toInteger('+1'), +1, `toInteger('+1') must be +1`);
+  t.equal(toInteger('+1.01'), +1, `toInteger('+1.01') must be +1`);
+  t.equal(toInteger('+1.5'), +1, `toInteger('+1.5') must be +1`);
+  t.equal(toInteger('+1.999'), +1, `toInteger('+1.999') must be +1`);
+  t.equal(toInteger('+2'), +2, `toInteger('+2') must be +2`);
+  t.equal(toInteger('+12345'), +12345, `toInteger('+12345') must be +12345`);
+  t.equal(toInteger('+12345.59'), +12345, `toInteger('+12345.59') must be +12345`);
+  t.equal(toInteger(`${Number.MAX_SAFE_INTEGER}`), Number.MAX_SAFE_INTEGER, `toInteger('${Number.MAX_SAFE_INTEGER}') must be Number.MAX_SAFE_INTEGER`);
+  t.equal(toInteger('1.2e22'), 1.2e+22, `toInteger('1.2e22') must be 1.2e+22`);
+
+  // With numbers
+  t.equal(toInteger(-1.2e22), -1.2e+22, `toInteger(-1.2e22) must be -1.2e+22`);
+  t.equal(toInteger(Number.MIN_SAFE_INTEGER), Number.MIN_SAFE_INTEGER, `toInteger(Number.MIN_SAFE_INTEGER) must be Number.MIN_SAFE_INTEGER`);
+  t.equal(toInteger(-12345.59), -12345, `toInteger(-12345.59) must be -12345`);
+  t.equal(toInteger(-12345), -12345, `toInteger(-12345) must be -12345`);
+  t.equal(toInteger(-2), -2, `toInteger(-2) must be -2`);
+  t.equal(toInteger(-1.999), -1, `toInteger(-1.999) must be -1`);
+  t.equal(toInteger(-1.5), -1, `toInteger(-1.5) must be -1`);
+  t.equal(toInteger(-1.01), -1, `toInteger(-1.01) must be -1`);
+  t.equal(toInteger(-1), -1, `toInteger(-1) must be -1`);
+  t.equal(toInteger(-0.999), 0, `toInteger(-0.999) must be 0`);
+  t.equal(toInteger(-0.5), 0, `toInteger(-0.5) must be 0`);
+  t.equal(toInteger(-0.01), 0, `toInteger(-0.01) must be 0`);
+  t.equal(toInteger(0), 0, `toInteger(0) must be 0`);
+  t.equal(toInteger(0.01), 0, `toInteger(0.01) must be 0`);
+  t.equal(toInteger(0.5), 0, `toInteger(0.5) must be 0`);
+  t.equal(toInteger(0.999), 0, `toInteger(0.999) must be 0`);
+  t.equal(toInteger(+1), +1, `toInteger(+1) must be +1`);
+  t.equal(toInteger(+1.01), +1, `toInteger(+1.01) must be +1`);
+  t.equal(toInteger(+1.5), +1, `toInteger(+1.5) must be +1`);
+  t.equal(toInteger(+1.999), +1, `toInteger(+1.999) must be +1`);
+  t.equal(toInteger(+2), +2, `toInteger(+2) must be +2`);
+  t.equal(toInteger(+12345), +12345, `toInteger(+12345) must be +12345`);
+  t.equal(toInteger(+12345.59), +12345, `toInteger(+12345.59) must be +12345`);
+  t.equal(toInteger(Number.MAX_SAFE_INTEGER), Number.MAX_SAFE_INTEGER, `toInteger(Number.MAX_SAFE_INTEGER) must be Number.MAX_SAFE_INTEGER`);
+  t.equal(toInteger(1.2e22), 1.2e+22, `toInteger(1.2e22) must be 1.2e+22`);
 
   t.end();
 });

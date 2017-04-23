@@ -14,6 +14,7 @@ const Failure = tries.Failure;
 
 const Promises = require('../promises');
 const CancelledError = Promises.CancelledError;
+const DelayCancelledError = Promises.DelayCancelledError;
 
 const Strings = require('../strings');
 const stringify = Strings.stringify;
@@ -82,6 +83,9 @@ const t3 = genThenable(t3Error, null, true, 1);
 const d2Error = new Error('d2 error');
 const d4Error = new Error('d4 error');
 
+const e2Error = new Error('e2 error');
+const e4Error = new Error('e4 error');
+
 function genDelayedPromise(err, name, ms, delayCancellable, cancellable) {
   const startTime = Date.now();
   return Promises.delay(ms, delayCancellable).then(() => {
@@ -125,6 +129,10 @@ function genThenable(err, data, failSync, ms) {
     }
   };
 }
+
+// Variations of `flatten` opts
+const simplifyOutcomesOpts = {skipSimplifyOutcomes: false};
+const skipSimplifyOutcomesOpts = {skipSimplifyOutcomes: true};
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Promises.isPromise
@@ -544,9 +552,9 @@ test('Promises.delay with cancellation of delay (mustResolve undefined)', t => {
         t.fail('Promises.delay should have rejected and its timeout should have cancelled');
         t.end();
       },
-      triggered => {
+      err => {
         t.pass('Promises.delay should have rejected and its timeout should been cancelled');
-        t.equal(triggered, false, 'Promises.delay should NOT have triggered yet');
+        t.ok(err instanceof DelayCancelledError, 'Promises.delay must reject with a DelayCancelledError');
         t.end();
       }
     );
@@ -562,9 +570,9 @@ test('Promises.delay with cancellation of delay (mustResolve explicit false)', t
         t.fail('Promises.delay should have rejected and its timeout should have cancelled');
         t.end();
       },
-      triggered => {
+      err => {
         t.pass('Promises.delay should have rejected and its timeout should have cancelled');
-        t.equal(triggered, false, 'Promises.delay should NOT have triggered yet');
+        t.ok(err instanceof DelayCancelledError, 'Promises.delay must reject with a DelayCancelledError');
         t.end();
       }
     );
@@ -1737,6 +1745,1343 @@ test("Promises.chain(f, [1,2,3,4]) cancelled too late during call 4 will resolve
     },
     err => {
       t.end(`Promises.chain(f, [1, '2', {c:3}, [4]]) when cancelled too late, must NOT reject with an error: ${stringify(err)}`);
+    }
+  );
+  t.ok(typeof cancellable.cancel === "function", `cancellable.cancel must be installed`);
+});
+
+// =====================================================================================================================
+// installCancelTimeout
+// =====================================================================================================================
+
+test('installCancelTimeout', t => {
+  const mustResolve = true;
+
+  let cancel1Called = false;
+  let cancel2Called = false;
+  let triggered1 = false;
+  let triggered2 = false;
+
+  const cancellable = {};
+
+  t.notOk(cancellable.cancelTimeout, `cancellable.cancelTimeout must not exist`);
+
+  Promises.installCancelTimeout(cancellable, (mustResolve) => {
+    console.log(`cancellable.cancelTimeout(${mustResolve}) #1 called`);
+    cancel1Called = true;
+    return triggered1;
+  });
+  const origCancelTimeout = cancellable.cancelTimeout;
+
+  t.ok(cancellable.cancelTimeout, `cancellable.cancelTimeout must exist`);
+
+  Promises.installCancelTimeout(cancellable, (mustResolve) => {
+    console.log(`cancellable.cancelTimeout(${mustResolve}) #2 called`);
+    cancel2Called = true;
+    return triggered2;
+  });
+
+  t.ok(cancellable.cancelTimeout, `cancellable.cancelTimeout must still exist`);
+  t.notEquals(cancellable.cancelTimeout, origCancelTimeout, `cancellable.cancelTimeout must NOT be original cancellable.cancelTimeout`);
+
+  t.notOk(cancel1Called, `cancel1Called must be false before 1st cancelTimeout`);
+  t.notOk(cancel2Called, `cancel2Called must be false before 1st cancelTimeout`);
+
+  // Cancel the original cancellable
+  let triggered = cancellable.cancelTimeout(mustResolve);
+
+  t.ok(cancel1Called, `cancel1Called must be true after 1st cancelTimeout`);
+  t.ok(cancel2Called, `cancel2Called must be true after 1st cancelTimeout`);
+  t.notOk(triggered, `triggered must be false after 1st cancelTimeout, since BOTH triggered1 & triggered2 were false`);
+
+  // Reset the flags (set only triggered1)
+  cancel1Called = false;
+  cancel2Called = false;
+  triggered1 = true;
+  triggered2 = false;
+
+  t.notOk(cancel1Called, `cancel1Called must be false after reset before 2nd cancelTimeout`);
+  t.notOk(cancel2Called, `cancel2Called must be false after reset before 2nd cancelTimeout`);
+
+  // Cancel the original cancellable AGAIN
+  triggered = cancellable.cancelTimeout(mustResolve);
+
+  t.ok(cancel1Called, `cancel1Called must be true after 2nd cancelTimeout`);
+  t.ok(cancel2Called, `cancel2Called must be true after 2nd cancelTimeout`);
+  // t.ok(triggered, `triggered must be true after 2nd cancelTimeout, since triggered1 was set to true`);
+  t.notOk(triggered, `triggered must be false after 2nd cancelTimeout, since ONLY triggered1 was set to true`);
+
+  // Reset the flags (set only triggered2)
+  cancel1Called = false;
+  cancel2Called = false;
+  triggered1 = false;
+  triggered2 = true;
+
+  t.notOk(cancel1Called, `cancel1Called must be false after reset before 3rd cancelTimeout`);
+  t.notOk(cancel2Called, `cancel2Called must be false after reset before 3rd cancelTimeout`);
+
+  // Cancel the original cancellable AGAIN
+  triggered = cancellable.cancelTimeout(mustResolve);
+
+  t.ok(cancel1Called, `cancel1Called must be true after 3rd cancelTimeout`);
+  t.ok(cancel2Called, `cancel2Called must be true after 3rd cancelTimeout`);
+  t.notOk(triggered, `triggered must be false after 3rd cancelTimeout, since ONLY triggered2 was set to true`);
+
+  // Reset the flags (set only triggered2)
+  cancel1Called = false;
+  cancel2Called = false;
+  triggered1 = true;
+  triggered2 = true;
+
+  t.notOk(cancel1Called, `cancel1Called must be false after reset before 4th cancelTimeout`);
+  t.notOk(cancel2Called, `cancel2Called must be false after reset before 4th cancelTimeout`);
+
+  // Cancel the original cancellable AGAIN
+  triggered = cancellable.cancelTimeout(mustResolve);
+
+  t.ok(cancel1Called, `cancel1Called must be true after 4th cancelTimeout`);
+  t.ok(cancel2Called, `cancel2Called must be true after 4th cancelTimeout`);
+  t.ok(triggered, `triggered must be true after 4th cancelTimeout, since BOTH triggered1 & triggered2 were set to true`);
+
+  t.end();
+});
+
+// =====================================================================================================================
+// installCancelTimeout - cancel multiple delays with single cancellable using cancelTimeout(false)
+// =====================================================================================================================
+
+test('installCancelTimeout - cancel multiple delays with single cancellable using cancelTimeout(false)', t => {
+  const cancellable = {};
+
+  const p1 = Promises.delay(100, cancellable).then(
+    () => {
+      console.log(`########### p1 triggered`);
+      return 1;
+    },
+    err => {
+      console.log(`########### p1 cancelled`, err);
+      // return -1;
+      throw err;
+    }
+  );
+
+  const p2 = Promises.delay(500, cancellable).then(
+    () => {
+      console.log(`########### p2 triggered`);
+      return 2;
+    },
+    err => {
+      console.log(`########### p2 cancelled`, err);
+      // return -2;
+      throw err;
+    }
+  );
+
+  t.ok(cancellable.cancelTimeout, `cancellable.cancelTimeout must be installed`);
+
+  const triggered = cancellable.cancelTimeout(false);
+
+  t.notOk(triggered, `Neither delay should have triggered yet`);
+
+  Promises.every([p1, p2]).then(
+    outcomes => {
+      t.ok(outcomes[0].isFailure(), `outcomes[0].isFailure must be true`);
+      t.ok(outcomes[1].isFailure(), `outcomes[1].isFailure must be true`);
+      t.ok(outcomes[0].error instanceof DelayCancelledError, `outcomes[0].error must be a DelayCancelledError`);
+      t.ok(outcomes[1].error instanceof DelayCancelledError, `outcomes[1].error must be a DelayCancelledError`);
+      t.equal(outcomes[0].error.delayMs, 100, `outcomes[0].error.delayMs must be 100`);
+      t.equal(outcomes[1].error.delayMs, 500, `outcomes[1].error.delayMs must be 500`);
+      t.end();
+    },
+    err => {
+      t.end(`Unexpected error`, err.stack);
+    }
+  );
+});
+
+// =====================================================================================================================
+// installCancelTimeout - cancel multiple delays with single cancellable using cancelTimeout(true)
+// =====================================================================================================================
+
+test('installCancelTimeout - cancel multiple delays with single cancellable using cancelTimeout(true)', t => {
+  const cancellable = {};
+
+  const p1 = Promises.delay(100, cancellable).then(
+    () => {
+      console.log(`########### p1 triggered`);
+      return 1;
+    },
+    err => {
+      console.log(`########### p1 cancelled`, err.stack);
+      // return -1;
+      throw err;
+    }
+  );
+
+  const p2 = Promises.delay(500, cancellable).then(
+    () => {
+      console.log(`########### p2 triggered`);
+      return 2;
+    },
+    err => {
+      console.log(`########### p2 cancelled`, err.stack);
+      // return -2;
+      throw err;
+    }
+  );
+
+  t.ok(cancellable.cancelTimeout, `cancellable.cancelTimeout must be installed`);
+
+  const triggered = cancellable.cancelTimeout(true);
+
+  t.notOk(triggered, `Neither delay should have triggered yet`);
+
+  Promises.every([p1, p2]).then(
+    outcomes => {
+      t.ok(outcomes[0].isSuccess(), `outcomes[0].isSuccess must be true`);
+      t.ok(outcomes[1].isSuccess(), `outcomes[1].isSuccess must be true`);
+      t.equal(outcomes[0].value, 1, `outcomes[0].value must be 1`);
+      t.equal(outcomes[1].value, 2, `outcomes[1].value must be 2`);
+      t.end();
+    },
+    err => {
+      t.end(`Unexpected error`, err.stack);
+    }
+  );
+});
+
+// =====================================================================================================================
+// installCancel
+// =====================================================================================================================
+
+test('installCancel', t => {
+  let cancel1Called = false;
+  let cancel2Called = false;
+  let completed1 = false;
+  let completed2 = false;
+
+  const cancellable = {};
+
+  t.notOk(cancellable.cancel, `cancellable.cancel must not exist`);
+
+  Promises.installCancel(cancellable, () => {
+    console.log(`cancellable.cancel #1 called`);
+    cancel1Called = true;
+    return completed1;
+  });
+  const originalCancel = cancellable.cancel;
+
+  t.ok(cancellable.cancel, `cancellable.cancel must exist`);
+
+  Promises.installCancel(cancellable, () => {
+    console.log(`cancellable.cancel #2 called`);
+    cancel2Called = true;
+    return completed2;
+  });
+
+  t.ok(cancellable.cancel, `cancellable.cancel must still exist`);
+  t.notEquals(cancellable.cancel, originalCancel, `cancellable.cancel must NOT be original cancellable.cancel`);
+
+  t.notOk(cancel1Called, `cancel1Called must be false before 1st cancel`);
+  t.notOk(cancel2Called, `cancel2Called must be false before 1st cancel`);
+
+  // Cancel the original cancellable
+  let completed = cancellable.cancel();
+
+  t.ok(cancel1Called, `cancel1Called must be true after 1st cancel`);
+  t.ok(cancel2Called, `cancel2Called must be true after 1st cancel`);
+  t.notOk(completed, `completed must be false after 1st cancel, since BOTH completed1 & completed2 were false`);
+
+  // Reset the flags (set only completed1)
+  cancel1Called = false;
+  cancel2Called = false;
+  completed1 = true;
+  completed2 = false;
+
+  t.notOk(cancel1Called, `cancel1Called must be false after reset before 2nd cancel`);
+  t.notOk(cancel2Called, `cancel2Called must be false after reset before 2nd cancel`);
+
+  // Cancel the original cancellable AGAIN
+  completed = cancellable.cancel();
+
+  t.ok(cancel1Called, `cancel1Called must be true after 2nd cancel`);
+  t.ok(cancel2Called, `cancel2Called must be true after 2nd cancel`);
+  // t.ok(completed, `completed must be true after 2nd cancel, since completed1 was set to true`);
+  t.notOk(completed, `completed must be false after 2nd cancel, since ONLY completed1 was set to true`);
+
+  // Reset the flags (set only completed2)
+  cancel1Called = false;
+  cancel2Called = false;
+  completed1 = false;
+  completed2 = true;
+
+  t.notOk(cancel1Called, `cancel1Called must be false after reset before 3rd cancel`);
+  t.notOk(cancel2Called, `cancel2Called must be false after reset before 3rd cancel`);
+
+  // Cancel the original cancellable AGAIN
+  completed = cancellable.cancel();
+
+  t.ok(cancel1Called, `cancel1Called must be true after 3rd cancel`);
+  t.ok(cancel2Called, `cancel2Called must be true after 3rd cancel`);
+  t.notOk(completed, `completed must be false after 3rd cancel, since ONLY completed2 was set to true`);
+
+  // Reset the flags (set only completed2)
+  cancel1Called = false;
+  cancel2Called = false;
+  completed1 = true;
+  completed2 = true;
+
+  t.notOk(cancel1Called, `cancel1Called must be false after reset before 4th cancel`);
+  t.notOk(cancel2Called, `cancel2Called must be false after reset before 4th cancel`);
+
+  // Cancel the original cancellable AGAIN
+  completed = cancellable.cancel();
+
+  t.ok(cancel1Called, `cancel1Called must be true after 4th cancel`);
+  t.ok(cancel2Called, `cancel2Called must be true after 4th cancel`);
+  t.ok(completed, `completed must be true after 4th cancel, since BOTH completed1 & completed2 were set to true`);
+
+  t.end();
+});
+
+// =====================================================================================================================
+// installCancel - cancel multiple Promises.every with single cancellable
+// =====================================================================================================================
+
+test("installCancel - cancel multiple Promises.every with single cancellable", t => {
+  const cancellable = {};
+
+  // 1st set of promises for 1st every
+  const delayCancellable1 = {};
+
+  const d1 = genDelayedPromise(null, 'd1', 10, delayCancellable1);
+  t.ok(typeof delayCancellable1.cancelTimeout === "function", `delayCancellable1.cancelTimeout must be installed`);
+  let prevCancelTimeout1 = delayCancellable1.cancelTimeout;
+
+  const d2 = genDelayedPromise(d2Error, 'd2', 2000, delayCancellable1);
+  t.ok(typeof delayCancellable1.cancelTimeout === "function", `delayCancellable1.cancelTimeout must still be installed`);
+  t.notEquals(delayCancellable1.cancelTimeout, prevCancelTimeout1, `delayCancellable1.cancelTimeout must NOT be previous cancelTimeout`);
+  prevCancelTimeout1 = delayCancellable1.cancelTimeout;
+
+  const d3 = genDelayedPromise(null, 'd3', 3000, delayCancellable1);
+  t.ok(typeof delayCancellable1.cancelTimeout === "function", `delayCancellable1.cancelTimeout must still be installed`);
+  t.notEquals(delayCancellable1.cancelTimeout, prevCancelTimeout1, `delayCancellable1.cancelTimeout must NOT be previous cancelTimeout`);
+  prevCancelTimeout1 = delayCancellable1.cancelTimeout;
+
+  const d4 = genDelayedPromise(d4Error, 'd4', 4000, delayCancellable1);
+  t.ok(typeof delayCancellable1.cancelTimeout === "function", `delayCancellable1.cancelTimeout must still be installed`);
+  t.notEquals(delayCancellable1.cancelTimeout, prevCancelTimeout1, `delayCancellable1.cancelTimeout must NOT be previous cancelTimeout`);
+
+  // 2nd set of promises for 2nd every
+  const delayCancellable2 = {};
+
+  const e1 = genDelayedPromise(null, 'e1', 10, delayCancellable2);
+  t.ok(typeof delayCancellable2.cancelTimeout === "function", `delayCancellable2.cancelTimeout must be installed`);
+  let prevCancelTimeout2 = delayCancellable2.cancelTimeout;
+
+  const e2 = genDelayedPromise(e2Error, 'e2', 2000, delayCancellable2);
+  t.ok(typeof delayCancellable2.cancelTimeout === "function", `delayCancellable2.cancelTimeout must still be installed`);
+  t.notEquals(delayCancellable2.cancelTimeout, prevCancelTimeout2, `delayCancellable2.cancelTimeout must NOT be previous cancelTimeout`);
+  prevCancelTimeout2 = delayCancellable2.cancelTimeout;
+
+  const e3 = genDelayedPromise(null, 'e3', 3000, delayCancellable2);
+  t.ok(typeof delayCancellable2.cancelTimeout === "function", `delayCancellable2.cancelTimeout must still be installed`);
+  t.notEquals(delayCancellable2.cancelTimeout, prevCancelTimeout2, `delayCancellable2.cancelTimeout must NOT be previous cancelTimeout`);
+  prevCancelTimeout2 = delayCancellable2.cancelTimeout;
+
+  const e4 = genDelayedPromise(e4Error, 'e4', 4000, delayCancellable2);
+  t.ok(typeof delayCancellable2.cancelTimeout === "function", `delayCancellable2.cancelTimeout must still be installed`);
+  t.notEquals(delayCancellable2.cancelTimeout, prevCancelTimeout2, `delayCancellable2.cancelTimeout must NOT be previous cancelTimeout`);
+
+  const p1 = Promises.every([d1, d2, d3, d4], cancellable).then(
+    results => {
+      t.fail(`Promises.every([d1,d2,d3,d4]) when cancelled, must NOT complete successfully with results: ${stringify(results)}`);
+    },
+    err => {
+      t.pass(`Promises.every([d1,d2,d3,d4]) when cancelled must reject with an error`);
+      // Cancel the delayCancellable delays too (just for clean-up)
+      // t.ok(delayCancellable1.cancelTimeout(true), `delayCancellable1.cancelTimeout() should have timed-out`);
+      t.notOk(delayCancellable1.cancelTimeout(true), `delayCancellable1.cancelTimeout() should NOT have timed-out yet`);
+      t.ok(err instanceof CancelledError, `Promises.every([d1,d2,d3,d4]) rejected error ${stringify(err)} must be instanceof CancelledError`);
+      t.notOk(err.completed, `CancelledError.completed must be false`);
+      const expectedResolvedOutcomes = [new Success('d1')];
+      t.deepEqual(err.resolvedOutcomes, expectedResolvedOutcomes, `Promises.every([d1,d2,d3,d4]) resolvedOutcomes must be ${stringify(expectedResolvedOutcomes)}`);
+      const expectedUnresolvedPromises = [d2, d3, d4];
+      t.deepEqual(err.unresolvedPromises, expectedUnresolvedPromises, `Promises.every([d1,d2,d3,d4]) unresolvedPromises must be ${stringify(expectedUnresolvedPromises)}`);
+      throw err;
+    }
+  );
+  t.ok(typeof cancellable.cancel === "function", `cancellable.cancel must be installed`);
+  let prevCancel = cancellable.cancel;
+
+
+  const p2 = Promises.every([e1, e2, e3, e4], cancellable).then(
+    results => {
+      t.fail(`Promises.every([e1,e2,e3,e4]) when cancelled, must NOT complete successfully with results: ${stringify(results)}`);
+    },
+    err => {
+      t.pass(`Promises.every([e1,e2,e3,e4]) when cancelled must reject with an error`);
+      // Cancel delayCancellable2 delays too (just for clean-up)
+      // t.ok(delayCancellable2.cancelTimeout(true), `delayCancellable2.cancelTimeout() should have timed-out`);
+      t.notOk(delayCancellable2.cancelTimeout(true), `delayCancellable2.cancelTimeout() should NOT have timed-out yet`);
+      t.ok(err instanceof CancelledError, `Promises.every([e1,e2,e3,e4]) rejected error ${stringify(err)} must be instanceof CancelledError`);
+      t.notOk(err.completed, `CancelledError.completed must be false`);
+      const expectedResolvedOutcomes = [new Success('e1')];
+      t.deepEqual(err.resolvedOutcomes, expectedResolvedOutcomes, `Promises.every([e1,e2,e3,e4]) resolvedOutcomes must be ${stringify(expectedResolvedOutcomes)}`);
+      const expectedUnresolvedPromises = [e2, e3, e4];
+      t.deepEqual(err.unresolvedPromises, expectedUnresolvedPromises, `Promises.every([e1,e2,e3,e4]) unresolvedPromises must be ${stringify(expectedUnresolvedPromises)}`);
+      throw err;
+    }
+  );
+  t.ok(typeof cancellable.cancel === "function", `cancellable.cancel must still be installed`);
+  t.notEquals(cancellable.cancel, prevCancel, `cancellable.cancel must NOT be previous cancel`);
+  prevCancel = cancellable.cancel;
+
+  Promises.every([p1, p2], cancellable).then(
+    outcomes => {
+      t.end(`Promises.every([p1, p2]) when cancelled, must NOT complete successfully with results: ${stringify(outcomes)}`);
+    },
+    err => {
+      t.pass(`Promises.every([p1, p2]) when cancelled must reject with an error`);
+      t.ok(err instanceof CancelledError, `Promises.every([p1,p2]) rejected error ${stringify(err)} must be instanceof CancelledError`);
+      t.notOk(err.completed, `CancelledError.completed must be false`);
+      t.end();
+    }
+  );
+  t.ok(typeof cancellable.cancel === "function", `cancellable.cancel must still be installed`);
+  t.notEquals(cancellable.cancel, prevCancel, `cancellable.cancel must NOT be previous cancel`);
+
+  // Cancel them all!
+  const completed = cancellable.cancel();
+  t.notOk(completed, `Promises.every([d1,d2,d3,d4]) and Promises.every([e1,e2,e3,e4]) and Promises.every([p1, p2)] must not all be completed yet`);
+
+});
+
+// // =====================================================================================================================
+// // extendCancel
+// // =====================================================================================================================
+//
+// test('extendCancel', t => {
+//   let cancel1Called = false;
+//   let cancel2Called = false;
+//   let completed1 = false;
+//   let completed2 = false;
+//
+//   const cancellable = {};
+//
+//   t.notOk(cancellable.cancel, `cancellable.cancel must not exist`);
+//
+//   cancellable.cancel = () => {
+//     console.log(`cancellable.cancel ORIGINAL called`);
+//     cancel1Called = true;
+//     return completed1;
+//   };
+//   const originalCancel = cancellable.cancel;
+//
+//   t.ok(cancellable.cancel, `cancellable.cancel must exist`);
+//
+//   const nextCancellable = {};
+//
+//   t.notOk(nextCancellable.cancel, `nextCancellable.cancel must not exist`);
+//
+//   nextCancellable.cancel = () => {
+//     console.log(`nextCancellable.cancel ORIGINAL called`);
+//     cancel2Called = true;
+//     return completed2;
+//   };
+//
+//   t.ok(nextCancellable.cancel, `nextCancellable.cancel must exist`);
+//
+//   Promises.extendCancel(cancellable, nextCancellable);
+//
+//   t.ok(cancellable.cancel, `cancellable.cancel must still exist after extendCancel`);
+//   t.notEquals(cancellable.cancel, originalCancel, `cancellable.cancel must NOT be original cancellable.cancel`);
+//   t.ok(nextCancellable.cancel, `nextCancellable.cancel must still exist`);
+//   t.notEquals(nextCancellable.cancel, originalCancel, `nextCancellable.cancel must NOT be original cancellable.cancel`);
+//
+//   t.notOk(cancel1Called, `cancel1Called must be false before 1st cancel`);
+//   t.notOk(cancel2Called, `cancel2Called must be false before 1st cancel`);
+//
+//   // Cancel the original cancellable
+//   let completed = cancellable.cancel();
+//
+//   t.ok(cancel1Called, `cancel1Called must be true after 1st cancel`);
+//   t.ok(cancel2Called, `cancel2Called must be true after 1st cancel`);
+//   t.notOk(completed, `completed must be false after 1st cancel, since BOTH completed1 & completed2 were false`);
+//
+//   // Reset the flags (set only completed1)
+//   cancel1Called = false;
+//   cancel2Called = false;
+//   completed1 = true;
+//   completed2 = false;
+//
+//   t.notOk(cancel1Called, `cancel1Called must be false after reset before 2nd cancel`);
+//   t.notOk(cancel2Called, `cancel2Called must be false after reset before 2nd cancel`);
+//
+//   // Cancel the original cancellable AGAIN
+//   completed = cancellable.cancel();
+//
+//   t.ok(cancel1Called, `cancel1Called must be true after 2nd cancel`);
+//   t.ok(cancel2Called, `cancel2Called must be true after 2nd cancel`);
+//   // t.ok(completed, `completed must be true after 2nd cancel, since completed1 was set to true`);
+//   t.notOk(completed, `completed must be false after 2nd cancel, since ONLY completed1 was set to true`);
+//
+//   // Reset the flags (set only completed2)
+//   cancel1Called = false;
+//   cancel2Called = false;
+//   completed1 = false;
+//   completed2 = true;
+//
+//   t.notOk(cancel1Called, `cancel1Called must be false after reset before 3rd cancel`);
+//   t.notOk(cancel2Called, `cancel2Called must be false after reset before 3rd cancel`);
+//
+//   // Cancel the original cancellable AGAIN
+//   completed = cancellable.cancel();
+//
+//   t.ok(cancel1Called, `cancel1Called must be true after 3rd cancel`);
+//   t.ok(cancel2Called, `cancel2Called must be true after 3rd cancel`);
+//   t.notOk(completed, `completed must be false after 3rd cancel, since ONLY completed2 was set to true`);
+//
+//   // Reset the flags (set only completed2)
+//   cancel1Called = false;
+//   cancel2Called = false;
+//   completed1 = true;
+//   completed2 = true;
+//
+//   t.notOk(cancel1Called, `cancel1Called must be false after reset before 4th cancel`);
+//   t.notOk(cancel2Called, `cancel2Called must be false after reset before 4th cancel`);
+//
+//   // Cancel the original cancellable AGAIN
+//   completed = cancellable.cancel();
+//
+//   t.ok(cancel1Called, `cancel1Called must be true after 4th cancel`);
+//   t.ok(cancel2Called, `cancel2Called must be true after 4th cancel`);
+//   t.ok(completed, `completed must be true after 4th cancel, since BOTH completed1 & completed2 were set to true`);
+//
+//   t.end();
+// });
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Promises.flatten
+// ---------------------------------------------------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------------------------------------------------
+test('Promises.flatten()', t => {
+  const expected = undefined;
+  t.deepEqual(Promises.flatten(), expected, `Promises.flatten() must be ${stringify(expected)}`);
+  t.end();
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test('Promises.flatten(undefined)', t => {
+  const expected = undefined;
+  t.deepEqual(Promises.flatten(undefined), expected, `Promises.flatten(undefined) must be ${stringify(expected)}`);
+  t.end();
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test('Promises.flatten(null)', t => {
+  const expected = null;
+  t.deepEqual(Promises.flatten(null), expected, `Promises.flatten(null) must be ${stringify(expected)}`);
+  t.end();
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test('Promises.flatten(123)', t => {
+  const expected = 123;
+  t.deepEqual(Promises.flatten(123), expected, `Promises.flatten(123) must be ${stringify(expected)}`);
+  t.end();
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test('Promises.flatten("Xyz")', t => {
+  const expected = "Xyz";
+  t.deepEqual(Promises.flatten("Xyz"), expected, `Promises.flatten("Xyz") must be ${stringify(expected)}`);
+  t.end();
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test('Promises.flatten([])', t => {
+  const expected = [];
+  t.deepEqual(Promises.flatten([]), expected, `Promises.flatten([]) must be ${stringify(expected)}`);
+  t.end();
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test('Promises.flatten(Promise.resolve(42))', t => {
+  Promises.flatten(Promise.resolve(42)).then(results => {
+    const expected = 42;
+    t.deepEqual(results, expected, `Promises.flatten(Promise.resolve(42)) must be ${stringify(expected)}`);
+    t.end();
+  });
+});
+
+test('Promises.flatten(Promise.resolve(42), null, simplifyOutcomesOpts)', t => {
+  Promises.flatten(Promise.resolve(42), null, simplifyOutcomesOpts).then(results => {
+    const expected = 42;
+    t.deepEqual(results, expected, `Promises.flatten(Promise.resolve(42)) must be ${stringify(expected)}`);
+    t.end();
+  });
+});
+
+test('Promises.flatten(Promise.resolve(42), null, skipSimplifyOutcomesOpts)', t => {
+  Promises.flatten(Promise.resolve(42), null, skipSimplifyOutcomesOpts).then(results => {
+    const expected = 42;
+    t.deepEqual(results, expected, `Promises.flatten(Promise.resolve(42)) must be ${stringify(expected)}`);
+    t.end();
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test('Promises.flatten(Promise.reject(new Error("43")))', t => {
+  Promises.flatten(Promise.reject(new Error("43"))).catch(err => {
+    const expected = new Error("43");
+    t.deepEqual(err, expected, `Promises.flatten(Promise.reject(new Error("43"))) must be reject with ${stringify(expected)}`);
+    t.end();
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test('Promises.flatten(Promise.resolve(42).then(x => Promise.resolve(x * 2)).then(y => Promise.resolve(y / 4))', t => {
+  Promises.flatten(Promise.resolve(42).then(x => Promise.resolve(x * 2)).then(y => Promise.resolve(y / 4))).then(results => {
+    const expected = 21;
+    t.deepEqual(results, expected, `Promises.flatten(Promise.resolve(42).then(x => Promise.resolve(x * 2)).then(y => Promise.resolve(y / 4))) must be ${stringify(expected)}`);
+    t.end();
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test('Promises.flatten(Promise.resolve(Promise.reject(new Error("43"))))', t => {
+  Promises.flatten(Promise.resolve(Promise.reject(new Error("43")))).catch(err => {
+    const expected = new Error("43");
+    t.deepEqual(err, expected, `Promises.flatten(Promise.resolve(Promise.reject(new Error("43")))) must be reject with ${stringify(expected)}`);
+    t.end();
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test('Promises.flatten([undefined])', t => {
+  const expected = [undefined];
+  t.deepEqual(Promises.flatten([undefined]), expected, `Promises.flatten([undefined]) must be ${stringify(expected)}`);
+  t.end();
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test('Promises.flatten([null])', t => {
+  const expected = [null];
+  t.deepEqual(Promises.flatten([null]), expected, `Promises.flatten([null]) must be ${stringify(expected)}`);
+  t.end();
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test('Promises.flatten([1, 2, 3])', t => {
+  const expected = [1, 2, 3];
+  t.deepEqual(Promises.flatten([1, 2, 3]), expected, `Promises.flatten([1, 2, 3]) must be ${stringify(expected)}`);
+  t.end();
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test("Promises.flatten([1, '2', 3])", t => {
+  const expected = [1, '2', 3];
+  t.deepEqual(Promises.flatten([1, '2', 3]), expected, `Promises.flatten([1, '2', 3]) must be ${stringify(expected)}`);
+  t.end();
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test('Promises.flatten([Promise.resolve(null), undefined])', t => {
+  Promises.flatten([Promise.resolve(null), undefined]).then(results => {
+    const expected = [null, undefined];
+    t.deepEqual(results, expected, `Promises.flatten([Promise.resolve(null), undefined]) must be ${stringify(expected)}`);
+    t.end();
+  });
+});
+
+test('Promises.flatten([Promise.resolve(null), undefined], null, simplifyOutcomesOpts)', t => {
+  Promises.flatten([Promise.resolve(null), undefined], null, simplifyOutcomesOpts).then(results => {
+    const expected = [null, undefined];
+    t.deepEqual(results, expected, `Promises.flatten([Promise.resolve(null), undefined]) must be ${stringify(expected)}`);
+    t.end();
+  });
+});
+
+test('Promises.flatten([Promise.resolve(null), undefined], null, skipSimplifyOutcomesOpts)', t => {
+  Promises.flatten([Promise.resolve(null), undefined], null, skipSimplifyOutcomesOpts).then(results => {
+    const expected = [new Success(null), new Success(undefined)];
+    t.deepEqual(results, expected, `Promises.flatten([Promise.resolve(null), undefined]) must be ${stringify(expected)}`);
+    t.end();
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test("Promises.flatten([undefined, Promise.resolve(null)])", t => {
+  Promises.flatten([undefined, Promise.resolve(null)]).then(results => {
+    const expected = [undefined, null];
+    t.deepEqual(results, expected, `Promises.flatten([undefined, Promise.resolve(null)]) must be ${stringify(expected)}`);
+    t.end();
+  });
+});
+
+test("Promises.flatten([undefined, Promise.resolve(null)], null, simplifyOutcomesOpts)", t => {
+  Promises.flatten([undefined, Promise.resolve(null)], null, simplifyOutcomesOpts).then(results => {
+    const expected = [undefined, null];
+    t.deepEqual(results, expected, `Promises.flatten([undefined, Promise.resolve(null)]) must be ${stringify(expected)}`);
+    t.end();
+  });
+});
+
+test("Promises.flatten([undefined, Promise.resolve(null)], null, skipSimplifyOutcomesOpts)", t => {
+  Promises.flatten([undefined, Promise.resolve(null)], null, skipSimplifyOutcomesOpts).then(results => {
+    const expected = [new Success(undefined), new Success(null)];
+    t.deepEqual(results, expected, `Promises.flatten([undefined, Promise.resolve(null)]) must be ${stringify(expected)}`);
+    t.end();
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test("Promises.flatten([Promise.resolve(null), null])", t => {
+  Promises.flatten([Promise.resolve(null), null]).then(results => {
+    const expected = [null, null];
+    t.deepEqual(results, expected, `Promises.flatten([Promise.resolve(null), null]) must be ${stringify(expected)}`);
+    t.end();
+  });
+});
+
+test("Promises.flatten([Promise.resolve(null), null], null, simplifyOutcomesOpts)", t => {
+  Promises.flatten([Promise.resolve(null), null], null, simplifyOutcomesOpts).then(results => {
+    const expected = [null, null];
+    t.deepEqual(results, expected, `Promises.flatten([Promise.resolve(null), null]) must be ${stringify(expected)}`);
+    t.end();
+  });
+});
+
+test("Promises.flatten([Promise.resolve(null), null], null, skipSimplifyOutcomesOpts)", t => {
+  Promises.flatten([Promise.resolve(null), null], null, skipSimplifyOutcomesOpts).then(results => {
+    const expected = [new Success(null), new Success(null)];
+    t.deepEqual(results, expected, `Promises.flatten([Promise.resolve(null), null]) must be ${stringify(expected)}`);
+    t.end();
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test("Promises.flatten([undefined, null, Promise.resolve(null), 123, 'ABCDEF'])", t => {
+  Promises.flatten([undefined, null, Promise.resolve(null), 123, 'ABCDEF']).then(results => {
+    const expected = [undefined, null, null, 123, 'ABCDEF'];
+    t.deepEqual(results, expected, `Promises.flatten([undefined, null, Promise.resolve(null), 123, 'ABCDEF']) must be ${stringify(expected)}`);
+    t.end();
+  });
+});
+
+test("Promises.flatten([undefined, null, Promise.resolve(null), 123, 'ABCDEF'], null, simplifyOutcomesOpts)", t => {
+  Promises.flatten([undefined, null, Promise.resolve(null), 123, 'ABCDEF'], null, simplifyOutcomesOpts).then(results => {
+    const expected = [undefined, null, null, 123, 'ABCDEF'];
+    t.deepEqual(results, expected, `Promises.flatten([undefined, null, Promise.resolve(null), 123, 'ABCDEF']) must be ${stringify(expected)}`);
+    t.end();
+  });
+});
+
+test("Promises.flatten([undefined, null, Promise.resolve(null), 123, 'ABCDEF'], null, skipSimplifyOutcomesOpts)", t => {
+  Promises.flatten([undefined, null, Promise.resolve(null), 123, 'ABCDEF'], null, skipSimplifyOutcomesOpts).then(results => {
+    const expected = [new Success(undefined), new Success(null), new Success(null), new Success(123), new Success('ABCDEF')];
+    t.deepEqual(results, expected, `Promises.flatten([undefined, null, Promise.resolve(null), 123, 'ABCDEF']) must be ${stringify(expected)}`);
+    t.end();
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test("Promises.flatten(p1)", t => {
+  Promises.flatten(p1).then(results => {
+    const expected = 'p1';
+    t.deepEqual(results, expected, `Promises.flatten(p1) must be ${JSON.stringify(expected)}`);
+    t.end();
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test("Promises.flatten([p1])", t => {
+  Promises.flatten([p1]).then(results => {
+    const expected = ['p1'];
+    t.deepEqual(results, expected, `Promises.flatten([p1]) must be ${stringify(expected)}`);
+    t.end();
+  });
+});
+
+test("Promises.flatten([p1], null, simplifyOutcomesOpts)", t => {
+  Promises.flatten([p1], null, simplifyOutcomesOpts).then(results => {
+    const expected = ['p1'];
+    t.deepEqual(results, expected, `Promises.flatten([p1]) must be ${stringify(expected)}`);
+    t.end();
+  });
+});
+
+test("Promises.flatten([p1], null, skipSimplifyOutcomesOpts)", t => {
+  Promises.flatten([p1], null, skipSimplifyOutcomesOpts).then(results => {
+    const expected = [new Success('p1')];
+    t.deepEqual(results, expected, `Promises.flatten([p1]) must be ${stringify(expected)}`);
+    t.end();
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test("Promises.flatten([p1, p2])", t => {
+  Promises.flatten([p1, p2])
+    .then(results => {
+      const expected = [new Success('p1'), new Failure(p2Error)];
+      t.deepEqual(results, expected, `Promises.flatten([p1,p2]) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+test("Promises.flatten([p1, p2], null, simplifyOutcomesOpts)", t => {
+  Promises.flatten([p1, p2], null, simplifyOutcomesOpts)
+    .then(results => {
+      const expected = [new Success('p1'), new Failure(p2Error)];
+      t.deepEqual(results, expected, `Promises.flatten([p1,p2]) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+test("Promises.flatten([p1, p2], null, skipSimplifyOutcomesOpts)", t => {
+  Promises.flatten([p1, p2], null, skipSimplifyOutcomesOpts)
+    .then(results => {
+      const expected = [new Success('p1'), new Failure(p2Error)];
+      t.deepEqual(results, expected, `Promises.flatten([p1,p2]) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test("Promises.flatten([p1, p3])", t => {
+  Promises.flatten([p1, p3])
+    .then(results => {
+      const expected = ['p1', 'p3'];
+      t.deepEqual(results, expected, `Promises.flatten([p1,p3]) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+test("Promises.flatten([p1, p3], null, simplifyOutcomesOpts)", t => {
+  Promises.flatten([p1, p3], null, simplifyOutcomesOpts)
+    .then(results => {
+      const expected = ['p1', 'p3'];
+      t.deepEqual(results, expected, `Promises.flatten([p1,p3]) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+test("Promises.flatten([p1, p3], null, skipSimplifyOutcomesOpts)", t => {
+  Promises.flatten([p1, p3], null, skipSimplifyOutcomesOpts)
+    .then(results => {
+      const expected = [new Success('p1'), new Success('p3')];
+      t.deepEqual(results, expected, `Promises.flatten([p1,p3]) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test("Promises.flatten([p2, p4])", t => {
+  Promises.flatten([p2, p4])
+    .then(results => {
+      const expected = [new Failure(p2Error), new Failure(p4Error)];
+      t.deepEqual(results, expected, `Promises.flatten([p2,p4]) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+test("Promises.flatten([p2, p4], null, simplifyOutcomesOpts)", t => {
+  Promises.flatten([p2, p4], null, simplifyOutcomesOpts)
+    .then(results => {
+      const expected = [new Failure(p2Error), new Failure(p4Error)];
+      t.deepEqual(results, expected, `Promises.flatten([p2,p4]) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+test("Promises.flatten([p2, p4], null, skipSimplifyOutcomesOpts)", t => {
+  Promises.flatten([p2, p4], null, skipSimplifyOutcomesOpts)
+    .then(results => {
+      const expected = [new Failure(p2Error), new Failure(p4Error)];
+      t.deepEqual(results, expected, `Promises.flatten([p2,p4]) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test("Promises.flatten([p1, p2, p3])", t => {
+  Promises.flatten([p1, p2, p3])
+    .then(results => {
+      const expected = [new Success('p1'), new Failure(p2Error), new Success('p3')];
+      t.deepEqual(results, expected, `Promises.flatten([p1,p2,p3]) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+test("Promises.flatten([p1, p2, p3], null, simplifyOutcomesOpts)", t => {
+  Promises.flatten([p1, p2, p3], null, simplifyOutcomesOpts)
+    .then(results => {
+      const expected = [new Success('p1'), new Failure(p2Error), new Success('p3')];
+      t.deepEqual(results, expected, `Promises.flatten([p1,p2,p3]) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+test("Promises.flatten([p1, p2, p3], null, skipSimplifyOutcomesOpts)", t => {
+  Promises.flatten([p1, p2, p3], null, skipSimplifyOutcomesOpts)
+    .then(results => {
+      const expected = [new Success('p1'), new Failure(p2Error), new Success('p3')];
+      t.deepEqual(results, expected, `Promises.flatten([p1,p2,p3]) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test("Promises.flatten([p1, p2, p3, p4])", t => {
+  Promises.flatten([p1, p2, p3, p4])
+    .then(results => {
+      const expected = [new Success('p1'), new Failure(p2Error), new Success('p3'), new Failure(p4Error),];
+      t.deepEqual(results, expected, `Promises.flatten([p1,p2,p3,p4]) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+test("Promises.flatten([p1, p2, p3, p4], null, simplifyOutcomesOpts)", t => {
+  Promises.flatten([p1, p2, p3, p4], null, simplifyOutcomesOpts)
+    .then(results => {
+      const expected = [new Success('p1'), new Failure(p2Error), new Success('p3'), new Failure(p4Error),];
+      t.deepEqual(results, expected, `Promises.flatten([p1,p2,p3,p4]) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+test("Promises.flatten([p1, p2, p3, p4], null, skipSimplifyOutcomesOpts)", t => {
+  Promises.flatten([p1, p2, p3, p4], null, skipSimplifyOutcomesOpts)
+    .then(results => {
+      const expected = [new Success('p1'), new Failure(p2Error), new Success('p3'), new Failure(p4Error),];
+      t.deepEqual(results, expected, `Promises.flatten([p1,p2,p3,p4]) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test("Promises.flatten([Infinity, p4, 4.5, p3, '3.5', p2, null, p1, undefined, p2, {a:1}])", t => {
+  // Reversed with duplicate and with simple values
+  Promises.flatten([Infinity, p4, 4.5, p3, '3.5', p2, null, p1, undefined, p2, {a: 1}])
+    .then(results => {
+      const expected = [new Success(Infinity), new Failure(p4Error), new Success(4.5), new Success('p3'), new Success('3.5'), new Failure(p2Error),
+        new Success(null), new Success('p1'), new Success(undefined), new Failure(p2Error), new Success({a: 1})];
+      t.deepEqual(results, expected, `Promises.flatten([Infinity, p4, 4.5, p3, '3.5', p2, null, p1, undefined, p2, {a:1}]) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+test("Promises.flatten([Infinity, p4, 4.5, p3, '3.5', p2, null, p1, undefined, p2, {a:1}], null, simplifyOutcomesOpts)", t => {
+  // Reversed with duplicate and with simple values
+  Promises.flatten([Infinity, p4, 4.5, p3, '3.5', p2, null, p1, undefined, p2, {a: 1}], null, simplifyOutcomesOpts)
+    .then(results => {
+      const expected = [new Success(Infinity), new Failure(p4Error), new Success(4.5), new Success('p3'), new Success('3.5'), new Failure(p2Error),
+        new Success(null), new Success('p1'), new Success(undefined), new Failure(p2Error), new Success({a: 1})];
+      t.deepEqual(results, expected, `Promises.flatten([Infinity, p4, 4.5, p3, '3.5', p2, null, p1, undefined, p2, {a:1}]) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+test("Promises.flatten([Infinity, p4, 4.5, p3, '3.5', p2, null, p1, undefined, p2, {a:1}], null, skipSimplifyOutcomesOpts)", t => {
+  // Reversed with duplicate and with simple values
+  Promises.flatten([Infinity, p4, 4.5, p3, '3.5', p2, null, p1, undefined, p2, {a: 1}], null, skipSimplifyOutcomesOpts)
+    .then(results => {
+      const expected = [new Success(Infinity), new Failure(p4Error), new Success(4.5), new Success('p3'), new Success('3.5'), new Failure(p2Error),
+        new Success(null), new Success('p1'), new Success(undefined), new Failure(p2Error), new Success({a: 1})];
+      t.deepEqual(results, expected, `Promises.flatten([Infinity, p4, 4.5, p3, '3.5', p2, null, p1, undefined, p2, {a:1}]) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test("Promises.flatten([Infinity, [p4, p2, p2], 4.5, p3, '3.5', null, [p1, p3, [p1, p3]], undefined, {a: 1}]", t => {
+  Promises.flatten([Infinity, [p4, p2, p2], 4.5, p3, '3.5', null, [p1, p3, [p1, p3]], undefined, {a: 1}])
+    .then(results => {
+      const expected = [Infinity, [new Failure(p4Error), new Failure(p2Error), new Failure(p2Error)],
+        4.5, 'p3', '3.5', null,
+        ['p1', 'p3', ['p1', 'p3']],
+        undefined, {a: 1}];
+      t.deepEqual(results, expected, `Promises.flatten([Infinity, p4, 4.5, p3, '3.5', p2, null, p1, undefined, p2, {a:1}]) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+test("Promises.flatten([Infinity, [p4, p2, p2], 4.5, p3, '3.5', null, [p1, p3, [p1, p3]], undefined, {a: 1}], null, simplifyOutcomesOpts)", t => {
+  Promises.flatten([Infinity, [p4, p2, p2], 4.5, p3, '3.5', null, [p1, p3, [p1, p3]], undefined, {a: 1}], null, simplifyOutcomesOpts)
+    .then(results => {
+      const expected = [Infinity, [new Failure(p4Error), new Failure(p2Error), new Failure(p2Error)],
+        4.5, 'p3', '3.5', null,
+        ['p1', 'p3', ['p1', 'p3']],
+        undefined, {a: 1}];
+      t.deepEqual(results, expected, `Promises.flatten([Infinity, p4, 4.5, p3, '3.5', p2, null, p1, undefined, p2, {a:1}]) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+test("Promises.flatten([Infinity, [p4, p2, p2], 4.5, p3, '3.5', null, [p1, p3, [p1, p3]], undefined, {a: 1}], null, skipSimplifyOutcomesOpts)", t => {
+  Promises.flatten([Infinity, [p4, p2, p2], 4.5, p3, '3.5', null, [p1, p3, [p1, p3]], undefined, {a: 1}], null, skipSimplifyOutcomesOpts)
+    .then(results => {
+      const expected = [new Success(Infinity), new Success([new Failure(p4Error), new Failure(p2Error), new Failure(p2Error)]),
+        new Success(4.5), new Success('p3'), new Success('3.5'), new Success(null),
+        new Success([new Success('p1'), new Success('p3'), new Success([new Success('p1'), new Success('p3')])]),
+        new Success(undefined), new Success({a: 1})];
+      t.deepEqual(results, expected, `Promises.flatten([Infinity, p4, 4.5, p3, '3.5', p2, null, p1, undefined, p2, {a:1}]) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test("Promises.flatten([p1, [p2, p3], p4]])", t => {
+  Promises.flatten([p1, [p2, p3], p4])
+    .then(results => {
+      const expected = [new Success('p1'), new Success([new Failure(p2Error), new Success('p3')]), new Failure(p4Error)];
+      t.deepEqual(results, expected, `Promises.flatten([p1, [p2, p3], p4]) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+test("Promises.flatten([p1, [p2, p3], p4]], null, simplifyOutcomesOpts)", t => {
+  Promises.flatten([p1, [p2, p3], p4], null, simplifyOutcomesOpts)
+    .then(results => {
+      const expected = [new Success('p1'), new Success([new Failure(p2Error), new Success('p3')]), new Failure(p4Error)];
+      t.deepEqual(results, expected, `Promises.flatten([p1, [p2, p3], p4]) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+test("Promises.flatten([p1, [p2, p3], p4]], null, skipSimplifyOutcomesOpts)", t => {
+  Promises.flatten([p1, [p2, p3], p4], null, skipSimplifyOutcomesOpts)
+    .then(results => {
+      const expected = [new Success('p1'), new Success([new Failure(p2Error), new Success('p3')]), new Failure(p4Error)];
+      t.deepEqual(results, expected, `Promises.flatten([p1, [p2, p3], p4]) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test("Promises.flatten([p1, [p2, [p3, p4]]])", t => {
+  Promises.flatten([p1, [p2, [p3, p4]]])
+    .then(results => {
+      const expected = ['p1', [new Failure(p2Error), new Success([new Success('p3'), new Failure(p4Error)])]];
+      t.deepEqual(results, expected, `Promises.flatten([p1, [p2, [p3, p4]]]) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+test("Promises.flatten([p1, [p2, [p3, p4]]], null, simplifyOutcomesOpts)", t => {
+  Promises.flatten([p1, [p2, [p3, p4]]], null, simplifyOutcomesOpts)
+    .then(results => {
+      const expected = ['p1', [new Failure(p2Error), new Success([new Success('p3'), new Failure(p4Error)])]];
+      t.deepEqual(results, expected, `Promises.flatten([p1, [p2, [p3, p4]]]) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+test("Promises.flatten([p1, [p2, [p3, p4]]], null, skipSimplifyOutcomesOpts)", t => {
+  Promises.flatten([p1, [p2, [p3, p4]]], null, skipSimplifyOutcomesOpts)
+    .then(results => {
+      const expected = [new Success('p1'), new Success([new Failure(p2Error), new Success([new Success('p3'), new Failure(p4Error)])])];
+      t.deepEqual(results, expected, `Promises.flatten([p1, [p2, [p3, p4]]]) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test("Promises.flatten([p1, [p2, Promise.resolve([p3, p4])]])", t => {
+  Promises.flatten([p1, [p2, Promise.resolve([p3, p4])]]).then(
+    results => {
+      const expected = ['p1', [new Failure(p2Error), new Success([new Success('p3'), new Failure(p4Error)])]];
+      t.deepEqual(results, expected, `Promises.flatten([p1, [p2, Promise.resolve([p3, p4])]]) must be ${stringify(expected)}`);
+      t.end();
+    }
+  );
+});
+
+test("Promises.flatten([p1, [p2, Promise.resolve([p3, p4])]], null, simplifyOutcomesOpts)", t => {
+  Promises.flatten([p1, [p2, Promise.resolve([p3, p4])]], null, simplifyOutcomesOpts).then(
+    results => {
+      const expected = ['p1', [new Failure(p2Error), new Success([new Success('p3'), new Failure(p4Error)])]];
+      t.deepEqual(results, expected, `Promises.flatten([p1, [p2, Promise.resolve([p3, p4])]]) must be ${stringify(expected)}`);
+      t.end();
+    }
+  );
+});
+
+test("Promises.flatten([p1, [p2, Promise.resolve([p3, p4])]], null, skipSimplifyOutcomesOpts)", t => {
+  Promises.flatten([p1, [p2, Promise.resolve([p3, p4])]], null, skipSimplifyOutcomesOpts).then(
+    results => {
+      const expected = [new Success('p1'), new Success([new Failure(p2Error), new Success([new Success('p3'), new Failure(p4Error)])])];
+      t.deepEqual(results, expected, `Promises.flatten([p1, [p2, Promise.resolve([p3, p4])]]) must be ${stringify(expected)}`);
+      t.end();
+    }
+  );
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test("Promises.flatten(Promise.resolve([p1, [p2, Promise.resolve([p3, p4])]]))", t => {
+  Promises.flatten(Promise.resolve([p1, [p2, Promise.resolve([p3, p4])]]))
+    .then(results => {
+      const expected = ['p1', [new Failure(p2Error), new Success([new Success('p3'), new Failure(p4Error)])]];
+      t.deepEqual(results, expected, `Promises.flatten(Promise.resolve([p1, [p2, Promise.resolve([p3, p4])]])) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+test("Promises.flatten(Promise.resolve([p1, [p2, Promise.resolve([p3, p4])]]), null, simplifyOutcomesOpts)", t => {
+  Promises.flatten(Promise.resolve([p1, [p2, Promise.resolve([p3, p4])]]), null, simplifyOutcomesOpts)
+    .then(results => {
+      const expected = ['p1', [new Failure(p2Error), new Success([new Success('p3'), new Failure(p4Error)])]];
+      t.deepEqual(results, expected, `Promises.flatten(Promise.resolve([p1, [p2, Promise.resolve([p3, p4])]])) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+test("Promises.flatten(Promise.resolve([p1, [p2, Promise.resolve([p3, p4])]]), null, skipSimplifyOutcomesOpts)", t => {
+  Promises.flatten(Promise.resolve([p1, [p2, Promise.resolve([p3, p4])]]), null, skipSimplifyOutcomesOpts)
+    .then(results => {
+      const expected = [new Success('p1'), new Success([new Failure(p2Error), new Success([new Success('p3'), new Failure(p4Error)])])];
+      t.deepEqual(results, expected, `Promises.flatten(Promise.resolve([p1, [p2, Promise.resolve([p3, p4])]])) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+test("Promises.flatten(Promise.resolve([p1, Promise.resolve([p2, Promise.resolve([p3, p4])])]))", t => {
+  Promises.flatten(Promise.resolve([p1, Promise.resolve([p2, Promise.resolve([p3, p4])])]))
+    .then(results => {
+      const expected = ['p1', [new Failure(p2Error), new Success([new Success('p3'), new Failure(p4Error)])]];
+      t.deepEqual(results, expected, `Promises.flatten(Promise.resolve([p1, Promise.resolve([p2, Promise.resolve([p3, p4])])])) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+test("Promises.flatten(Promise.resolve([p1, Promise.resolve([p2, Promise.resolve([p3, p4])])]), null, simplifyOutcomesOpts)", t => {
+  Promises.flatten(Promise.resolve([p1, Promise.resolve([p2, Promise.resolve([p3, p4])])]), null, simplifyOutcomesOpts)
+    .then(results => {
+      const expected = ['p1', [new Failure(p2Error), new Success([new Success('p3'), new Failure(p4Error)])]];
+      t.deepEqual(results, expected, `Promises.flatten(Promise.resolve([p1, Promise.resolve([p2, Promise.resolve([p3, p4])])])) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+test("Promises.flatten(Promise.resolve([p1, Promise.resolve([p2, Promise.resolve([p3, p4])])]), null, skipSimplifyOutcomesOpts)", t => {
+  Promises.flatten(Promise.resolve([p1, Promise.resolve([p2, Promise.resolve([p3, p4])])]), null, skipSimplifyOutcomesOpts)
+    .then(results => {
+      const expected = [new Success('p1'), new Success([new Failure(p2Error), new Success([new Success('p3'), new Failure(p4Error)])])];
+      t.deepEqual(results, expected, `Promises.flatten(Promise.resolve([p1, Promise.resolve([p2, Promise.resolve([p3, p4])])])) must be ${stringify(expected)}`);
+      t.end();
+    });
+});
+
+// =====================================================================================================================
+// Promises.flatten with skipSimplifyOutcomes false & with cancellations
+// =====================================================================================================================
+
+test("Promises.flatten([d1,d2,d3,d4]) cancelled immediately (i.e. before d1, d2, d3 & d4 resolve) will resolve only d1", t => {
+  const cancellable = {};
+
+  const d1Cancellable = {};
+  const d1 = genDelayedPromise(null, 'd1', 10, d1Cancellable);
+  t.ok(typeof d1Cancellable.cancelTimeout === "function", `d1Cancellable.cancelTimeout must be installed`);
+
+  const d2Cancellable = {};
+  const d2 = genDelayedPromise(d2Error, 'd2', 2000, d2Cancellable);
+  t.ok(typeof d2Cancellable.cancelTimeout === "function", `d2Cancellable.cancelTimeout must be installed`);
+
+  const d3Cancellable = {};
+  const d3 = genDelayedPromise(null, 'd3', 3000, d3Cancellable);
+  t.ok(typeof d3Cancellable.cancelTimeout === "function", `d3Cancellable.cancelTimeout must be installed`);
+
+  const d4Cancellable = {};
+  const d4 = genDelayedPromise(d4Error, 'd4', 4000, d4Cancellable);
+  t.ok(typeof d4Cancellable.cancelTimeout === "function", `d4Cancellable.cancelTimeout must be installed`);
+
+  Promises.flatten([d1, d2, d3, d4], cancellable).then(
+    results => {
+      t.end(`Promises.flatten([d1,d2,d3,d4]) when cancelled, must NOT complete successfully with results: ${stringify(results)}`);
+    },
+    err => {
+      t.pass(`Promises.flatten([d1,d2,d3,d4]) when cancelled must reject with an error`);
+      // Cancel the d2, d3 & d4 delays too (just for clean-up)
+      t.ok(d1Cancellable.cancelTimeout(true), `d1Cancellable.cancelTimeout() should have timed-out`);
+      t.notOk(d2Cancellable.cancelTimeout(true), `d2Cancellable.cancelTimeout() should NOT have timed-out yet`);
+      t.notOk(d3Cancellable.cancelTimeout(true), `d3Cancellable.cancelTimeout() should NOT have timed-out yet`);
+      t.notOk(d4Cancellable.cancelTimeout(true), `d4Cancellable.cancelTimeout() should NOT have timed-out yet`);
+      t.ok(err instanceof CancelledError, `Promises.flatten([d1,d2,d3,d4]) rejected error ${stringify(err)} must be instanceof CancelledError`);
+      t.notOk(err.completed, `CancelledError.completed must be false`);
+      const expectedResolvedOutcomes = [new Success('d1')];
+      t.deepEqual(err.resolvedOutcomes, expectedResolvedOutcomes, `Promises.flatten([d1,d2,d3,d4]) resolvedOutcomes must be ${stringify(expectedResolvedOutcomes)}`);
+      const expectedUnresolvedPromises = [d2, d3, d4];
+      t.deepEqual(err.unresolvedPromises, expectedUnresolvedPromises, `Promises.flatten([d1,d2,d3,d4]) unresolvedPromises must be ${stringify(expectedUnresolvedPromises)}`);
+      t.end();
+    }
+  );
+  t.ok(typeof cancellable.cancel === "function", `cancellable.cancel must be installed`);
+  const completed = cancellable.cancel();
+  t.notOk(completed, `Promises.flatten([d1,d2,d3,d4]) must not be completed yet`);
+});
+
+test("Promises.flatten([d1,d2,d3,d4]) cancelled during d1 (i.e. before d2, d3 & d4 resolve) will resolve only d1", t => {
+  const cancellable = {};
+
+  const d1Cancellable = {};
+  const d1 = genDelayedPromise(null, 'd1', 10, d1Cancellable, cancellable);
+  t.ok(typeof d1Cancellable.cancelTimeout === "function", `d1Cancellable.cancelTimeout must be installed`);
+
+  const d2Cancellable = {};
+  const d2 = genDelayedPromise(d2Error, 'd2', 2000, d2Cancellable);
+  t.ok(typeof d2Cancellable.cancelTimeout === "function", `d2Cancellable.cancelTimeout must be installed`);
+
+  const d3Cancellable = {};
+  const d3 = genDelayedPromise(null, 'd3', 3000, d3Cancellable);
+  t.ok(typeof d3Cancellable.cancelTimeout === "function", `d3Cancellable.cancelTimeout must be installed`);
+
+  const d4Cancellable = {};
+  const d4 = genDelayedPromise(d4Error, 'd4', 4000, d4Cancellable);
+  t.ok(typeof d4Cancellable.cancelTimeout === "function", `d4Cancellable.cancelTimeout must be installed`);
+
+  Promises.flatten([d1, d2, d3, d4], cancellable).then(
+    results => {
+      t.end(`Promises.flatten([d1,d2,d3,d4]) when cancelled, must NOT complete successfully with results: ${stringify(results)}`);
+    },
+    err => {
+      t.pass(`Promises.flatten([d1,d2,d3,d4]) when cancelled must reject with an error`);
+      // Cancel the d2, d3 & d4 delays too (just for clean-up)
+      t.ok(d1Cancellable.cancelTimeout(true), `d1Cancellable.cancelTimeout() should have timed-out`);
+      t.notOk(d2Cancellable.cancelTimeout(true), `d2Cancellable.cancelTimeout() should NOT have timed-out yet`);
+      t.notOk(d3Cancellable.cancelTimeout(true), `d3Cancellable.cancelTimeout() should NOT have timed-out yet`);
+      t.notOk(d4Cancellable.cancelTimeout(true), `d4Cancellable.cancelTimeout() should NOT have timed-out yet`);
+      t.ok(err instanceof CancelledError, `Promises.flatten([d1,d2,d3,d4]) rejected error ${stringify(err)} must be instanceof CancelledError`);
+      t.notOk(err.completed, `CancelledError.completed must be false`);
+      const expectedResolvedOutcomes = [new Success('d1')];
+      t.deepEqual(err.resolvedOutcomes, expectedResolvedOutcomes, `Promises.flatten([d1,d2,d3,d4]) resolvedOutcomes must be ${stringify(expectedResolvedOutcomes)}`);
+      const expectedUnresolvedPromises = [d2, d3, d4];
+      t.deepEqual(err.unresolvedPromises, expectedUnresolvedPromises, `Promises.flatten([d1,d2,d3,d4]) unresolvedPromises must be ${stringify(expectedUnresolvedPromises)}`);
+      t.end();
+    }
+  );
+  t.ok(typeof cancellable.cancel === "function", `cancellable.cancel must be installed`);
+});
+
+test("Promises.flatten([d1,d2,d3,d4]) cancelled during d2 (i.e. before d3 & d4 resolve) will resolve only d1 & d2", t => {
+  const cancellable = {};
+
+  const d1Cancellable = {};
+  const d1 = genDelayedPromise(null, 'd1', 10, d1Cancellable);
+  t.ok(typeof d1Cancellable.cancelTimeout === "function", `d1Cancellable.cancelTimeout must be installed`);
+
+  const d2Cancellable = {};
+  const d2 = genDelayedPromise(d2Error, 'd2', 20, d2Cancellable, cancellable);
+  t.ok(typeof d2Cancellable.cancelTimeout === "function", `d2Cancellable.cancelTimeout must be installed`);
+
+  const d3Cancellable = {};
+  const d3 = genDelayedPromise(null, 'd3', 3000, d3Cancellable);
+  t.ok(typeof d3Cancellable.cancelTimeout === "function", `d3Cancellable.cancelTimeout must be installed`);
+
+  const d4Cancellable = {};
+  const d4 = genDelayedPromise(d4Error, 'd4', 4000, d4Cancellable);
+  t.ok(typeof d4Cancellable.cancelTimeout === "function", `d4Cancellable.cancelTimeout must be installed`);
+
+  Promises.flatten([d1, d2, d3, d4], cancellable).then(
+    results => {
+      t.end(`Promises.flatten([d1,d2,d3,d4]) when cancelled, must NOT complete successfully with results: ${stringify(results)}`);
+    },
+    err => {
+      t.pass(`Promises.flatten([d1,d2,d3,d4]) when cancelled must reject with an error`);
+      // Cancel the d2, d3 & d4 delays too (just for clean-up)
+      t.ok(d1Cancellable.cancelTimeout(true), `d1Cancellable.cancelTimeout() should have timed-out`);
+      t.ok(d2Cancellable.cancelTimeout(true), `d2Cancellable.cancelTimeout() should have timed-out`);
+      t.notOk(d3Cancellable.cancelTimeout(true), `d3Cancellable.cancelTimeout() should NOT have timed-out yet`);
+      t.notOk(d4Cancellable.cancelTimeout(true), `d4Cancellable.cancelTimeout() should NOT have timed-out yet`);
+      t.ok(err instanceof CancelledError, `Promises.flatten([d1,d2,d3,d4]) rejected error ${stringify(err)} must be instanceof CancelledError`);
+      t.notOk(err.completed, `CancelledError.completed must be false`);
+      const expectedResolvedOutcomes = [new Success('d1'), new Failure(d2Error)];
+      t.deepEqual(err.resolvedOutcomes, expectedResolvedOutcomes, `Promises.flatten([d1,d2,d3,d4]) resolvedOutcomes must be ${stringify(expectedResolvedOutcomes)}`);
+      const expectedUnresolvedPromises = [d3, d4];
+      t.deepEqual(err.unresolvedPromises, expectedUnresolvedPromises, `Promises.flatten([d1,d2,d3,d4]) unresolvedPromises must be ${stringify(expectedUnresolvedPromises)}`);
+      t.end();
+    }
+  );
+  t.ok(typeof cancellable.cancel === "function", `cancellable.cancel must be installed`);
+});
+
+test("Promises.flatten([d1,d2,d3,d4]) cancelled during d3 (i.e. before d4 completes) will resolve d1, d2 & d3", t => {
+  const cancellable = {};
+
+  const d1Cancellable = {};
+  const d1 = genDelayedPromise(null, 'd1', 10, d1Cancellable);
+  t.ok(typeof d1Cancellable.cancelTimeout === "function", `d1Cancellable.cancelTimeout must be installed`);
+
+  const d2Cancellable = {};
+  const d2 = genDelayedPromise(d2Error, 'd2', 20, d2Cancellable);
+  t.ok(typeof d2Cancellable.cancelTimeout === "function", `d2Cancellable.cancelTimeout must be installed`);
+
+  const d3Cancellable = {};
+  const d3 = genDelayedPromise(null, 'd3', 30, d3Cancellable, cancellable);
+  t.ok(typeof d3Cancellable.cancelTimeout === "function", `d3Cancellable.cancelTimeout must be installed`);
+
+  const d4Cancellable = {};
+  const d4 = genDelayedPromise(d4Error, 'd4', 4000, d4Cancellable);
+  t.ok(typeof d4Cancellable.cancelTimeout === "function", `d4Cancellable.cancelTimeout must be installed`);
+
+  Promises.flatten([d1, d2, d3, d4], cancellable).then(
+    results => {
+      t.end(`Promises.flatten([d1,d2,d3,d4]) when cancelled, must NOT complete successfully with results: ${stringify(results)}`);
+    },
+    err => {
+      t.pass(`Promises.flatten([d1,d2,d3,d4]) when cancelled must reject with an error`);
+      // Cancel the d2, d3 & d4 delays too (just for clean-up)
+      t.ok(d1Cancellable.cancelTimeout(true), `d1Cancellable.cancelTimeout() should have timed-out`);
+      t.ok(d2Cancellable.cancelTimeout(true), `d2Cancellable.cancelTimeout() should have timed-out`);
+      t.ok(d3Cancellable.cancelTimeout(true), `d3Cancellable.cancelTimeout() should have timed-out`);
+      t.notOk(d4Cancellable.cancelTimeout(true), `d4Cancellable.cancelTimeout() should NOT have timed-out yet`);
+      t.ok(err instanceof CancelledError, `Promises.flatten([d1,d2,d3,d4]) rejected error ${stringify(err)} must be instanceof CancelledError`);
+      t.notOk(err.completed, `CancelledError.completed must be false`);
+      const expectedResolvedOutcomes = [new Success('d1'), new Failure(d2Error), new Success('d3')];
+      t.deepEqual(err.resolvedOutcomes, expectedResolvedOutcomes, `Promises.flatten([d1,d2,d3,d4]) resolvedOutcomes must be ${stringify(expectedResolvedOutcomes)}`);
+      const expectedUnresolvedPromises = [d4];
+      t.deepEqual(err.unresolvedPromises, expectedUnresolvedPromises, `Promises.flatten([d1,d2,d3,d4]) unresolvedPromises must be ${stringify(expectedUnresolvedPromises)}`);
+      t.end();
+    }
+  );
+  t.ok(typeof cancellable.cancel === "function", `cancellable.cancel must be installed`);
+});
+
+test("Promises.flatten([d1,d2,d3,d4]) cancelled during d4 will resolve d1, d2, d3 & d4", t => {
+  const cancellable = {};
+
+  const d1Cancellable = {};
+  const d1 = genDelayedPromise(null, 'd1', 10, d1Cancellable);
+  t.ok(typeof d1Cancellable.cancelTimeout === "function", `d1Cancellable.cancelTimeout must be installed`);
+
+  const d2Cancellable = {};
+  const d2 = genDelayedPromise(d2Error, 'd2', 20, d2Cancellable);
+  t.ok(typeof d2Cancellable.cancelTimeout === "function", `d2Cancellable.cancelTimeout must be installed`);
+
+  const d3Cancellable = {};
+  const d3 = genDelayedPromise(null, 'd3', 30, d3Cancellable);
+  t.ok(typeof d3Cancellable.cancelTimeout === "function", `d3Cancellable.cancelTimeout must be installed`);
+
+  const d4Cancellable = {};
+  const d4 = genDelayedPromise(d4Error, 'd4', 40, d4Cancellable, cancellable);
+  t.ok(typeof d4Cancellable.cancelTimeout === "function", `d4Cancellable.cancelTimeout must be installed`);
+
+  Promises.flatten([d1, d2, d3, d4], cancellable).then(
+    outcomes => {
+      t.pass(`Promises.flatten([d1,d2,d3,d4]) when cancelled too late must resolve with outcomes`);
+      // Cancel the d2, d3 & d4 delays too (just for clean-up)
+      t.ok(d1Cancellable.cancelTimeout(true), `d1Cancellable.cancelTimeout() should have timed-out`);
+      t.ok(d2Cancellable.cancelTimeout(true), `d2Cancellable.cancelTimeout() should have timed-out`);
+      t.ok(d3Cancellable.cancelTimeout(true), `d3Cancellable.cancelTimeout() should have timed-out`);
+      t.ok(d4Cancellable.cancelTimeout(true), `d4Cancellable.cancelTimeout() should have timed-out`);
+      const expectedOutcomes = [new Success('d1'), new Failure(d2Error), new Success('d3'), new Failure(d4Error)];
+      t.deepEqual(outcomes, expectedOutcomes, `Promises.flatten([d1,d2,d3,d4]) outcomes must be ${stringify(expectedOutcomes)}`);
+      t.end();
+    },
+    err => {
+      t.end(`Promises.flatten([d1,d2,d3,d4]) when cancelled too late, must NOT reject with error`, err.stack);
     }
   );
   t.ok(typeof cancellable.cancel === "function", `cancellable.cancel must be installed`);

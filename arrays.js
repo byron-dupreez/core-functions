@@ -16,7 +16,7 @@ module.exports = {
  * @returns {T[]} an array containing only distinct, unique elements
  */
 function distinct(array) {
-  return array.filter((elem, pos) => array.indexOf(elem) == pos);
+  return array.filter((elem, pos) => array.indexOf(elem) === pos);
 }
 
 /**
@@ -27,7 +27,7 @@ function distinct(array) {
  * @returns {boolean} true if array contains no duplicates; false otherwise
  */
 function isDistinct(array) {
-  return array.every((elem, pos) => array.indexOf(elem) == pos);
+  return array.every((elem, pos) => array.indexOf(elem) === pos);
 }
 
 /**

@@ -130,6 +130,161 @@ class Try {
   toPromise() {
     return Promise.reject(new Error(errorMessages.NoValueOrError));
   }
+
+  /**
+   * Simplifies the given list of Success and/or Failure outcomes to a list of values if and ONLY if every outcome is a
+   * Success; otherwise simply returns the given list.
+   * @param {Array.<*>|Outcomes} outcomes - a list of Success and/or Failure outcomes to potentially simplify
+   * @returns {Array.<*>|Outcomes} a simplified list of Success values (if all were Success outcomes) or the given list
+   */
+  static simplify(outcomes) {
+    return outcomes.every(o => o instanceof Success) ? outcomes.map(o => o.value) : outcomes;
+  }
+
+  /**
+   * Returns a count of the number of outcomes that match the given predicate in the given list of outcomes.
+   * @param {Outcomes} outcomes - a list of outcomes
+   * @param {function(outcome: Outcome): boolean} predicate - the predicate to use to determine whether an outcome should be counted or not
+   * @returns {number} the number of outcomes that match the given predicate
+   */
+  static count(outcomes, predicate) {
+    return outcomes.reduce((acc, o) => acc + (predicate(o) ? 1 : 0), 0);
+  }
+
+  /**
+   * Returns a count of the number of Success outcomes in the given list of outcomes.
+   * @param {Outcomes} outcomes - a list of outcomes
+   * @returns {number} the number of Success outcomes
+   */
+  static countSuccess(outcomes) {
+    return outcomes.reduce((acc, o) => acc + (o instanceof Success ? 1 : 0), 0);
+  }
+
+  /**
+   * Returns a count of the number of Failure outcomes in the given list of outcomes.
+   * @param {Outcomes} outcomes - a list of outcomes
+   * @returns {number} the number of Failure outcomes
+   */
+  static countFailure(outcomes) {
+    return outcomes.reduce((acc, o) => acc + (o instanceof Failure ? 1 : 0), 0);
+  }
+
+  /**
+   * Returns a description of the number of successes followed by the number of failures in the given list of outcomes.
+   * @param {Outcomes} outcomes - a list of outcomes
+   * @returns {string} the number of Failure outcomes
+   */
+  static describeSuccessAndFailureCounts(outcomes) {
+    const successCount = Try.countSuccess(outcomes);
+    const failureCount = Try.countFailure(outcomes);
+    return `${successCount} success${successCount !== 1 ? 'es' : ''} & ${failureCount} failure${failureCount !== 1 ? 's' : ''}`;
+  }
+
+  /**
+   * Recursively flattens the given value, which is expected to be typically zero or more Try values containing zero or
+   * more Try values (containing ...), by unpacking/flattening Array and Try values up to the specified depth. If depth
+   * is deep enough to flatten all Array & Try values, then returns either a single successful value (if the given value
+   * is effectively a single value) or a single flattened array of successful values or throws the error of the first
+   * Failure found (if any and if opts.keepFailures is false).
+   * @param {*|*[]|Outcome|Outcomes} value - the value to be flattened
+   * @param {number|undefined} [depth] - the optional maximum depth to which to flatten recursively (defaults to MAX_SAFE_INTEGER if undefined)
+   * @param {Object|undefined} [opts] - optional options to use to alter the behaviour
+   * @param {boolean|undefined} [opts.keepFailures] - if true, collects and preserves any Failure outcomes as is;
+   * otherwise flattens Failures too and throws the error of the first Failure found (defaults to false)
+   * @returns {*|*[]} a single successful value or an array of zero or more successful values or throws an error
+   * @throws {Error} the error of the first Failure found (if any and opts.keepFailures is false)
+   */
+  static flatten(value, depth, opts) {
+    const maxDepth = depth === undefined ? Number.MAX_SAFE_INTEGER : depth;
+    const TryType = opts && opts.keepFailures ? Success : Try;
+    const history = new WeakMap();
+
+    function collect(value, depth) {
+      const isArray = Array.isArray(value);
+      const v = isArray ? new Array(value.length) : value;
+
+      // Avoid circular references
+      if (value && typeof value === 'object') {
+        if (history.has(value))
+          return history.get(value);
+
+        history.set(value, v);
+      }
+
+      if (value instanceof TryType) {
+        const vv = value.get();
+        // Recurse deeper if maximum depth has not been reached yet
+        return depth > 0 ? collect(vv, depth - 1) : vv;
+      }
+
+      if (isArray) {
+        // Recurse deeper if maximum depth has not been reached yet & if its still worthwhile to do so
+        const mustTraverse = depth > 0 && value.some(e => (e instanceof TryType) || Array.isArray(e));
+        for (let i = 0; i < value.length; ++i) {
+          const e = value[i];
+          const vv = e instanceof TryType ? e.get() : e;
+          v[i] = mustTraverse ? collect(vv, depth - 1) : vv;
+        }
+        return v;
+      }
+
+      return v;
+    }
+
+    return collect(value, maxDepth);
+  }
+
+  /**
+   * Recursively searches for a Failure on the given value, which is expected to be typically one or more Try values
+   * containing one or more Try values (containing ...).
+   * @param {*|*[]|Outcome|Outcomes} value - the value to be recursively searched
+   * @param {number|undefined} [depth] - the optional maximum depth to which to search recursively (defaults to MAX_SAFE_INTEGER if undefined)
+   * @returns {Failure|undefined} the first Failure found (if any); otherwise undefined
+   */
+  static findFailure(value, depth) {
+    const maxDepth = depth === undefined ? Number.MAX_SAFE_INTEGER : depth;
+    const history = new WeakMap();
+
+    function find(value, depth) {
+      // Avoid circular references
+      if (value && typeof value === 'object') {
+        if (history.has(value))
+          return undefined;
+        history.set(value, value);
+      }
+
+      if (value instanceof Failure)
+        return value;
+
+      if (value instanceof Success) {
+        // Search deeper if maximum depth has not been reached yet
+        return depth > 0 ? find(value.value, depth - 1) : undefined;
+      }
+
+      if (Array.isArray(value)) {
+        // Recurse deeper if maximum depth has not been reached yet & if its still worthwhile to do so (otherwise just
+        // return undefined)
+        const f = value.find(e => e instanceof Failure);
+        // const f = depth > 0 ? value.find(e => e instanceof Failure) : undefined;
+        if (f)
+          return f;
+
+        // Search deeper if maximum depth has not been reached yet & if its still worthwhile to do so
+        if (depth > 0 && value.some(e => (e instanceof Success) || Array.isArray(e))) {
+          for (let e of value) {
+            const f = find(e instanceof Success ? e.value : e, depth - 1);
+            if (f)
+              return f;
+          }
+        }
+      }
+      // return value instanceof Failure ? value : undefined;
+      return undefined;
+    }
+
+    return find(value, maxDepth);
+  }
+
 }
 
 /**

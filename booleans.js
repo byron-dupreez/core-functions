@@ -20,7 +20,6 @@ module.exports = {
  * @returns {boolean} true if really true or false; false otherwise
  */
 function isBoolean(value) {
-  //return typeof value === 'boolean' || (value instanceof Boolean && typeof (value.valueOf()) === 'boolean');
   return typeof value === 'boolean' || value instanceof Boolean;
 }
 

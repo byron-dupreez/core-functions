@@ -253,17 +253,17 @@ test('toAppError', t => {
     check({[name]: 503}, ServiceUnavailable);
     check({[name]: 504}, GatewayTimeout);
 
-    check({[name]: " 300.1 "}, AppError);
-    check({[name]: " 400.2 "}, BadRequest);
-    check({[name]: " 401.3 "}, Unauthorized);
-    check({[name]: " 403.4 "}, Forbidden);
-    check({[name]: " 404.5 "}, NotFound);
-    check({[name]: " 408.6 "}, RequestTimeout);
-    check({[name]: " 429.7 "}, TooManyRequests);
-    check({[name]: " 500.8 "}, InternalServerError);
-    check({[name]: " 502.9 "}, BadGateway);
-    check({[name]: " 503.0 "}, ServiceUnavailable);
-    check({[name]: " 504.1 "}, GatewayTimeout);
+    check({[name]: " 300 "}, AppError);
+    check({[name]: " 400 "}, BadRequest);
+    check({[name]: " 401 "}, Unauthorized);
+    check({[name]: " 403 "}, Forbidden);
+    check({[name]: " 404 "}, NotFound);
+    check({[name]: " 408 "}, RequestTimeout);
+    check({[name]: " 429 "}, TooManyRequests);
+    check({[name]: " 500 "}, InternalServerError);
+    check({[name]: " 502 "}, BadGateway);
+    check({[name]: " 503 "}, ServiceUnavailable);
+    check({[name]: " 504 "}, GatewayTimeout);
   });
 
   // Check errors with httpStatusCode, httpStatus & statusCode become appropriate errors
@@ -365,17 +365,17 @@ test('toAppErrorForApiGateway', t => {
     check({[name]: 503}, ServiceUnavailable);
     check({[name]: 504}, GatewayTimeout);
 
-    check({[name]: " 300.1 "}, InternalServerError);
-    check({[name]: " 400.2 "}, BadRequest);
-    check({[name]: " 401.3 "}, Unauthorized);
-    check({[name]: " 403.4 "}, Forbidden);
-    check({[name]: " 404.5 "}, NotFound);
-    check({[name]: " 408.6 "}, RequestTimeout);
-    check({[name]: " 429.7 "}, TooManyRequests);
-    check({[name]: " 500.8 "}, InternalServerError);
-    check({[name]: " 502.9 "}, BadGateway);
-    check({[name]: " 503.0 "}, ServiceUnavailable);
-    check({[name]: " 504.1 "}, GatewayTimeout);
+    check({[name]: " 300 "}, InternalServerError);
+    check({[name]: " 400 "}, BadRequest);
+    check({[name]: " 401 "}, Unauthorized);
+    check({[name]: " 403 "}, Forbidden);
+    check({[name]: " 404 "}, NotFound);
+    check({[name]: " 408 "}, RequestTimeout);
+    check({[name]: " 429 "}, TooManyRequests);
+    check({[name]: " 500 "}, InternalServerError);
+    check({[name]: " 502 "}, BadGateway);
+    check({[name]: " 503 "}, ServiceUnavailable);
+    check({[name]: " 504 "}, GatewayTimeout);
   });
 
   // Check errors with httpStatusCode, httpStatus & statusCode become appropriate errors

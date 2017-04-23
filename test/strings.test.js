@@ -439,7 +439,7 @@ function checkStringify(t, wrapInString) {
       reason: undefined
     },
     _attempts: 1,
-    _lastExecutedAt: "2016-12-01T05:09:09.119Z",
+    _began: "2016-12-01T05:09:09.119Z",
     _result: undefined,
     _error: undefined,
     _slaveTasks: [],
@@ -450,19 +450,19 @@ function checkStringify(t, wrapInString) {
         executable: this.executable,
         state: this._state,
         attempts: this._attempts,
-        lastExecutedAt: this._lastExecutedAt,
+        began: this._began,
         subTasks: this._subTasks
       };
     }
   };
   // default behaviour must use toJSON method
-  checkNoOpts(task, wrapInString ? '[object Object]' : '{"name":"Task1","executable":true,"state":{"code":"Unstarted","completed":false,"rejected":false},"attempts":1,"lastExecutedAt":"2016-12-01T05:09:09.119Z","subTasks":[]}');
+  checkNoOpts(task, wrapInString ? '[object Object]' : '{"name":"Task1","executable":true,"state":{"code":"Unstarted","completed":false,"rejected":false},"attempts":1,"began":"2016-12-01T05:09:09.119Z","subTasks":[]}');
 
   // explicit !avoidToJSONMethods must use toJSON method
-  checkWithOpts(task, {avoidToJSONMethods: false}, wrapInString ? '[object Object]' : '{"name":"Task1","executable":true,"state":{"code":"Unstarted","completed":false,"rejected":false},"attempts":1,"lastExecutedAt":"2016-12-01T05:09:09.119Z","subTasks":[]}');
+  checkWithOpts(task, {avoidToJSONMethods: false}, wrapInString ? '[object Object]' : '{"name":"Task1","executable":true,"state":{"code":"Unstarted","completed":false,"rejected":false},"attempts":1,"began":"2016-12-01T05:09:09.119Z","subTasks":[]}');
 
   // explicit avoidToJSONMethods must NOT use toJSON method
-  checkWithOpts(task, {avoidToJSONMethods: true}, wrapInString ? '[object Object]' : '{"name":"Task1","definition":{"name":"Task1","executable":true,"execute":[Function: anonymous],"subTaskDefs":[],"parent":undefined},"executable":true,"execute":[Function: anonymous],"_subTasks":[],"_subTasksByName":{},"parent":undefined,"_state":{"code":"Unstarted","completed":false,"error":undefined,"rejected":false,"reason":undefined},"_attempts":1,"_lastExecutedAt":"2016-12-01T05:09:09.119Z","_result":undefined,"_error":undefined,"_slaveTasks":[],"_frozen":true,"toJSON":[Function: toJSON]}');
+  checkWithOpts(task, {avoidToJSONMethods: true}, wrapInString ? '[object Object]' : '{"name":"Task1","definition":{"name":"Task1","executable":true,"execute":[Function: anonymous],"subTaskDefs":[],"parent":undefined},"executable":true,"execute":[Function: anonymous],"_subTasks":[],"_subTasksByName":{},"parent":undefined,"_state":{"code":"Unstarted","completed":false,"error":undefined,"rejected":false,"reason":undefined},"_attempts":1,"_began":"2016-12-01T05:09:09.119Z","_result":undefined,"_error":undefined,"_slaveTasks":[],"_frozen":true,"toJSON":[Function: toJSON]}');
 }
 
 function checkTrim(t, wrapInString) {

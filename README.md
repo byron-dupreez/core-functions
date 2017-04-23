@@ -1,4 +1,4 @@
-# core-functions v3.0.1
+# core-functions v3.0.2
 
 Core functions, utilities and classes for working with Node/JavaScript primitives and built-in objects, including 
 strings, numbers, booleans, Dates, Promises, base 64, Arrays, Objects, standard AppErrors, sorting utilities, etc.
@@ -8,7 +8,9 @@ Currently includes:
 - arrays.js - Array utilities
 - base64.js - utilities for encoding from UTF-8 to Base 64 and vice-versa
 - booleans.js - boolean utilities
+- copying.js - Object copying utilities
 - dates.js - Date utilities
+- merging.js - Object merging utilities
 - numbers.js - number utilities
 - objects.js - Object utilities
 - promises.js - native Promise utilities
@@ -16,6 +18,8 @@ Currently includes:
 - strings.js - string utilities
 - timers.js - Timer/timeout utilities
 - tries.js - Try, Success and Failure classes representing the outcome of a function execution
+- weak-map-copy.js - a class that emulates a copy of a WeakMap 
+- weak-set-copy.js - a class that emulates a copy of a WeakSet
 
 This module is exported as a [Node.js](https://nodejs.org/) module.
 
@@ -153,6 +157,57 @@ This module's unit tests were developed with and must be run with [tape](https:/
 See the [package source](https://github.com/byron-dupreez/core-functions) for more details.
 
 ## Changes
+
+### 3.0.2
+- Changes to `promises` module:
+  - Added `installCancel` utility function that installs a `cancel` method on a cancellable, which combines any existing
+    `cancel` method behaviour with the given new cancel function logic
+  - Changed `every` and `chain` functions to use new `installCancel` utility function, which enables them to "extend" 
+    the behaviour of their cancellables' cancel methods instead of just overwriting them
+  - Added `installCancelTimeout` utility function that installs a `cancelTimeout` method on a cancellable, which 
+    combines any existing `cancelTimeout` method behaviour with the given new cancelTimeout function logic
+  - Changed `delay` function to use new `installCancelTimeout` utility function, which enables it to "extend" the 
+    behaviour of its cancellable's cancel method instead of just overwriting it
+  - Changed `chain` function to also pass any and all previous outcomes as an optional 4th argument to the given input
+    function `f`, which enables an input function to use and/or react to previous outcomes in the chain
+  - Added new `DelayCancelledError` subclass of Error
+  - Changed `delay` function to throw a new `DelayCancelledError` when timeout triggers and mustResolve is false. Note 
+    that this change is not entirely backward compatible, since it fixes the prior behaviour that was incorrectly 
+    throwing a boolean with the triggered value as the "error"
+  - Added new `flatten` function to recursively reduce a given Promise or array of Promises (containing other promises 
+    or arrays of promises) down to a single Promise (with any Success and/or Failure outcomes necessary)
+- Changes to `numbers`, `objects` & `app-errors` modules:
+  - Replaced all usages of `Number.parseInt(...)` with more reliable & consistent `Number(...)`
+    e.g. parseInt('1e+22') returns 1, while Number('1e+22') returns 1e+22; 
+    e.g. parseInt('12B3') returns 12, while Number('12B3') returns NaN
+- Changes & fixes to `objects` module:
+  - Moved the majority of the functionality of the `copy`, `copyNamedProperties` & `merge` functions to the new `copying` 
+    & `merging` modules 
+  - Changed `copy`, `copyNamedProperties` & `merge` functions to simply delegate to their counterparts in the new `copying` 
+    & `merging` modules and marked the original functions as deprecated 
+  - Added new `isTypedArray`, `getPropertyNames`, `getPropertySymbols`, `getPropertyKeys`, `getPropertyDescriptors`,
+    `getPropertyValueByKeys`, `getPropertyDescriptorByKeys`, `getPropertyValueByCompoundName` & `getOwnPropertyNamesRecursively` 
+    functions
+- Added new `weak-map-copy` module to enable "copying" of `WeakMap` instances
+- Added new `weak-set-copy` module to enable "copying" of `WeakSet` instances
+- Added new `copying` module:
+  - Added new versions of `copy` & `copyNamedProperties` functions copied from `objects` module
+  - Major refactoring & revision of `copy` function to also support copying of property descriptors and copying of 
+    Symbols, Dates, Buffers, ArrayBuffers, TypedArrays, DataViews, Errors, RegExps, Maps, Sets, WeakMaps & WeakSets
+  - Added new `deepMapKeys`, `deepMapValues`, `deepSets`, `onlyEnumerable`, `onlyValues`, `omitAccessors`, `isCopyable`, 
+    `createCustomObject` & `copyCustomContent` options to enable more extensive customisation of the `copy` function
+  - Added new `configureCopyContext`, `isCopyableObject`, `copyObject`, `createObject`, `createTypedArray`, 
+    `createDataView`, `copyContent`, `copyPropertyDescriptors`, `copyPropertyValues`, `copyPropertyDescriptor`, 
+    `copyPropertyValue` & `copyDescriptor` supporting functions
+- Added new `merging` module:
+  - Added new version of `merge` function copied from `objects` module
+  - Major refactoring & revision of `merge` function
+  - Added new `isMergeable` and `onlyEnumerable` options to enable more extensive customisation of the `merge` function
+  - Added new `configureMergeContext`, `isMergeableObject`, `mergeObject`, `resolveMergedObject`, `mergeContent`, 
+    `areSimilarArrayLikes`, `mergePropertyDescriptors` & `mergePropertyValues` supporting functions
+- Changes to `tries` module:
+  - Added `simplify`, `count`, `countSuccess`, `countFailure`  & `describeSuccessAndFailureCounts` static methods 
+  - Added `flatten` & `findFailure` static methods
 
 ### 3.0.1
 - Changes to `promises` module:

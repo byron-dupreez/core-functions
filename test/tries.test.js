@@ -30,10 +30,18 @@ const err2Regex = /Crash/;
 const failure = new Failure(err);
 const failure2 = new Failure(err2);
 
-const returnA1 = () => { return {a: 1} };
-const throwErr = () => { throw err };
-const throwErr2 = () => { throw err2 };
-function throwError(e) { throw e }
+const returnA1 = () => {
+  return {a: 1}
+};
+const throwErr = () => {
+  throw err
+};
+const throwErr2 = () => {
+  throw err2
+};
+function throwError(e) {
+  throw e
+}
 
 const noValueOrErrorRegex = /No value or error/;
 
@@ -639,5 +647,1096 @@ test('Try toPromise', t => {
   );
 });
 
+test('countSuccess, countFailure, count & describeSuccessAndFailureCounts', t => {
+  function check(outcomes, expectedSuccessCount, expectedFailureCount) {
+    t.equal(Try.countSuccess(outcomes), expectedSuccessCount, `countSuccess(outcomes) must be ${expectedSuccessCount}`);
+    t.equal(Try.countFailure(outcomes), expectedFailureCount, `countFailure(outcomes) must be ${expectedFailureCount}`);
+    t.equal(Try.count(outcomes, o => o.isSuccess()), expectedSuccessCount, `count(outcomes, o => o.isSuccess()) must be ${expectedSuccessCount}`);
+    t.equal(Try.count(outcomes, o => o.isFailure()), expectedFailureCount, `count(outcomes, o => o.isFailure()) must be ${expectedFailureCount}`);
+    t.equal(Try.count(outcomes, o => o instanceof Try), expectedSuccessCount + expectedFailureCount, `count(outcomes, o => o instanceof Try) must be ${expectedSuccessCount + expectedFailureCount}`);
+    const expected = `${expectedSuccessCount} success${expectedSuccessCount !== 1 ? 'es' : ''} & ${expectedFailureCount} failure${expectedFailureCount !== 1 ? 's' : ''}`;
+    t.equal(Try.describeSuccessAndFailureCounts(outcomes), expected, `describeSuccessAndFailureCounts(outcomes) must be '${expected}'`);
+  }
 
+  const s = new Success(42);
+  const f = new Failure(new Error('43'));
+
+  check([], 0, 0);
+  check([s], 1, 0);
+  check([f], 0, 1);
+  check([s, s], 2, 0);
+  check([s, f], 1, 1);
+  check([f, s], 1, 1);
+  check([f, f], 0, 2);
+  check([s, s, s], 3, 0);
+  check([s, s, f], 2, 1);
+  check([s, f, s], 2, 1);
+  check([s, f, f], 1, 2);
+  check([f, s, s], 2, 1);
+  check([f, s, f], 1, 2);
+  check([f, f, s], 1, 2);
+  check([f, f, f], 0, 3);
+  check([f, s, f, s, s, f, s, f, s, f, s, s], 7, 5);
+
+  t.end();
+});
+
+// =====================================================================================================================
+// flatten - with depth undefined (i.e. deep)
+// =====================================================================================================================
+
+test('flatten - with depth undefined (i.e. deep)', t => {
+  const e1 = new Error('Failed 1');
+  const e2 = new Error('Failed 2');
+  const e3 = new Error('Failed 3');
+  const keep = true;
+
+  function throws(fn, expectedError, prefix) {
+    t.throws(fn, `${prefix} must throw an error`);
+    try {
+      const result = fn();
+      t.fail(`${prefix} must NOT succeed with result: ${stringify(result)}`);
+    } catch (err) {
+      t.equal(err, expectedError, `${prefix} must throw ${expectedError}`);
+    }
+  }
+
+  // Empty Array case
+  // -------------------------------------------------------------------------------------------------------------------
+  let v = [];
+  let x = [];
+  t.deepEqual(Try.flatten(v), x, `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
+  // Non-Try & non-Array cases
+  // -------------------------------------------------------------------------------------------------------------------
+  v = undefined;
+  x = v;
+  t.deepEqual(Try.flatten(v), x, `flatten(${stringify(v)}) must be ${stringify(x)}`);
+  //noinspection JSCheckFunctionSignatures
+  t.deepEqual(Try.flatten(), x, `flatten() must be ${stringify(x)}`);
+
+  v = null;
+  x = v;
+  t.deepEqual(Try.flatten(v), x, `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = 1;
+  x = v;
+  t.deepEqual(Try.flatten(v), x, `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = 'Abc';
+  x = v;
+  t.deepEqual(Try.flatten(v), x, `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = {a: 1};
+  x = v;
+  t.deepEqual(Try.flatten(v), x, `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
+  // must not flatten object properties
+  v = {a: new Success(1), b: new Failure(e1)};
+  x = v;
+  t.deepEqual(Try.flatten(v), x, `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
+  // must not flatten object properties
+  v = {a: [new Success(1), new Success(2)], b: [new Failure(e1), new Failure(e2)]};
+  x = v;
+  t.deepEqual(Try.flatten(v), x, `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
+  // must not flatten object properties
+  v = {a: new Success([new Success(1), new Success(2)]), b: new Success([new Failure(e1), new Failure(e2)])};
+  x = v;
+  t.deepEqual(Try.flatten(v), x, `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
+  // Array cases (without Try values)
+  // -------------------------------------------------------------------------------------------------------------------
+  v = [1, 2, 3];
+  x = [1, 2, 3];
+  t.deepEqual(Try.flatten(v), x, `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = [[1, 2, 3], [4, 5, 6]];
+  x = [[1, 2, 3], [4, 5, 6]];
+  // x = [1, 2, 3, 4, 5, 6];
+  t.deepEqual(Try.flatten(v), x, `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = [[[1, [2, 3]], [[4, 5], 6], [7, [8], 9]], [[[10, 11, 12]], [[13, 14], [15]], [[16], [17, 18]]]];
+  x = [[[1, [2, 3]], [[4, 5], 6], [7, [8], 9]], [[[10, 11, 12]], [[13, 14], [15]], [[16], [17, 18]]]];
+  // x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+  t.deepEqual(Try.flatten(v), x, `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
+  // Success cases
+  // -------------------------------------------------------------------------------------------------------------------
+  v = new Success(1);
+  x = 1;
+  t.deepEqual(Try.flatten(v), x, `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = [new Success(1)];
+  x = [1];
+  t.deepEqual(Try.flatten(v), x, `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = [new Success([1])];
+  x = [[1]];
+  t.deepEqual(Try.flatten(v), x, `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = [[new Success(1)]];
+  x = [[1]];
+  t.deepEqual(Try.flatten(v), x, `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = [[[[new Success([1])]]]];
+  x = [[[[[1]]]]];
+  t.deepEqual(Try.flatten(v), x, `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = new Success(new Success(2)); // actually already flat
+  x = 2;
+  t.deepEqual(Try.flatten(v), x, `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = new Success([new Success(2)]);
+  x = [2];
+  t.deepEqual(Try.flatten(v), x, `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = [new Success([new Success(2)])];
+  x = [[2]];
+  t.deepEqual(Try.flatten(v), x, `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = new Success(new Success(new Success(new Success(4)))); // actually already flat
+  x = 4;
+  t.deepEqual(Try.flatten(v), x, `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = new Success([new Success([new Success([new Success(4)])])]);
+  x = [[[4]]];
+  t.deepEqual(Try.flatten(v), x, `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
+  // Failure cases
+  // -------------------------------------------------------------------------------------------------------------------
+  v = new Failure(e1);
+  x = v;
+  throws(() => Try.flatten(v), e1, `flatten(${stringify(v)})`);
+  throws(() => Try.flatten(v, undefined, {keepFailures: !keep}), e1, `flatten(${stringify(v)}, !keep) must throw ${v.error}`);
+  t.equal(Try.flatten(v, undefined, {keepFailures: keep}), x, `flatten(${stringify(v)}, keep) must be ${stringify(x)}`);
+
+  v = [new Failure(e1)];
+  x = [new Failure(e1)];
+  throws(() => Try.flatten(v), e1, `flatten(${stringify(v)})`);
+  t.deepEqual(Try.flatten(v, undefined, {keepFailures: keep}), x, `flatten(${stringify(v)}, keep) must be ${stringify(x)}`);
+
+  v = [[new Failure(e2)]];
+  x = [[new Failure(e2)]];
+  throws(() => Try.flatten(v), e2, `flatten(${stringify(v)})`);
+  t.deepEqual(Try.flatten(v, undefined, {keepFailures: keep}), x, `flatten(${stringify(v)}, keep) must be ${stringify(x)}`);
+
+  v = [[[[[new Failure(e3)]]]]];
+  x = [[[[[new Failure(e3)]]]]];
+  throws(() => Try.flatten(v), e3, `flatten(${stringify(v)})`);
+  t.deepEqual(Try.flatten(v, undefined, {keepFailures: keep}), x, `flatten(${stringify(v)}, keep) must be ${stringify(x)}`);
+
+  v = new Success(new Failure(e1));
+  x = v;
+  throws(() => Try.flatten(v), e1, `flatten(${stringify(v)})`);
+  throws(() => Try.flatten(v, undefined, {keepFailures: !keep}), e1, `flatten(${stringify(v)}, !keep) must throw ${v.error}`);
+  t.equal(Try.flatten(v, undefined, {keepFailures: keep}), x, `flatten(${stringify(v)}, keep) must be ${stringify(x)}`);
+
+  v = new Success([new Failure(e1)]);
+  x = v.value;
+  throws(() => Try. flatten(v), e1, `flatten(${stringify(v)})`);
+  throws(() => Try.flatten(v, undefined, {keepFailures: !keep}), e1, `flatten(${stringify(v)}, !keep) must throw ${v.error}`);
+  t.deepEqual(Try.flatten(v, undefined, {keepFailures: keep}), x, `flatten(${stringify(v)}, keep) must be ${stringify(x)}`);
+
+  // Multiple Success and/or Failure cases
+  // -------------------------------------------------------------------------------------------------------------------
+  v = [new Success(1), new Success(2)];
+  x = [1, 2];
+  t.deepEqual(Try.flatten(v), x, `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = new Success([new Success(1), new Success(2)]);
+  x = [1, 2];
+  t.deepEqual(Try.flatten(v), x, `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = new Success(new Success([new Success(1), new Success(2)]));
+  x = [1, 2];
+  t.deepEqual(Try.flatten(v), x, `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = [new Success([new Success([new Success(1), new Success(2)])])];
+  x = [[[1, 2]]];
+  t.deepEqual(Try.flatten(v), x, `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = [new Success([new Success([new Success(1), new Success(2)]), new Success(3)])];
+  x = [[[1, 2], 3]];
+  t.deepEqual(Try.flatten(v), x, `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = [new Success([new Success([new Success(1), new Success(2), new Failure(e1)]), new Failure(e2)]), new Failure(e3)];
+  x = [[[1, 2, new Failure(e1)], new Failure(e2)], new Failure(e3)];
+  throws(() => Try.flatten(v), e1, `flatten(${stringify(v)})`);
+  t.deepEqual(Try.flatten(v, undefined, {keepFailures: keep}), x, `flatten(${stringify(v)}, keep) must be ${stringify(x)}`);
+
+  v = [[new Success(1)], [new Success(2)]];
+  x = [[1], [2]];
+  t.deepEqual(Try.flatten(v), x, `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = [[new Success(1)], [new Success(2)], [new Success(3)]];
+  x = [[1], [2], [3]];
+  t.deepEqual(Try.flatten(v), x, `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = [[[new Success(1)], [new Success(2)], [new Success(3)]], [[new Success(4)], [new Success(5)], [new Success(6)]]];
+  x = [[[1], [2], [3]], [[4], [5], [6]]];
+  t.deepEqual(Try.flatten(v), x, `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = new Success(new Success([new Success([new Success([new Success(1)]), new Success([new Success(2), new Failure(e1)]), new Success([new Success(3), new Failure(e2)])]), new Success([[new Success(4)], [new Success(5)], [new Success(6), new Failure(e3)]])]));
+  x = [[[1], [2, new Failure(e1)], [3, new Failure(e2)]], [[4], [5], [6, new Failure(e3)]]];
+  throws(() => Try.flatten(v), e1, `flatten(${stringify(v)})`);
+  t.deepEqual(Try.flatten(v, undefined, {keepFailures: keep}), x, `flatten(${stringify(v)}, keep) must be ${stringify(x)}`);
+
+  v = [[[1], [2], [3], [new Failure(e1)]], [[4], [5], [6], [new Failure(e2)]]];
+  x = [[[1], [2], [3], [new Failure(e1)]], [[4], [5], [6], [new Failure(e2)]]];
+  throws(() => Try.flatten(v), e1, `flatten(${stringify(v)})`);
+  t.deepEqual(Try.flatten(v, undefined, {keepFailures: keep}), x, `flatten(${stringify(v)}, keep) must be ${stringify(x)}`);
+
+  v = [[[[new Failure(e3)]]], [[1], [2], [3], [new Failure(e1)]], [[4], [5], [6], [new Failure(e2)]]];
+  x = [[[[new Failure(e3)]]], [[1], [2], [3], [new Failure(e1)]], [[4], [5], [6], [new Failure(e2)]]];
+  throws(() => Try.flatten(v), e3, `flatten(${stringify(v)})`);
+  t.deepEqual(Try.flatten(v, undefined, {keepFailures: keep}), x, `flatten(${stringify(v)}, keep) must be ${stringify(x)}`);
+
+  // Circular references
+  // -------------------------------------------------------------------------------------------------------------------
+  v = [new Success([1, 2]), undefined, new Success([3, undefined, 4])];
+  v[0].value.push(v);
+  v[0].value.push(v[0]);
+  v[1] = v;
+  v[2].value[1] = v;
+  v.push(v);
+  x = [[1, 2], undefined, [3, undefined, 4]];
+  x[0].push(x);
+  x[0].push(x[0]);
+  x[1] = x;
+  x[2][1] = x;
+  x.push(x);
+
+  // compare using stringify, since deepEqual doesn't survive circular structures
+  t.deepEqual(stringify(Try.flatten(v)), stringify(x), `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
+  t.end();
+});
+
+// =====================================================================================================================
+// flatten - with shallower depths
+// =====================================================================================================================
+
+test('flatten - with shallower depths', t => {
+  const e1 = new Error('Failed 1');
+  const e2 = new Error('Failed 2');
+  const e3 = new Error('Failed 3');
+  const e6 = new Error('Failed 6');
+  const keep = true;
+
+  function throws(fn, expectedError, prefix) {
+    t.throws(fn, `${prefix} must throw an error`);
+    try {
+      const result = fn();
+      t.fail(`${prefix} must NOT succeed with result: ${stringify(result)}`);
+    } catch (err) {
+      t.equal(err, expectedError, `${prefix} must throw ${expectedError}`);
+    }
+  }
+
+  // Success case 1
+  // -------------------------------------------------------------------------------------------------------------------
+  let v = new Success(1);
+  // let x = new Success(1);
+  let x = 1;
+  let n = 0;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = -1;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = Number.MIN_SAFE_INTEGER;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  x = 1;
+  n = 1;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = 2;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = Number.MAX_SAFE_INTEGER;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  // Success case 2
+  // -------------------------------------------------------------------------------------------------------------------
+  v = [new Success(1)];
+  // x = [new Success(1)];
+  x = [1];
+  n = 0;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = -1;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = Number.MIN_SAFE_INTEGER;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  x = [1];
+  n = 1;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = 2;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = Number.MAX_SAFE_INTEGER;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  // Success case 3
+  // -------------------------------------------------------------------------------------------------------------------
+  v = [new Success([1])];
+  // x = [new Success([1])];
+  // n = 0;
+  // t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  // n = -1;
+  // t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  // n = Number.MIN_SAFE_INTEGER;
+  // t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  x = [[1]];
+  n = 0;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = 1;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = Number.MAX_SAFE_INTEGER;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  // Success case 4
+  // -------------------------------------------------------------------------------------------------------------------
+  v = [new Success([new Success([new Success(1)])])];
+  // x = [new Success([new Success([new Success(1)])])];
+  // n = 0;
+  // t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  // n = -1;
+  // t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  // n = Number.MIN_SAFE_INTEGER;
+  // t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  x = [[new Success([new Success(1)])]];
+  n = 0;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = [[[new Success(1)]]];
+  n = 1;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = [[[1]]];
+  n = 2;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = Number.MAX_SAFE_INTEGER;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  // Success case 5
+  // -------------------------------------------------------------------------------------------------------------------
+  v = new Success([new Success([new Success([new Success(1), [new Success(2), new Success(3)]])])]);
+  // x = new Success([new Success([new Success([new Success(1), [new Success(2), new Success(3)]])])]);
+  // n = 0;
+  // t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  // n = -1;
+  // t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  // n = Number.MIN_SAFE_INTEGER;
+  // t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  x = [new Success([new Success([new Success(1), [new Success(2), new Success(3)]])])];
+  n = 0;
+  console.log(`############### v  = ${stringify(v)}`);
+  console.log(`############### v' = ${stringify(Try.flatten(v, n))}`);
+  console.log(`############### x  = ${stringify(x)}`);
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = [[new Success([new Success(1), [new Success(2), new Success(3)]])]];
+  n = 1;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = [[[new Success(1), [new Success(2), new Success(3)]]]];
+  n = 2;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = [[[1, [new Success(2), new Success(3)]]]];
+  n = 3;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = [[[1, [2, 3]]]];
+  n = 4;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = Number.MAX_SAFE_INTEGER;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  // Success cases
+  // -------------------------------------------------------------------------------------------------------------------
+  v = new Success([new Success([new Success(1), new Success(2), new Success(3)]), new Success([new Success(4), new Success(5), new Success(6)])]);
+  // x = new Success([new Success([new Success(1), new Success(2), new Success(3)]), new Success([new Success(4), new Success(5), new Success(6)])]);
+  // n = 0;
+  // t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  // n = -1;
+  // t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  // n = Number.MIN_SAFE_INTEGER;
+  // t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  x = [new Success([new Success(1), new Success(2), new Success(3)]), new Success([new Success(4), new Success(5), new Success(6)])];
+  n = 0;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = [[new Success(1), new Success(2), new Success(3)], [new Success(4), new Success(5), new Success(6)]];
+  n = 1;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = [[1, 2, 3], [4, 5, 6]];
+  n = 2;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = Number.MAX_SAFE_INTEGER;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  v = new Success([new Success([new Success([new Success(1), new Success([new Success(2), new Success(3)])])]), new Success([new Success([new Success([new Success(4), new Success(5)]), new Success(6)])])]);
+  // x = new Success([new Success([new Success([new Success(1), new Success([new Success(2), new Success(3)])])]), new Success([new Success([new Success([new Success(4), new Success(5)]), new Success(6)])])]);
+  // n = 0;
+  // t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  // n = -1;
+  // t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  // n = Number.MIN_SAFE_INTEGER;
+  // t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  x = [new Success([new Success([new Success(1), new Success([new Success(2), new Success(3)])])]), new Success([new Success([new Success([new Success(4), new Success(5)]), new Success(6)])])];
+  n = 0;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = [[new Success([new Success(1), new Success([new Success(2), new Success(3)])])], [new Success([new Success([new Success(4), new Success(5)]), new Success(6)])]];
+  n = 1;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = [[[new Success(1), new Success([new Success(2), new Success(3)])]], [[new Success([new Success(4), new Success(5)]), new Success(6)]]];
+  n = 2;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = [[[1, [new Success(2), new Success(3)]]], [[[new Success(4), new Success(5)], 6]]];
+  n = 3;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = [[[1, [2, 3]]], [[[4, 5], 6]]];
+  n = 4;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = Number.MAX_SAFE_INTEGER;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  // Failure cases
+  // -------------------------------------------------------------------------------------------------------------------
+  v = new Failure(e1);
+  x = v;
+  n = 0;
+  // t.equal(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  throws(() => Try.flatten(v, n), e1, `flatten(${stringify(v)}, ${n})`);
+  throws(() => Try.flatten(v, n, {keepFailures: !keep}), e1, `flatten(${stringify(v)}, ${n}, !keep)`);
+  t.equal(Try.flatten(v, n, {keepFailures: keep}), x, `flatten(${stringify(v)}, ${n}, keep) must be ${stringify(x)}`);
+  x = v;
+  n = 1;
+  throws(() => Try.flatten(v, n), e1, `flatten(${stringify(v)}, ${n})`);
+  throws(() => Try.flatten(v, n, {keepFailures: !keep}), e1, `flatten(${stringify(v)}, ${n}, !keep)`);
+  t.equal(Try.flatten(v, n, {keepFailures: keep}), x, `flatten(${stringify(v)}, ${n}, keep) must be ${stringify(x)}`);
+
+  v = new Success(new Failure(e1)); // already flat
+  x = v;
+  n = 0;
+  // t.equal(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  throws(() => Try.flatten(v, n), e1, `flatten(${stringify(v)}, ${n}`);
+  throws(() => Try.flatten(v, n, {keepFailures: !keep}), e1, `flatten(${stringify(v)}, ${n}, !keep)`);
+  t.equal(Try.flatten(v, n, {keepFailures: keep}), x, `flatten(${stringify(v)}, ${n}, keep) must be ${stringify(x)}`);
+  x = v;
+  n = 1;
+  throws(() => Try.flatten(v, n), e1, `flatten(${stringify(v)}, ${n}`);
+  throws(() => Try.flatten(v, n, {keepFailures: !keep}), e1, `flatten(${stringify(v)}, ${n}, !keep)`);
+  t.equal(Try.flatten(v, n, {keepFailures: keep}), x, `flatten(${stringify(v)}, ${n}, keep) must be ${stringify(x)}`);
+
+  v = [new Failure(e1)];
+  x = [new Failure(e1)];
+  n = 0;
+  // t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  throws(() => Try.flatten(v, n), e1, `flatten(${stringify(v)}, ${n})`);
+  t.deepEqual(Try.flatten(v, n, {keepFailures: keep}), x, `flatten(${stringify(v)}, ${n}, keep) must be ${stringify(x)}`);
+  x = [new Failure(e1)];
+  n = 1;
+  throws(() => Try.flatten(v, n), e1, `flatten(${stringify(v)}, ${n})`);
+  t.deepEqual(Try.flatten(v, n, {keepFailures: keep}), x, `flatten(${stringify(v)}, ${n}, keep) must be ${stringify(x)}`);
+
+  v = new Success([new Failure(e1)]);
+  // x = v;
+  // n = 0;
+  // t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = [new Failure(e1)];
+  n = 0;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = 1;
+  throws(() => Try.flatten(v, n), e1, `flatten(${stringify(v)}, ${n})`);
+  throws(() => Try.flatten(v, n, {keepFailures: !keep}), e1, `flatten(${stringify(v)}, ${n}, !keep)`);
+  t.deepEqual(Try.flatten(v, n, {keepFailures: keep}), x, `flatten(${stringify(v)}, ${n}, keep) must be ${stringify(x)}`);
+
+  v = [[new Failure(e2)]];
+  x = [[new Failure(e2)]];
+  n = 0;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = 1;
+  // t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  throws(() => Try.flatten(v, n), e2, `flatten(${stringify(v)}, ${n})`);
+  t.deepEqual(Try.flatten(v, n, {keepFailures: keep}), x, `flatten(${stringify(v)}, ${n}, keep) must be ${stringify(x)}`);
+  n = 2;
+  throws(() => Try.flatten(v, n), e2, `flatten(${stringify(v)}, ${n})`);
+  t.deepEqual(Try.flatten(v, n, {keepFailures: keep}), x, `flatten(${stringify(v)}, ${n}, keep) must be ${stringify(x)}`);
+
+  v = new Success([new Success([new Failure(e2)])]);
+  // x = new Success([new Success([new Failure(e2)])]);
+  // n = 0;
+  // t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = [new Success([new Failure(e2)])];
+  n = 0;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = [[new Failure(e2)]];
+  n = 1;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  // throws(() => Try.flatten(v, n), e2, `flatten(${stringify(v)}, ${n})`);
+  // t.deepEqual(Try.flatten(v, n, {keepFailures: keep}), x, `flatten(${stringify(v)}, ${n}, keep) must be ${stringify(x)}`);
+  n = 2;
+  throws(() => Try.flatten(v, n), e2, `flatten(${stringify(v)}, ${n})`);
+  t.deepEqual(Try.flatten(v, n, {keepFailures: keep}), x, `flatten(${stringify(v)}, ${n}, keep) must be ${stringify(x)}`);
+
+  v = [[[[[new Failure(e3)]]]]];
+  x = [[[[[new Failure(e3)]]]]];
+  n = 0;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = 1;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = 2;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = 3;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = 4;
+  // t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  throws(() => Try.flatten(v, n), e3, `flatten(${stringify(v)}, ${n})`);
+  t.deepEqual(Try.flatten(v, n, {keepFailures: keep}), x, `flatten(${stringify(v)}, ${n}, keep) must be ${stringify(x)}`);
+  n = 5;
+  throws(() => Try.flatten(v, n), e3, `flatten(${stringify(v)}, ${n})`);
+  t.deepEqual(Try.flatten(v, n, {keepFailures: keep}), x, `flatten(${stringify(v)}, ${n}, keep) must be ${stringify(x)}`);
+
+  v = new Success([new Success([new Success([new Success([new Success([new Failure(e3)])])])])]);
+  // x = new Success([new Success([new Success([new Success([new Success([new Failure(e3)])])])])]);
+  // n = 0;
+  // t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = [new Success([new Success([new Success([new Success([new Failure(e3)])])])])];
+  n = 0;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = [[new Success([new Success([new Success([new Failure(e3)])])])]];
+  n = 1;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = [[[new Success([new Success([new Failure(e3)])])]]];
+  n = 2;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = [[[[new Success([new Failure(e3)])]]]];
+  n = 3;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = [[[[[new Failure(e3)]]]]];
+  n = 4;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = [[[[[new Failure(e3)]]]]];
+  n = 6;
+  throws(() => Try.flatten(v, n), e3, `flatten(${stringify(v)}, ${n})`);
+  t.deepEqual(Try.flatten(v, n, {keepFailures: keep}), x, `flatten(${stringify(v)}, ${n}, keep) must be ${stringify(x)}`);
+
+
+  // Multiple Failures case
+  // -------------------------------------------------------------------------------------------------------------------
+  v = new Success([new Success([new Success([new Success(1), new Success([new Success(2), new Failure(e3)])])]), new Success([new Success([new Success([new Success(4), new Success(5)]), new Failure(e6)])])]);
+  // x = new Success([new Success([new Success([new Success(1), new Success([new Success(2), new Failure(e3)])])]), new Success([new Success([new Success([new Success(4), new Success(5)]), new Failure(e6)])])]);
+  // n = 0;
+  // t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  // n = -1;
+  // t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  // n = Number.MIN_SAFE_INTEGER;
+  // t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  x = [new Success([new Success([new Success(1), new Success([new Success(2), new Failure(e3)])])]), new Success([new Success([new Success([new Success(4), new Success(5)]), new Failure(e6)])])];
+  n = 0;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = [[new Success([new Success(1), new Success([new Success(2), new Failure(e3)])])], [new Success([new Success([new Success(4), new Success(5)]), new Failure(e6)])]];
+  n = 1;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = [[[new Success(1), new Success([new Success(2), new Failure(e3)])]], [[new Success([new Success(4), new Success(5)]), new Failure(e6)]]];
+  n = 2;
+  t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = [[[1, [new Success(2), new Failure(e3)]]], [[[new Success(4), new Success(5)], new Failure(e6)]]];
+  n = 3;
+  throws(() => Try.flatten(v, n), e6, `flatten(${stringify(v)}, ${n})`);
+  t.deepEqual(Try.flatten(v, n, {keepFailures: keep}), x, `flatten(${stringify(v)}, ${n}, keep) must be ${stringify(x)}`);
+  x = [[[1, [2, new Failure(e3)]]], [[[4, 5], new Failure(e6)]]];
+  n = 4;
+  throws(() => Try.flatten(v, n), e3, `flatten(${stringify(v)}, ${n})`); // switches to e3, since traversing depth first!
+  t.deepEqual(Try.flatten(v, n, {keepFailures: keep}), x, `flatten(${stringify(v)}, ${n}, keep) must be ${stringify(x)}`);
+
+  t.end();
+});
+
+// =====================================================================================================================
+// findFailure - with depth undefined (i.e. deep)
+// =====================================================================================================================
+
+test('findFailure - with depth undefined (i.e. deep)', t => {
+  const e1 = new Error('Failed 1');
+  const e2 = new Error('Failed 2');
+  const e3 = new Error('Failed 3');
+
+  // Empty Array case
+  // -------------------------------------------------------------------------------------------------------------------
+  let v = [];
+  let x = undefined;
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  // Non-Try & non-Array cases
+  // -------------------------------------------------------------------------------------------------------------------
+  v = undefined;
+  x = undefined;
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+  //noinspection JSCheckFunctionSignatures
+  t.deepEqual(Try.findFailure(), x, `findFailure() must be ${stringify(x)}`);
+
+  v = null;
+  x = undefined;
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = 1;
+  x = undefined;
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = 'Abc';
+  x = undefined;
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = {a: 1};
+  x = undefined;
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  // must not findFailure in object properties
+  v = {a: new Success(1), b: new Failure(e1)};
+  x = undefined;
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  // must not findFailure in object properties
+  v = {a: [new Success(1), new Success(2)], b: [new Failure(e1), new Failure(e2)]};
+  x = undefined;
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  // must not findFailure in object properties
+  v = {a: new Success([new Success(1), new Success(2)]), b: new Success([new Failure(e1), new Failure(e2)])};
+  x = undefined;
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  // Success cases
+  // -------------------------------------------------------------------------------------------------------------------
+  v = new Success(1);
+  x = undefined;
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = [new Success(1)];
+  x = undefined;
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = [new Success([1])];
+  x = undefined;
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = [[new Success(1)]];
+  x = undefined;
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = [[[[new Success([1])]]]];
+  x = undefined;
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = new Success(new Success(2)); // actually already flat
+  x = undefined;
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = new Success([new Success(2)]);
+  x = undefined;
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = [new Success([new Success(2)])];
+  x = undefined;
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = new Success(new Success(new Success(new Success(4)))); // actually already flat
+  x = undefined;
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = new Success([new Success([new Success([new Success(4)])])]);
+  x = undefined;
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  // Failure cases
+  // -------------------------------------------------------------------------------------------------------------------
+  v = new Failure(e1);
+  x = v;
+  t.equal(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = [new Failure(e1)];
+  x = v[0];
+  t.equal(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = [[new Failure(e2)]];
+  x = v[0][0];
+  t.equal(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = [[[[[new Failure(e3)]]]]];
+  x = v[0][0][0][0][0];
+  t.equal(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = new Success(new Failure(e1));
+  x = v;
+  t.equal(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = new Success([new Failure(e1)]);
+  x = v.value[0];
+  t.equal(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  // Multiple Success and/or Failure cases
+  // -------------------------------------------------------------------------------------------------------------------
+  v = [new Success(1), new Success(2)];
+  x = undefined;
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = new Success([new Success(1), new Success(2)]);
+  x = undefined;
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = new Success(new Success([new Success(1), new Success(2)]));
+  x = undefined;
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = [new Success([new Success([new Success(1), new Success(2)])])];
+  x = undefined;
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = [new Success([new Success([new Success(1), new Success(2)]), new Success(3)])];
+  x = undefined;
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = [new Success([new Success([new Success(1), new Success(2), new Failure(e1)]), new Failure(e2)]), new Failure(e3)];
+  x = new Failure(e1); // since searching depth-first
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = [[new Success(1)], [new Success(2)]];
+  x = undefined;
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = [[new Success(1)], [new Success(2)], [new Success(3)]];
+  x = undefined;
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = [[[new Success(1)], [new Success(2)], [new Success(3)]], [[new Success(4)], [new Success(5)], [new Success(6)]]];
+  x = undefined;
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = new Success(new Success([new Success([new Success([new Success(1)]), new Success([new Success(2), new Failure(e1)]), new Success([new Success(3), new Failure(e2)])]), new Success([[new Success(4)], [new Success(5)], [new Success(6), new Failure(e3)]])]));
+  x = new Failure(e1);
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = [[[1], [2], [3], [new Failure(e1)]], [[4], [5], [6], [new Failure(e2)]]];
+  x = new Failure(e1);
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = [[[[new Failure(e3)]]], [[1], [2], [3], [new Failure(e1)]], [[4], [5], [6], [new Failure(e2)]]];
+  x = new Failure(e3);
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  // Circular references
+  // -------------------------------------------------------------------------------------------------------------------
+  v = [new Success([1, 2]), undefined, new Success([3, undefined, 4])];
+  v[0].value.push(v);
+  v[0].value.push(v[0]);
+  v[1] = v;
+  v[2].value[1] = v;
+  v.push(v);
+  x = undefined;
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  v = [new Success([1, 2]), undefined, new Success([3, undefined, 4, new Failure(e3)])];
+  v[0].value.push(v);
+  v[0].value.push(v[0]);
+  v[1] = v;
+  v[2].value[1] = v;
+  v.push(v);
+  x = new Failure(e3);
+  t.deepEqual(Try.findFailure(v), x, `findFailure(${stringify(v)}) must be ${stringify(x)}`);
+
+  t.end();
+});
+
+
+// =====================================================================================================================
+// findFailure - with shallower depths
+// =====================================================================================================================
+
+test('findFailure - with shallower depths', t => {
+  const e1 = new Error('Failed 1');
+  const e2 = new Error('Failed 2');
+  const e3 = new Error('Failed 3');
+  const e6 = new Error('Failed 6');
+
+  let x = undefined;
+
+  // Success case 1
+  // -------------------------------------------------------------------------------------------------------------------
+  let v = new Success(1);
+  let n = 0;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = -1;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = Number.MIN_SAFE_INTEGER;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  n = 1;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = 2;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = Number.MAX_SAFE_INTEGER;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  // Success case 2
+  // -------------------------------------------------------------------------------------------------------------------
+  v = [new Success(1)];
+  n = 0;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = -1;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = Number.MIN_SAFE_INTEGER;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  n = 1;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = 2;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = Number.MAX_SAFE_INTEGER;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  // Success case 3
+  // -------------------------------------------------------------------------------------------------------------------
+  v = [new Success([1])];
+  n = 0;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = -1;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = Number.MIN_SAFE_INTEGER;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  n = 1;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = 2;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = Number.MAX_SAFE_INTEGER;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  // Success case 4
+  // -------------------------------------------------------------------------------------------------------------------
+  v = [new Success([new Success([new Success(1)])])];
+  n = 0;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = -1;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = Number.MIN_SAFE_INTEGER;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  n = 1;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = 2;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = 3;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = Number.MAX_SAFE_INTEGER;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  // Success case 4
+  // -------------------------------------------------------------------------------------------------------------------
+  v = new Success([new Success([new Success([new Success(1), [new Success(2), new Success(3)]])])]);
+  n = 0;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = -1;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = Number.MIN_SAFE_INTEGER;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  n = 1;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = 2;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = 3;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = 4;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = 5;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = Number.MAX_SAFE_INTEGER;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  // Success cases
+  // -------------------------------------------------------------------------------------------------------------------
+  v = new Success([new Success([new Success(1), new Success(2), new Success(3)]), new Success([new Success(4), new Success(5), new Success(6)])]);
+  n = 0;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = -1;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = Number.MIN_SAFE_INTEGER;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  n = 1;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = 2;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = 3;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = Number.MAX_SAFE_INTEGER;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  v = new Success([new Success([new Success([new Success(1), new Success([new Success(2), new Success(3)])])]), new Success([new Success([new Success([new Success(4), new Success(5)]), new Success(6)])])]);
+  n = 0;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = -1;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = Number.MIN_SAFE_INTEGER;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  n = 1;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = 2;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = 3;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = 4;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = 5;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = Number.MAX_SAFE_INTEGER;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  // Failure cases
+  // -------------------------------------------------------------------------------------------------------------------
+  v = new Failure(e1);
+  x = v;
+  n = 0;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = 1;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  v = new Success(new Failure(e1)); // already flat
+  // x = undefined;
+  // n = -1;
+  // t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = v;
+  n = 0;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = v;
+  n = 1;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  v = [new Failure(e1)];
+  // x = undefined; //TODO check this
+  x = v[0];
+  n = 0;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = v[0];
+  n = 1;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  v = new Success([new Failure(e1)]);
+  x = undefined;
+  n = 0;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  // x = undefined;
+  x = v.value[0];
+  n = 1;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = v.value[0];
+  n = 2;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  v = [[new Failure(e2)]];
+  x = undefined;
+  n = 0;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  // x = undefined;
+  x = v[0][0];
+  n = 1;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = v[0][0];
+  n = 2;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  v = new Success([new Success([new Failure(e2)])]);
+  x = undefined;
+  n = 0;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = undefined;
+  n = 1;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  // x = undefined;
+  x = v.value[0].value[0];
+  n = 2;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = v.value[0].value[0];
+  n = 3;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  v = [[[[[new Failure(e3)]]]]];
+  x = undefined;
+  n = 0;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = undefined;
+  n = 1;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = undefined;
+  n = 2;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = undefined;
+  n = 3;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  // x = undefined;
+  x = v[0][0][0][0][0];
+  n = 4;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = v[0][0][0][0][0];
+  n = 5;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  v = new Success([new Success([new Success([new Success([new Success([new Failure(e3)])])])])]);
+  x = undefined;
+  n = 0;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = undefined;
+  n = 1;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = undefined;
+  n = 2;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = undefined;
+  n = 3;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = undefined;
+  n = 4;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  // x = undefined;
+  x = v.value[0].value[0].value[0].value[0].value[0];
+  n = 5;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = v.value[0].value[0].value[0].value[0].value[0];
+  n = 6;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+
+  // Multiple Failures case
+  // -------------------------------------------------------------------------------------------------------------------
+  v = new Success([new Success([new Success([new Success(1), new Success([new Success(2), new Failure(e3)])])]), new Success([new Success([new Success([new Success(4), new Success(5)]), new Failure(e6)])])]);
+  x = undefined;
+  n = 0;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = -1;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  n = Number.MIN_SAFE_INTEGER;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  x = undefined;
+  n = 1;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = undefined;
+  n = 2;
+  t.equal(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  // x = undefined;
+  x = new Failure(e6);
+  n = 3;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  // x = new Failure(e6);
+  x = new Failure(e3);
+  n = 4;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+  x = new Failure(e3);
+  n = 5;
+  t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  t.end();
+});
 

@@ -318,7 +318,7 @@ function toCode(code, cause, defaultCode) {
  * @returns {number|string}
  */
 function toHttpStatus(httpStatus) {
-  const httpStatusCode = Number.parseInt(trim(httpStatus));
+  const httpStatusCode = Number(trim(httpStatus));
   return Number.isNaN(httpStatusCode) ? stringify(trimOrEmpty(httpStatus)) : httpStatusCode;
 }
 
@@ -329,7 +329,7 @@ function toHttpStatus(httpStatus) {
  * @returns {number} the HTTP status code (if it was parsable as a number); otherwise -1
  */
 function toHttpStatusStrict(httpStatus) {
-  const httpStatusCode = Number.parseInt(trim(httpStatus));
+  const httpStatusCode = Number(trim(httpStatus));
   return Number.isNaN(httpStatusCode) ? -1 : httpStatusCode;
 }
 /**

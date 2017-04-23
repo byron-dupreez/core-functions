@@ -28,6 +28,7 @@ module.exports = {
   isNaN: isNaN,
   isInteger: isInteger,
   isSafeInteger: isSafeInteger,
+  toInteger: toInteger,
 
   integerRegex: integerRegex,
   numberRegex: numberRegex,
@@ -122,6 +123,18 @@ function isSafeInteger(value) {
 }
 
 /**
+ * Attempts to convert the given number-like string into an integer using `floor` if the parsed number is positive or
+ * `ceil` if its negative.
+ * @param {string|number|*} numberLike - a number-like string
+ * @returns {number|NaN} a parsed, integer version of the given number-like string
+ */
+function toInteger(numberLike) {
+  const n = Number(numberLike);
+  if (Number.isNaN(n)) return NaN;
+  return n >= 0 ? Math.floor(n) : Math.ceil(n);
+}
+
+/**
  * Returns true if the given value is a number-like string containing a number of any precision.
  * @param {string} value - the value to test
  * @returns {boolean} true if the given value is a number string; false otherwise
@@ -194,7 +207,7 @@ function toDecimalLike(numberLike) {
 
   if (hasExponent) {
     // Convert exponent into decimal format
-    let e = Number.parseInt(n.substring(ePos + 1));
+    let e = toInteger(n.substring(ePos + 1));
     if (e >= 0) {
       if (hasDecPoint) {
         if (e < decPlaces) {
@@ -285,7 +298,7 @@ function toNumberOrIntegerLike(value) {
     // Check if the string contains an integer
     if (isIntegerLike(value)) {
       // Integer-like string, so attempt to parse to an integer
-      const n = Number.parseInt(value);
+      const n = toInteger(value);
       // Check if have enough precision to hold the given integer value ... otherwise return the given value excluding
       // its fractional part (if any)
       return Number.isSafeInteger(n) ? n : Number.isNaN(n) ? NaN : toIntegerLikeOrNaN(value);
