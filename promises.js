@@ -380,7 +380,7 @@ function every(promises, cancellable) {
 
   // Install or extend the cancel method on the given cancellable object (if any)
   installCancel(cancellable, () => {
-    cancelled = true;
+    if (!completed) cancelled = true;
     return completed;
   });
 
@@ -478,17 +478,17 @@ function flatten(value, cancellable, opts) {
   }
   const isArray = Array.isArray(value);
   if (isArray && value.some(v => isPromiseLike(v))) {
-    // If value is an array containing at least one Promise or promise-like, then first flatten all of its promises and
-    // then use `every` function to flatten all of its resulting promises into a single promise of outcomes
+    // If value is an array containing at least one Promise or promise-like, then first flatten each of its promises and
+    // then use the `every` function to "flatten" all of its resulting promises into a single promise of "simplified" outcomes
     const promise = every(value.map(v => flatten(v, cancellable, opts)), cancellable);
     return !opts || !opts.skipSimplifyOutcomes ? promise.then(outcomes => Try.simplify(outcomes)) : promise;
 
-  } else if (value instanceof Try) {
+  } else if (value instanceof Success) {
     // If value is a Success outcome, then flatten its Success value too
     return value.map(v => flatten(v, cancellable, opts));
 
-  } else if (isArray && value.some(v => v instanceof Try)) {
-    // If value is an array containing at least one Success or Failure outcome, then flatten any Success values too
+  } else if (isArray && value.some(v => v instanceof Success)) {
+    // If value is an array containing at least one Success outcome, then flatten any Success values too
     const outcomes = value.map(v => v instanceof Success ? v.map(vv => flatten(vv, cancellable, opts)) : v);
     return !opts || !opts.skipSimplifyOutcomes ? Try.simplify(outcomes) : outcomes;
   }
@@ -539,7 +539,7 @@ function chain(f, inputs, cancellable) {
 
   // Install or extend the cancel method on the given cancellable object (if any)
   installCancel(cancellable, () => {
-    cancelled = true;
+    if (!completed) cancelled = true;
     return completed;
   });
 

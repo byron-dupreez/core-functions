@@ -1,4 +1,4 @@
-# core-functions v3.0.2
+# core-functions v3.0.3
 
 Core functions, utilities and classes for working with Node/JavaScript primitives and built-in objects, including 
 strings, numbers, booleans, Dates, Promises, base 64, Arrays, Objects, standard AppErrors, sorting utilities, etc.
@@ -157,6 +157,11 @@ This module's unit tests were developed with and must be run with [tape](https:/
 See the [package source](https://github.com/byron-dupreez/core-functions) for more details.
 
 ## Changes
+
+### 3.0.3
+- Minor changes & optimisations to `promises` module:
+  - Changed `every` & `chain` functions to skip marking internal cancelled flags as true on cancellation if already completed
+  - Changed `flatten` function to avoid the wasted effort of "flattening" non-Success values and/or arrays of non-Success values
 
 ### 3.0.2
 - Changes to `promises` module:
