@@ -162,6 +162,8 @@ See the [package source](https://github.com/byron-dupreez/core-functions) for mo
 - Minor changes & optimisations to `promises` module:
   - Changed `every` & `chain` functions to skip marking internal cancelled flags as true on cancellation if already completed
   - Changed `flatten` function to avoid the wasted effort of "flattening" non-Success values and/or arrays of non-Success values
+- Changes to `arrays` module:  
+  - Added a `flatten` function
 
 ### 3.0.2
 - Changes to `promises` module:

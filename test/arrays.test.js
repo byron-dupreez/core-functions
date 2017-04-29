@@ -14,6 +14,7 @@ const Arrays = require('../arrays');
 const distinct = Arrays.distinct;
 const isDistinct = Arrays.isDistinct;
 const isArrayOfType = Arrays.isArrayOfType;
+const flatten = Arrays.flatten;
 
 function wrap(value) {
   switch (typeof value) {
@@ -23,7 +24,8 @@ function wrap(value) {
       return new Number(value);
     case 'boolean': //noinspection JSPrimitiveTypeWrapperUsage
       return new Boolean(value);
-    default: return value;
+    default:
+      return value;
   }
 }
 
@@ -31,6 +33,7 @@ test('isDistinct', t => {
   function check(array, expected) {
     t.equal(Arrays.isDistinct(array), expected, `Arrays.isDistinct(${stringify(array)}) must ${expected ? '' : 'NOT '}be distinct`);
   }
+
   // empty array
   check([], true, t);
 
@@ -49,9 +52,9 @@ test('isDistinct', t => {
   check([1, 1, 1], false, t);
 
   // arrays of objects
-  const o1 = {a:1};
-  const o2 = {a:1};
-  const o3 = {a:1};
+  const o1 = {a: 1};
+  const o2 = {a: 1};
+  const o3 = {a: 1};
   check([o1], true, t);
   check([o1, o2], true, t);
   check([o1, o2, o3], true, t);
@@ -84,9 +87,9 @@ test('distinct', t => {
   check([1, 1, 1], [1]);
 
   // arrays of objects
-  const o1 = {a:1};
-  const o2 = {a:1};
-  const o3 = {a:1};
+  const o1 = {a: 1};
+  const o2 = {a: 1};
+  const o3 = {a: 1};
   check([o1], [o1]);
   check([o1, o2], [o1, o2]);
   check([o1, o2, o3], [o1, o2, o3]);
@@ -102,6 +105,7 @@ function checkIsArrayOfType(t, strict) {
   function check(array, type, expected) {
     t.equal(Arrays.isArrayOfType(array, type, strict), expected, `Arrays.isDistinct(${stringify(array)}, ${type}, ${strict}) must ${expected ? '' : 'NOT '}be an array of ${stringify(type)}`);
   }
+
   // empty array
   check([], "string", true);
   check([], "number", true);
@@ -119,7 +123,7 @@ function checkIsArrayOfType(t, strict) {
   check(['a', 'b', null], "string", false);
   check(['a', 'b', 1], "string", false);
   check(['a', 'b', true], "string", false);
-  check(['a', 'a', {a:'a'}], "string", false);
+  check(['a', 'a', {a: 'a'}], "string", false);
 
   // arrays of Strings
   check([wrap('a')], String, true);
@@ -130,7 +134,7 @@ function checkIsArrayOfType(t, strict) {
   check([wrap('a'), wrap('b'), null], String, false);
   check([wrap('a'), wrap('b'), 1], String, false);
   check([wrap('a'), wrap('b'), true], String, false);
-  check([wrap('a'), wrap('a'), {a:wrap('a')}], String, false);
+  check([wrap('a'), wrap('a'), {a: wrap('a')}], String, false);
 
   // arrays of both strings and Strings
   check(['a', wrap('b')], "string", !strict);
@@ -144,7 +148,7 @@ function checkIsArrayOfType(t, strict) {
   check([1, 2, undefined], "number", false);
   check([1, 2, null], "number", false);
   check([1, 2, '1'], "number", false);
-  check([1, 1, {a:1}], "number", false);
+  check([1, 1, {a: 1}], "number", false);
 
   // arrays of Numbers
   check([wrap(1), wrap(2), wrap(3)], Number, true);
@@ -162,7 +166,7 @@ function checkIsArrayOfType(t, strict) {
   check([true, false, undefined], "boolean", false);
   check([true, false, null], "boolean", false);
   check([true, false, 'true'], "boolean", false);
-  check([true, true, {a:true}], "boolean", false);
+  check([true, true, {a: true}], "boolean", false);
 
   // arrays of Booleans
   check([wrap(true)], Boolean, true);
@@ -172,16 +176,16 @@ function checkIsArrayOfType(t, strict) {
   check([wrap(true), wrap(false), undefined], Boolean, false);
   check([wrap(true), wrap(false), null], Boolean, false);
   check([wrap(true), wrap(false), 'true'], Boolean, false);
-  check([wrap(true), wrap(true), {a:wrap(true)}], Boolean, false);
+  check([wrap(true), wrap(true), {a: wrap(true)}], Boolean, false);
 
   // arrays of both booleans and Booleans
   check([true, wrap(false)], "boolean", !strict);
   check([true, wrap(false)], Boolean, !strict);
 
   // arrays of objects
-  const o1 = {a:1};
-  const o2 = {a:1};
-  const o3 = {a:1};
+  const o1 = {a: 1};
+  const o2 = {a: 1};
+  const o3 = {a: 1};
   check([o1], Object, true);
   check([o1, o2], Object, true);
   check([o1, o2, o3], Object, true);
@@ -213,3 +217,47 @@ test('isArrayOfType with non-strict', t => {
   t.end();
 });
 
+test('flatten', t => {
+  // Empty array
+  let as = [];
+  let xs = [];
+  t.deepEqual(flatten(as), xs, `flatten(${stringify(as)}) must be ${stringify(xs)}`);
+
+  // Only non-Array elements
+  as = [1];
+  xs = [1];
+  t.deepEqual(flatten(as), xs, `flatten(${stringify(as)}) must be ${stringify(xs)}`);
+
+  as = [1, 2];
+  xs = [1, 2];
+  t.deepEqual(flatten(as), xs, `flatten(${stringify(as)}) must be ${stringify(xs)}`);
+
+  as = [1, 2, 3];
+  xs = [1, 2, 3];
+  t.deepEqual(flatten(as), xs, `flatten(${stringify(as)}) must be ${stringify(xs)}`);
+
+  as = [1, 2, 3, 4, 5, 6, 7, 8];
+  xs = [1, 2, 3, 4, 5, 6, 7, 8];
+  t.deepEqual(flatten(as), xs, `flatten(${stringify(as)}) must be ${stringify(xs)}`);
+
+  // Only Array elements
+  as = [[1], [2]];
+  xs = [1, 2];
+  t.deepEqual(flatten(as), xs, `flatten(${stringify(as)}) must be ${stringify(xs)}`);
+
+  as = [[1, 2], [3, 4], [5, 6, 7], [8]];
+  xs = [1, 2, 3, 4, 5, 6, 7, 8];
+  t.deepEqual(flatten(as), xs, `flatten(${stringify(as)}) must be ${stringify(xs)}`);
+
+  // All Array elements which contain both non-Array & Array elements
+  as = [[1, [2]], [[3, 4]], [[5, 6], 7], [8]];
+  xs = [1, [2], [3, 4], [5, 6], 7, 8];
+  t.deepEqual(flatten(as), xs, `flatten(${stringify(as)}) must be ${stringify(xs)}`);
+
+  // Mixture of non-Array & Array elements
+  as = [1, [2], [3, 4], [5, 6], 7, 8];
+  xs = [1, 2, 3, 4, 5, 6, 7, 8];
+  t.deepEqual(flatten(as), xs, `flatten(${stringify(as)}) must be ${stringify(xs)}`);
+
+  t.end();
+});

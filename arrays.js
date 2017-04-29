@@ -6,7 +6,8 @@
 module.exports = {
   distinct: distinct,
   isDistinct: isDistinct,
-  isArrayOfType: isArrayOfType
+  isArrayOfType: isArrayOfType,
+  flatten: flatten
 };
 
 /**
@@ -65,4 +66,20 @@ function isArrayOfType(value, type, strict) {
   }
   // value is not an array or type is not a function or string
   return false;
+}
+
+/**
+ * Flattens the given Array of Array and/or non-Array elements into a single new Array containing all of the given
+ * Array's unpacked Array elements' elements together with all of its own non-Array elements.
+ * @param {*[][]} array - an Array of Array and/or non-Array elements
+ * @returns {*[]} a single Array containing all of the elements of the given arrays
+ */
+function flatten(array) {
+  return array.reduce((acc, e) => {
+    if (Array.isArray(e))
+      acc.push.apply(acc, e);
+    else
+      acc.push(e);
+    return acc;
+  }, []);
 }
