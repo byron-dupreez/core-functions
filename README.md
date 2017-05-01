@@ -164,6 +164,11 @@ See the [package source](https://github.com/byron-dupreez/core-functions) for mo
   - Changed `flatten` function to avoid the wasted effort of "flattening" non-Success values and/or arrays of non-Success values
 - Changes to `arrays` module:  
   - Added a `flatten` function
+- Changes to `tries` module:
+  - Changed the default behaviour of the static `countSuccess` & `describeSuccessAndFailureCounts` methods to count any 
+    non-Failure outcomes as successes (instead of ONLY counting Success outcomes as successes)
+    - Added an optional `strict` argument to these static methods that can be set to true to restore the original 
+      behaviour of ONLY strictly counting Success outcomes as successes 
 
 ### 3.0.2
 - Changes to `promises` module:

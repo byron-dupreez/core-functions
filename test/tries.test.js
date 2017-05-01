@@ -647,36 +647,165 @@ test('Try toPromise', t => {
   );
 });
 
-test('countSuccess, countFailure, count & describeSuccessAndFailureCounts', t => {
-  function check(outcomes, expectedSuccessCount, expectedFailureCount) {
-    t.equal(Try.countSuccess(outcomes), expectedSuccessCount, `countSuccess(outcomes) must be ${expectedSuccessCount}`);
+test('countSuccess, countFailure, count & describeSuccessAndFailureCounts - with strict NOT true', t => {
+  function check(outcomes, strict, expectedSuccessCount, expectedFailureCount) {
+    t.equal(Try.countSuccess(outcomes, strict), expectedSuccessCount, `countSuccess(outcomes, ${strict ? '':'!'}strict) must be ${expectedSuccessCount}`);
     t.equal(Try.countFailure(outcomes), expectedFailureCount, `countFailure(outcomes) must be ${expectedFailureCount}`);
-    t.equal(Try.count(outcomes, o => o.isSuccess()), expectedSuccessCount, `count(outcomes, o => o.isSuccess()) must be ${expectedSuccessCount}`);
-    t.equal(Try.count(outcomes, o => o.isFailure()), expectedFailureCount, `count(outcomes, o => o.isFailure()) must be ${expectedFailureCount}`);
-    t.equal(Try.count(outcomes, o => o instanceof Try), expectedSuccessCount + expectedFailureCount, `count(outcomes, o => o instanceof Try) must be ${expectedSuccessCount + expectedFailureCount}`);
+
+    const isSuccess = strict ? o => o instanceof Success : o => !(o instanceof Failure);
+    const isSuccessDesc = strict ? 'o => o instanceof Success' : 'o => !(o instanceof Failure)';
+    t.equal(Try.count(outcomes, isSuccess), expectedSuccessCount, `count(outcomes, ${isSuccessDesc}) must be ${expectedSuccessCount}`);
+    t.equal(Try.count(outcomes, o => o instanceof Failure), expectedFailureCount, `count(outcomes, o => o instanceof Failure) must be ${expectedFailureCount}`);
+
+    const isTry = strict ? o => o instanceof Try : o => !!o;
+    const isTryDesc = strict ? 'o => o instanceof Try' : 'o => !!o';
+    t.equal(Try.count(outcomes, isTry), expectedSuccessCount + expectedFailureCount, `count(outcomes, ${isTryDesc}) must be ${expectedSuccessCount + expectedFailureCount}`);
+
     const expected = `${expectedSuccessCount} success${expectedSuccessCount !== 1 ? 'es' : ''} & ${expectedFailureCount} failure${expectedFailureCount !== 1 ? 's' : ''}`;
-    t.equal(Try.describeSuccessAndFailureCounts(outcomes), expected, `describeSuccessAndFailureCounts(outcomes) must be '${expected}'`);
+    t.equal(Try.describeSuccessAndFailureCounts(outcomes, strict), expected, `describeSuccessAndFailureCounts(outcomes, ${strict ? '':'!'}strict) must be '${expected}'`);
   }
 
   const s = new Success(42);
   const f = new Failure(new Error('43'));
+  const strict = false;
 
-  check([], 0, 0);
-  check([s], 1, 0);
-  check([f], 0, 1);
-  check([s, s], 2, 0);
-  check([s, f], 1, 1);
-  check([f, s], 1, 1);
-  check([f, f], 0, 2);
-  check([s, s, s], 3, 0);
-  check([s, s, f], 2, 1);
-  check([s, f, s], 2, 1);
-  check([s, f, f], 1, 2);
-  check([f, s, s], 2, 1);
-  check([f, s, f], 1, 2);
-  check([f, f, s], 1, 2);
-  check([f, f, f], 0, 3);
-  check([f, s, f, s, s, f, s, f, s, f, s, s], 7, 5);
+  const strictValues = [false, undefined];
+  for (let strict of strictValues) {
+    // No outcomes
+    check([], strict, 0, 0);
+
+    // Only Success and Failure values
+    check([s], strict, 1, 0);
+    check([f], strict, 0, 1);
+    check([s, s], strict, 2, 0);
+    check([s, f], strict, 1, 1);
+    check([f, s], strict, 1, 1);
+    check([f, f], strict, 0, 2);
+    check([s, s, s], strict, 3, 0);
+    check([s, s, f], strict, 2, 1);
+    check([s, f, s], strict, 2, 1);
+    check([s, f, f], strict, 1, 2);
+    check([f, s, s], strict, 2, 1);
+    check([f, s, f], strict, 1, 2);
+    check([f, f, s], strict, 1, 2);
+    check([f, f, f], strict, 0, 3);
+    check([f, s, f, s, s, f, s, f, s, f, s, s], strict, 7, 5);
+
+
+    // Only non-Failure and Failure values
+    check([1], strict, 1, 0);
+    check([f], strict, 0, 1);
+    check([1, 2], strict, 2, 0);
+    check([1, f], strict, 1, 1);
+    check([f, 2], strict, 1, 1);
+    check([f, f], strict, 0, 2);
+    check([1, 2, 3], strict, 3, 0);
+    check([1, 2, f], strict, 2, 1);
+    check([1, f, 3], strict, 2, 1);
+    check([1, f, f], strict, 1, 2);
+    check([f, 2, 3], strict, 2, 1);
+    check([f, 2, f], strict, 1, 2);
+    check([f, f, 3], strict, 1, 2);
+    check([f, f, f], strict, 0, 3);
+    check([f, 2, f, 4, 5, f, 6, f, 7, f, 8, 9], strict, 7, 5);
+
+    // Success, non-Failure and Failure values
+    check([1, s], strict, 2, 0);
+    check([f], strict, 0, 1);
+    check([s, 2, s, 4], strict, 4, 0);
+    check([s, 2, f], strict, 2, 1);
+    check([f, s, 3], strict, 2, 1);
+    check([f, f], strict, 0, 2);
+    check([s, 2, 3, s, 5, s], strict, 6, 0);
+    check([1, s, 2, s, f], strict, 4, 1);
+    check([s, 2, f, 4, s], strict, 4, 1);
+    check([1, s, f, f], strict, 2, 2);
+    check([f, 2, s, s, 5], strict, 4, 1);
+    check([f, s, 2, f], strict, 2, 2);
+    check([f, f, 3, s], strict, 2, 2);
+    check([f, f, f], strict, 0, 3);
+    check([f, 2, f, s, 5, f, s, f, 7, f, 8, s], strict, 7, 5);
+  }
+
+  t.end();
+});
+
+test('countSuccess, countFailure, count & describeSuccessAndFailureCounts - with strict true', t => {
+  function check(outcomes, strict, expectedSuccessCount, expectedFailureCount) {
+    t.equal(Try.countSuccess(outcomes, strict), expectedSuccessCount, `countSuccess(outcomes, ${strict ? '':'!'}strict) must be ${expectedSuccessCount}`);
+    t.equal(Try.countFailure(outcomes), expectedFailureCount, `countFailure(outcomes) must be ${expectedFailureCount}`);
+
+    const isSuccess = strict ? o => o instanceof Success : o => !(o instanceof Failure);
+    const isSuccessDesc = strict ? 'o => o instanceof Success' : 'o => !(o instanceof Failure)';
+    t.equal(Try.count(outcomes, isSuccess), expectedSuccessCount, `count(outcomes, ${isSuccessDesc}) must be ${expectedSuccessCount}`);
+    t.equal(Try.count(outcomes, o => o instanceof Failure), expectedFailureCount, `count(outcomes, o => o instanceof Failure) must be ${expectedFailureCount}`);
+
+    const isTry = strict ? o => o instanceof Try : o => !!o;
+    const isTryDesc = strict ? 'o => o instanceof Try' : 'o => !!o';
+    t.equal(Try.count(outcomes, isTry), expectedSuccessCount + expectedFailureCount, `count(outcomes, ${isTryDesc}) must be ${expectedSuccessCount + expectedFailureCount}`);
+
+    const expected = `${expectedSuccessCount} success${expectedSuccessCount !== 1 ? 'es' : ''} & ${expectedFailureCount} failure${expectedFailureCount !== 1 ? 's' : ''}`;
+    t.equal(Try.describeSuccessAndFailureCounts(outcomes, strict), expected, `describeSuccessAndFailureCounts(outcomes, ${strict ? '':'!'}strict) must be '${expected}'`);
+  }
+
+  const s = new Success(42);
+  const f = new Failure(new Error('43'));
+  const strict = true;
+
+  // No outcomes
+  check([], strict, 0, 0);
+
+  // Only Success and Failure values
+  check([s], strict, 1, 0);
+  check([f], strict, 0, 1);
+  check([s, s], strict, 2, 0);
+  check([s, f], strict, 1, 1);
+  check([f, s], strict, 1, 1);
+  check([f, f], strict, 0, 2);
+  check([s, s, s], strict, 3, 0);
+  check([s, s, f], strict, 2, 1);
+  check([s, f, s], strict, 2, 1);
+  check([s, f, f], strict, 1, 2);
+  check([f, s, s], strict, 2, 1);
+  check([f, s, f], strict, 1, 2);
+  check([f, f, s], strict, 1, 2);
+  check([f, f, f], strict, 0, 3);
+  check([f, s, f, s, s, f, s, f, s, f, s, s], strict, 7, 5);
+
+
+  // Only non-Failure and Failure values
+  check([1], strict, 0, 0);
+  check([f], strict, 0, 1);
+  check([1, 2], strict, 0, 0);
+  check([1, f], strict, 0, 1);
+  check([f, 2], strict, 0, 1);
+  check([f, f], strict, 0, 2);
+  check([1, 2, 3], strict, 0, 0);
+  check([1, 2, f], strict, 0, 1);
+  check([1, f, 3], strict, 0, 1);
+  check([1, f, f], strict, 0, 2);
+  check([f, 2, 3], strict, 0, 1);
+  check([f, 2, f], strict, 0, 2);
+  check([f, f, 3], strict, 0, 2);
+  check([f, f, f], strict, 0, 3);
+  check([f, 2, f, 4, 5, f, 6, f, 7, f, 8, 9], strict, 0, 5);
+
+  // Success, non-Failure and Failure values
+  check([1, s], strict, 1, 0);
+  check([f], strict, 0, 1);
+  check([s, 2, s, 4], strict, 2, 0);
+  check([s, 2, f], strict, 1, 1);
+  check([f, s, 3], strict, 1, 1);
+  check([f, f], strict, 0, 2);
+  check([s, 2, 3, s, 5, s], strict, 3, 0);
+  check([1, s, 2, s, f], strict, 2, 1);
+  check([s, 2, f, 4, s], strict, 2, 1);
+  check([1, s, f, f], strict, 1, 2);
+  check([f, 2, s, s, 5], strict, 2, 1);
+  check([f, s, 2, f], strict, 1, 2);
+  check([f, f, 3, s], strict, 1, 2);
+  check([f, f, f], strict, 0, 3);
+  check([f, 2, f, s, 5, f, s, f, 7, f, 8, s], strict, 3, 5);
 
   t.end();
 });

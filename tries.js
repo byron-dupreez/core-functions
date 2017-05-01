@@ -152,12 +152,15 @@ class Try {
   }
 
   /**
-   * Returns a count of the number of Success outcomes in the given list of outcomes.
-   * @param {Outcomes} outcomes - a list of outcomes
-   * @returns {number} the number of Success outcomes
+   * Returns a count of the number of Success outcomes (if strict) or non-Failure outcomes (if not strict) in the given
+   * list of outcomes.
+   * @param {Outcomes|*[]} outcomes - a list of outcomes
+   * @param {boolean|undefined} [strict] - whether to strictly count ONLY Success outcomes as successes (if true) or count any non-Failure outcomes as successes (if not true - default)
+   * @returns {number} the number of Success or non-Failure outcomes
    */
-  static countSuccess(outcomes) {
-    return outcomes.reduce((acc, o) => acc + (o instanceof Success ? 1 : 0), 0);
+  static countSuccess(outcomes, strict) {
+    const isSuccess = strict ? o => o instanceof Success : o => !(o instanceof Failure);
+    return outcomes.reduce((acc, o) => acc + (isSuccess(o) ? 1 : 0), 0);
   }
 
   /**
@@ -171,11 +174,12 @@ class Try {
 
   /**
    * Returns a description of the number of successes followed by the number of failures in the given list of outcomes.
-   * @param {Outcomes} outcomes - a list of outcomes
-   * @returns {string} the number of Failure outcomes
+   * @param {Outcomes|*[]} outcomes - a list of outcomes (or of any results)
+   * @param {boolean|undefined} [strict] - whether to strictly count ONLY Success outcomes as successes (if true) or count any non-Failure outcomes as successes (if not true - default)
+   * @returns {string} a description of the number of successes and the number of failures
    */
-  static describeSuccessAndFailureCounts(outcomes) {
-    const successCount = Try.countSuccess(outcomes);
+  static describeSuccessAndFailureCounts(outcomes, strict) {
+    const successCount = Try.countSuccess(outcomes, strict);
     const failureCount = Try.countFailure(outcomes);
     return `${successCount} success${successCount !== 1 ? 'es' : ''} & ${failureCount} failure${failureCount !== 1 ? 's' : ''}`;
   }
@@ -278,7 +282,6 @@ class Try {
           }
         }
       }
-      // return value instanceof Failure ? value : undefined;
       return undefined;
     }
 
