@@ -30,6 +30,10 @@ const err2Regex = /Crash/;
 const failure = new Failure(err);
 const failure2 = new Failure(err2);
 
+function avoidUnhandledPromiseRejectionWarning(err) {
+  // Avoid irrelevant: (node:18304) UnhandledPromiseRejectionWarning: Unhandled promise rejection (rejection id: ...): ...
+}
+
 const returnA1 = () => {
   return {a: 1}
 };
@@ -542,6 +546,7 @@ test('Try.try', t => {
   t.deepEqual(Try.try(f), new Success(v), `Try.try(${stringify(f)}) must be ${new Success(stringify(v))}`);
 
   v = Promise.reject(new Error("Crunch"));
+  v.catch(avoidUnhandledPromiseRejectionWarning);
   f = function never() {
     return v;
   };

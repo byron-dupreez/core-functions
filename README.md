@@ -1,4 +1,4 @@
-# core-functions v3.0.3
+# core-functions v3.0.4
 
 Core functions, utilities and classes for working with Node/JavaScript primitives and built-in objects, including 
 strings, numbers, booleans, Dates, Promises, base 64, Arrays, Objects, standard AppErrors, sorting utilities, etc.
@@ -157,6 +157,12 @@ This module's unit tests were developed with and must be run with [tape](https:/
 See the [package source](https://github.com/byron-dupreez/core-functions) for more details.
 
 ## Changes
+
+### 3.0.4
+- Changes to `promises` module:
+  - Upgraded to Node 6.10.3
+  - Added `avoidUnhandledPromiseRejectionWarning` function to avoid unneeded Node 6.10.3 warnings
+  - Patched unit tests to pass under Node 6.10.3
 
 ### 3.0.3
 - Minor changes & optimisations to `promises` module:

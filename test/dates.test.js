@@ -866,7 +866,11 @@ test('isValidDate', t => {
 
   t.notOk(isValidDate(new Date('2017-12-31T00:00:60.000Z')), `Date('2017-12-31T00:00:60.000Z') is NOT a valid date`);
   t.notOk(isValidDate(new Date('2017-12-31T00:60:00.000Z')), `Date('2017-12-31T00:60:00.000Z') is NOT a valid date`);
-  t.notOk(isValidDate(new Date('2017-12-31T24:00:00.000Z')), `Date('2017-12-31T24:00:00.000Z') is NOT a valid date`);
+  if (process.version && process.version.startsWith("4.3.")) { // special case for 4.3.x
+    t.notOk(isValidDate(new Date('2017-12-31T24:00:00.000Z')), `Date('2017-12-31T24:00:00.000Z') is NOT a valid date`);
+  } else if (process.version && process.version.startsWith("6.10.")) { // special case for 6.10.x
+    t.ok(isValidDate(new Date('2017-12-31T24:00:00.000Z')), `Date('2017-12-31T24:00:00.000Z') is a valid date`);
+  }
   t.notOk(isValidDate(new Date('2017-12-31T24:59:59.999Z')), `Date('2017-12-31T24:59:59.999Z') is NOT a valid date`);
 
   // Extended dates and date-times

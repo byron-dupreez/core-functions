@@ -86,9 +86,9 @@ module.exports = {
   /** Installs the given cancel function onto the given cancellable object */
   installCancel: installCancel,
   /** Installs the given cancelTimeout function onto the given cancellable object */
-  installCancelTimeout: installCancelTimeout
-  // /** Replaces the cancel method on the given cancellable object with a new cancel method that will invoke both its original cancel method and the new, next cancellable's cancel method. */
-  // extendCancel: extendCancel
+  installCancelTimeout: installCancelTimeout,
+  /** Attaches an arbitrary `catch` clause to the given promise to avoid an unneeded UnhandledPromiseRejectionWarning */
+  avoidUnhandledPromiseRejectionWarning: avoidUnhandledPromiseRejectionWarning
 };
 
 /**
@@ -469,12 +469,9 @@ function one(promise) {
 function flatten(value, cancellable, opts) {
   if (isPromiseLike(value)) {
     // If value is a promise or promise-like then flatten its resolved value or rejected error
-    return value.then(
-      v => flatten(v, cancellable, opts),
-      err => {
-        throw err;
-      }
-    );
+    const p = value.then(v => flatten(v, cancellable, opts));
+    avoidUnhandledPromiseRejectionWarning(p);
+    return p;
   }
   const isArray = Array.isArray(value);
   if (isArray && value.some(v => isPromiseLike(v))) {
@@ -622,27 +619,15 @@ function installCancelTimeout(cancellable, cancelTimeout) {
   }
 }
 
-// /**
-//  * Replaces the `cancel` method on the given cancellable object with a new `cancel` method that will invoke both its
-//  * original `cancel` method (if any) and the given next cancellable's `cancel` method (if any).
-//  * @param {Cancellable} cancellable - the original cancellable, whose `cancel` method will be replaced/extended
-//  * @param {Cancellable} nextCancellable - the next cancellable, whose `cancel` method will be invoked by the
-//  * cancellable's new `cancel` method
-//  */
-// function extendCancel(cancellable, nextCancellable) {
-//   if (cancellable && typeof cancellable === 'object' && nextCancellable && typeof nextCancellable === 'object') {
-//     const originalCancel = cancellable.cancel;
-//     cancellable.cancel = () => {
-//       let completed = true;
-//       if (nextCancellable.cancel) {
-//         const nextCompleted = nextCancellable.cancel();
-//         completed = completed && nextCompleted;
-//       }
-//       if (originalCancel) {
-//         const originalCompleted = originalCancel.call(cancellable);
-//         completed = completed && originalCompleted;
-//       }
-//       return completed;
-//     };
-//   }
-// }
+/**
+ * Attaches an arbitrary `catch` clause to the given promise to avoid an unneeded UnhandledPromiseRejectionWarning.
+ * @param {Promise|PromiseLike|*} p - a promise to which to attach an arbitrary `catch`
+ */
+function avoidUnhandledPromiseRejectionWarning(p) {
+  if (p && p.catch) {
+    p.catch(err => {
+      // Avoid unneeded warnings: (node:18304) UnhandledPromiseRejectionWarning: Unhandled promise rejection (rejection id: ...): ...
+      console.log(`Avoided UnhandledPromiseRejectionWarning - ${err}`);
+    });
+  }
+}

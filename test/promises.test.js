@@ -30,7 +30,9 @@ function fallible(fail) {
 
 function fallibleAsync(fail) {
   if (fail) {
-    return Promise.reject(error);
+    const promise = Promise.reject(error);
+    Promises.avoidUnhandledPromiseRejectionWarning(promise);
+    return promise;
   }
   return Promise.resolve('ok');
 }
@@ -66,11 +68,13 @@ const p1 = Promise.resolve('p1');
 
 const p2Error = new Error('p2 error');
 const p2 = Promise.reject(p2Error);
+Promises.avoidUnhandledPromiseRejectionWarning(p2);
 
 const p3 = Promise.resolve('p3');
 
 const p4Error = new Error('p4 error');
 const p4 = Promise.reject(p4Error);
+Promises.avoidUnhandledPromiseRejectionWarning(p4);
 
 const t1 = genThenable(null, 't1', false, 1);
 
@@ -88,24 +92,32 @@ const e4Error = new Error('e4 error');
 
 function genDelayedPromise(err, name, ms, delayCancellable, cancellable) {
   const startTime = Date.now();
-  return Promises.delay(ms, delayCancellable).then(() => {
-    if (cancellable) {
-      if (cancellable.cancel) {
-        const completed = cancellable.cancel();
-        console.log(`Delayed promise ${name} ${completed ? '"cancelled" completed' : 'cancelled incomplete'} cancellable`);
-      } else {
-        console.log(`Delayed promise ${name} could NOT cancel given cancellable, since no cancel was installed yet!`);
+  const promise = Promises.delay(ms, delayCancellable)
+    .then(() => {
+      if (cancellable) {
+        if (cancellable.cancel) {
+          const completed = cancellable.cancel();
+          console.log(`Delayed promise ${name} ${completed ? '"cancelled" completed' : 'cancelled incomplete'} cancellable`);
+        } else {
+          console.log(`Delayed promise ${name} could NOT cancel given cancellable, since no cancel was installed yet!`);
+        }
       }
-    }
-    const msElapsed = Date.now() - startTime;
-    if (msElapsed >= ms) {
-      console.log(`Delayed promise ${name} completed at ${msElapsed} ms (original delay was ${ms} ms)`);
-    } else {
-      console.log(`Delayed promise ${name} ended prematurely at ${msElapsed} ms out of ${ms} ms delay`);
-    }
-    if (err) throw err;
-    return name;
-  });
+      const msElapsed = Date.now() - startTime;
+      if (msElapsed >= ms) {
+        console.log(`Delayed promise ${name} completed at ${msElapsed} ms (original delay was ${ms} ms)`);
+      } else {
+        console.log(`Delayed promise ${name} ended prematurely at ${msElapsed} ms out of ${ms} ms delay`);
+      }
+      if (err) throw err;
+      return name;
+    })
+    .catch(err => {
+      const msElapsed = Date.now() - startTime;
+      console.log(`Delayed promise ${name} failed at ${msElapsed} ms out of ${ms} ms delay`, err.stack);
+      throw err;
+    });
+  Promises.avoidUnhandledPromiseRejectionWarning(promise);
+  return promise;
 }
 
 function genThenable(err, data, failSync, ms) {
@@ -632,7 +644,8 @@ test('Promises.allOrOne', t => {
         t.equal(ps[0], p, 'allOrOne([promise]) contains same promise as [promise]');
         t.end();
       });
-    });
+    })
+    .catch(Promises.avoidUnhandledPromiseRejectionWarning);
 
 });
 
@@ -650,11 +663,12 @@ test("Promises.every()", t => {
 });
 
 test('Promises.every([])', t => {
-  Promises.every([]).then(results => {
-    const expected = [];
-    t.deepEqual(results, expected, `Promises.every([]) must be ${stringify(expected)}`);
-    t.end();
-  });
+  Promises.every([])
+    .then(results => {
+      const expected = [];
+      t.deepEqual(results, expected, `Promises.every([]) must be ${stringify(expected)}`);
+      t.end();
+    });
 });
 
 test('Promises.every([undefined])', t => {
@@ -2114,7 +2128,6 @@ test("installCancel - cancel multiple Promises.every with single cancellable", t
   t.ok(typeof cancellable.cancel === "function", `cancellable.cancel must be installed`);
   let prevCancel = cancellable.cancel;
 
-
   const p2 = Promises.every([e1, e2, e3, e4], cancellable).then(
     results => {
       t.fail(`Promises.every([e1,e2,e3,e4]) when cancelled, must NOT complete successfully with results: ${stringify(results)}`);
@@ -2133,6 +2146,8 @@ test("installCancel - cancel multiple Promises.every with single cancellable", t
       throw err;
     }
   );
+  Promises.avoidUnhandledPromiseRejectionWarning(p2);
+
   t.ok(typeof cancellable.cancel === "function", `cancellable.cancel must still be installed`);
   t.notEquals(cancellable.cancel, prevCancel, `cancellable.cancel must NOT be previous cancel`);
   prevCancel = cancellable.cancel;
@@ -2156,110 +2171,6 @@ test("installCancel - cancel multiple Promises.every with single cancellable", t
   t.notOk(completed, `Promises.every([d1,d2,d3,d4]) and Promises.every([e1,e2,e3,e4]) and Promises.every([p1, p2)] must not all be completed yet`);
 
 });
-
-// // =====================================================================================================================
-// // extendCancel
-// // =====================================================================================================================
-//
-// test('extendCancel', t => {
-//   let cancel1Called = false;
-//   let cancel2Called = false;
-//   let completed1 = false;
-//   let completed2 = false;
-//
-//   const cancellable = {};
-//
-//   t.notOk(cancellable.cancel, `cancellable.cancel must not exist`);
-//
-//   cancellable.cancel = () => {
-//     console.log(`cancellable.cancel ORIGINAL called`);
-//     cancel1Called = true;
-//     return completed1;
-//   };
-//   const originalCancel = cancellable.cancel;
-//
-//   t.ok(cancellable.cancel, `cancellable.cancel must exist`);
-//
-//   const nextCancellable = {};
-//
-//   t.notOk(nextCancellable.cancel, `nextCancellable.cancel must not exist`);
-//
-//   nextCancellable.cancel = () => {
-//     console.log(`nextCancellable.cancel ORIGINAL called`);
-//     cancel2Called = true;
-//     return completed2;
-//   };
-//
-//   t.ok(nextCancellable.cancel, `nextCancellable.cancel must exist`);
-//
-//   Promises.extendCancel(cancellable, nextCancellable);
-//
-//   t.ok(cancellable.cancel, `cancellable.cancel must still exist after extendCancel`);
-//   t.notEquals(cancellable.cancel, originalCancel, `cancellable.cancel must NOT be original cancellable.cancel`);
-//   t.ok(nextCancellable.cancel, `nextCancellable.cancel must still exist`);
-//   t.notEquals(nextCancellable.cancel, originalCancel, `nextCancellable.cancel must NOT be original cancellable.cancel`);
-//
-//   t.notOk(cancel1Called, `cancel1Called must be false before 1st cancel`);
-//   t.notOk(cancel2Called, `cancel2Called must be false before 1st cancel`);
-//
-//   // Cancel the original cancellable
-//   let completed = cancellable.cancel();
-//
-//   t.ok(cancel1Called, `cancel1Called must be true after 1st cancel`);
-//   t.ok(cancel2Called, `cancel2Called must be true after 1st cancel`);
-//   t.notOk(completed, `completed must be false after 1st cancel, since BOTH completed1 & completed2 were false`);
-//
-//   // Reset the flags (set only completed1)
-//   cancel1Called = false;
-//   cancel2Called = false;
-//   completed1 = true;
-//   completed2 = false;
-//
-//   t.notOk(cancel1Called, `cancel1Called must be false after reset before 2nd cancel`);
-//   t.notOk(cancel2Called, `cancel2Called must be false after reset before 2nd cancel`);
-//
-//   // Cancel the original cancellable AGAIN
-//   completed = cancellable.cancel();
-//
-//   t.ok(cancel1Called, `cancel1Called must be true after 2nd cancel`);
-//   t.ok(cancel2Called, `cancel2Called must be true after 2nd cancel`);
-//   // t.ok(completed, `completed must be true after 2nd cancel, since completed1 was set to true`);
-//   t.notOk(completed, `completed must be false after 2nd cancel, since ONLY completed1 was set to true`);
-//
-//   // Reset the flags (set only completed2)
-//   cancel1Called = false;
-//   cancel2Called = false;
-//   completed1 = false;
-//   completed2 = true;
-//
-//   t.notOk(cancel1Called, `cancel1Called must be false after reset before 3rd cancel`);
-//   t.notOk(cancel2Called, `cancel2Called must be false after reset before 3rd cancel`);
-//
-//   // Cancel the original cancellable AGAIN
-//   completed = cancellable.cancel();
-//
-//   t.ok(cancel1Called, `cancel1Called must be true after 3rd cancel`);
-//   t.ok(cancel2Called, `cancel2Called must be true after 3rd cancel`);
-//   t.notOk(completed, `completed must be false after 3rd cancel, since ONLY completed2 was set to true`);
-//
-//   // Reset the flags (set only completed2)
-//   cancel1Called = false;
-//   cancel2Called = false;
-//   completed1 = true;
-//   completed2 = true;
-//
-//   t.notOk(cancel1Called, `cancel1Called must be false after reset before 4th cancel`);
-//   t.notOk(cancel2Called, `cancel2Called must be false after reset before 4th cancel`);
-//
-//   // Cancel the original cancellable AGAIN
-//   completed = cancellable.cancel();
-//
-//   t.ok(cancel1Called, `cancel1Called must be true after 4th cancel`);
-//   t.ok(cancel2Called, `cancel2Called must be true after 4th cancel`);
-//   t.ok(completed, `completed must be true after 4th cancel, since BOTH completed1 & completed2 were set to true`);
-//
-//   t.end();
-// });
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Promises.flatten
@@ -2334,20 +2245,22 @@ test('Promises.flatten(Promise.resolve(42), null, skipSimplifyOutcomesOpts)', t 
 
 // ---------------------------------------------------------------------------------------------------------------------
 test('Promises.flatten(Promise.reject(new Error("43")))', t => {
-  Promises.flatten(Promise.reject(new Error("43"))).catch(err => {
-    const expected = new Error("43");
-    t.deepEqual(err, expected, `Promises.flatten(Promise.reject(new Error("43"))) must be reject with ${stringify(expected)}`);
-    t.end();
-  });
+  Promises.flatten(Promise.reject(new Error("43")))
+    .catch(err => {
+      const expected = new Error("43");
+      t.deepEqual(err, expected, `Promises.flatten(Promise.reject(new Error("43"))) must be reject with ${stringify(expected)}`);
+      t.end();
+    });
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
 test('Promises.flatten(Promise.resolve(42).then(x => Promise.resolve(x * 2)).then(y => Promise.resolve(y / 4))', t => {
-  Promises.flatten(Promise.resolve(42).then(x => Promise.resolve(x * 2)).then(y => Promise.resolve(y / 4))).then(results => {
-    const expected = 21;
-    t.deepEqual(results, expected, `Promises.flatten(Promise.resolve(42).then(x => Promise.resolve(x * 2)).then(y => Promise.resolve(y / 4))) must be ${stringify(expected)}`);
-    t.end();
-  });
+  Promises.flatten(Promise.resolve(42).then(x => Promise.resolve(x * 2)).then(y => Promise.resolve(y / 4)))
+    .then(results => {
+      const expected = 21;
+      t.deepEqual(results, expected, `Promises.flatten(Promise.resolve(42).then(x => Promise.resolve(x * 2)).then(y => Promise.resolve(y / 4))) must be ${stringify(expected)}`);
+      t.end();
+    });
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
