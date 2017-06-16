@@ -158,6 +158,17 @@ See the [package source](https://github.com/byron-dupreez/core-functions) for mo
 
 ## Changes
 
+### 3.0.5
+- Added new `any` module:
+  - Added new `defined` & `notDefined` functions
+  - Added `valueOf` function removed from `objects` module
+- Changes to `objects`:
+  - Moved `valueOf` function to `any` module
+  - Deprecated exported `valueOf` function & delegated it to `valueOf` in `any` module
+- Changes to `sorting`:
+  - Removed `isUndefinedOrNull` function & replaced its usage with calls to `notDefined` function from `any` module
+  - Deprecated exported `isUndefinedOrNull` function & delegated it to `notDefined` function from `any` module
+
 ### 3.0.4
 - Changes to `promises` module:
   - Upgraded to Node 6.10.3

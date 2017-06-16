@@ -1,5 +1,8 @@
 'use strict';
 
+const any = require('./any');
+const notDefined = any.notDefined;
+
 const Strings = require('./strings');
 const Numbers = require('./numbers');
 const Dates = require('./dates');
@@ -28,7 +31,10 @@ Object.freeze(SortType);
  */
 module.exports = {
   SortType: SortType,
-  isUndefinedOrNull: isUndefinedOrNull,
+
+  /** @deprecated - use {@linkcode core-functions/any#notDefined} instead */
+  isUndefinedOrNull: any.notDefined,
+
   compareUndefinedOrNull: compareUndefinedOrNull,
   compareNumbers: compareNumbers,
   compareStrings: compareStrings,
@@ -40,11 +46,6 @@ module.exports = {
 
   sortKeyValuePairsByKey: sortKeyValuePairsByKey
 };
-
-/** Simply returns true if the given value is either undefined or null; false otherwise. */
-function isUndefinedOrNull(a) {
-  return a === undefined || a === null;
-}
 
 /**
  * Compares two undefined or null values for sorting of a useless array consisting entirely of undefined or null values.
@@ -67,7 +68,7 @@ function compareUndefinedOrNull(a, b) {
  */
 function compareNumbers(a, b) {
   if (a === b) return 0;
-  if (isUndefinedOrNull(a) || isUndefinedOrNull(b)) return compareUndefinedOrNull(a, b);
+  if (notDefined(a) || notDefined(b)) return compareUndefinedOrNull(a, b);
 
   // For sorting stability, compare NaNs as "equal" to each other and "less" than any other number
   const aIsNaN = Numbers.isNaN(a);
@@ -86,7 +87,7 @@ function compareNumbers(a, b) {
  */
 function compareStrings(a, b, opts) {
   if (a === b) return 0;
-  if (isUndefinedOrNull(a) || isUndefinedOrNull(b)) return compareUndefinedOrNull(a, b);
+  if (notDefined(a) || notDefined(b)) return compareUndefinedOrNull(a, b);
 
   const ignoreCase = !!opts && opts.ignoreCase === true;
   const a1 = ignoreCase ? a.toLowerCase() : a;
@@ -105,7 +106,7 @@ function compareStrings(a, b, opts) {
  */
 function compareBooleans(a, b) {
   if (a === b) return 0;
-  if (isUndefinedOrNull(a) || isUndefinedOrNull(b)) return compareUndefinedOrNull(a, b);
+  if (notDefined(a) || notDefined(b)) return compareUndefinedOrNull(a, b);
   return a < b ? -1 : a > b ? +1 : 0;
 }
 
@@ -117,7 +118,7 @@ function compareBooleans(a, b) {
  */
 function compareDates(a, b) {
   if (a === b) return 0;
-  if (isUndefinedOrNull(a) || isUndefinedOrNull(b)) return compareUndefinedOrNull(a, b);
+  if (notDefined(a) || notDefined(b)) return compareUndefinedOrNull(a, b);
   return compareNumbers(a.getTime(), b.getTime());
 }
 
@@ -129,7 +130,7 @@ function compareDates(a, b) {
  */
 function compareIntegerLikes(i1, i2) {
   if (i1 === i2) return 0;
-  if (isUndefinedOrNull(i1) || isUndefinedOrNull(i2)) return compareUndefinedOrNull(i1, i2);
+  if (notDefined(i1) || notDefined(i2)) return compareUndefinedOrNull(i1, i2);
 
   if (!i1 || i1.length <= 0) return -1;
   if (!i2 || i2.length <= 0) return +1;
@@ -274,7 +275,7 @@ function toSortable(values) {
 
     case SortType.UNKNOWN:
       // Last resort, convert all of the values (other than strings, undefined or null) to strings
-      sortableValues = sortableValues.map(v => typeof v === 'string' || isUndefinedOrNull(v) ? v : Strings.stringify(v));
+      sortableValues = sortableValues.map(v => typeof v === 'string' || notDefined(v) ? v : Strings.stringify(v));
       compare = compareStrings;
       break;
 

@@ -8,55 +8,11 @@
 const test = require('tape');
 
 const Objects = require('../objects');
-const valueOf = Objects.valueOf;
 const toKeyValuePairs = Objects.toKeyValuePairs;
 const getOwnPropertyNamesRecursively = Objects.getOwnPropertyNamesRecursively;
 
 const strings = require('../strings');
 const stringify = strings.stringify;
-
-// =====================================================================================================================
-// valueOf
-// =====================================================================================================================
-
-test('valueOf', t => {
-  function check(value, expected) {
-    return t.deepEqual(Objects.valueOf(value), expected, `Objects.valueOf(${stringify(value)}) must be ${stringify(expected)}`);
-  }
-
-  // undefined
-  check(undefined, undefined);
-  check(null, null);
-
-  // strings
-  check('', '');
-  check('a', 'a');
-  check('Abc', 'Abc');
-  check(new Object(''), ''); // wrapped must unwrap
-  check(new Object('a'), 'a'); // wrapped must unwrap
-  check(new Object('Abc'), 'Abc'); // wrapped must unwrap
-
-  check(0, 0);
-  check(1, 1);
-  check(3.14, 3.14);
-  check(new Object(0), 0); // wrapped must unwrap
-  check(new Object(1), 1); // wrapped must unwrap
-  check(new Object(3.14), 3.14); // wrapped must unwrap
-
-  check(true, true);
-  check(false, false);
-  check(new Object(true), true); // wrapped must unwrap
-  check(new Object(false), false); // wrapped must unwrap
-
-  check({}, {});
-  check({a: 1}, {a: 1});
-
-  check([], []);
-  check(['a'], ['a']);
-  check(['a', 1], ['a', 1]);
-
-  t.end();
-});
 
 // =====================================================================================================================
 // toKeyValuePairs
