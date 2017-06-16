@@ -1,9 +1,10 @@
-# core-functions v3.0.4
+# core-functions v3.0.5
 
 Core functions, utilities and classes for working with Node/JavaScript primitives and built-in objects, including 
 strings, numbers, booleans, Dates, Promises, base 64, Arrays, Objects, standard AppErrors, sorting utilities, etc.
 
 Currently includes:
+- any.js - generic utilities for working with any type of value
 - app-errors.js - a collection of standard application AppError subclasses for the more commonly used HTTP status codes
 - arrays.js - Array utilities
 - base64.js - utilities for encoding from UTF-8 to Base 64 and vice-versa
@@ -32,6 +33,11 @@ $ npm i --save core-functions
 ```
 
 In Node.js:
+
+To use the `any` utilities
+```js
+const any = require('core-functions/any');
+```
 
 To use the string utilities
 ```js
