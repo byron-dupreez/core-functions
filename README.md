@@ -1,4 +1,4 @@
-# core-functions v3.0.5
+# core-functions v3.0.6
 
 Core functions, utilities and classes for working with Node/JavaScript primitives and built-in objects, including 
 strings, numbers, booleans, Dates, Promises, base 64, Arrays, Objects, standard AppErrors, sorting utilities, etc.
@@ -163,6 +163,9 @@ This module's unit tests were developed with and must be run with [tape](https:/
 See the [package source](https://github.com/byron-dupreez/core-functions) for more details.
 
 ## Changes
+
+### 3.0.6
+- Changed `engines.node` to `>=6.10` in`test/package.json`
 
 ### 3.0.5
 - Added new `any` module:

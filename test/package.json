@@ -1,11 +1,11 @@
 {
   "name": "core-functions-tests",
-  "version": "3.0.5",
+  "version": "3.0.6",
   "author": "Byron du Preez",
   "license": "Apache-2.0",
   "private": true,
   "engines": {
-    "node": ">=4.3.2"
+    "node": ">=6.10"
   },
   "scripts": {
     "test": "tape ./*.test.js"
