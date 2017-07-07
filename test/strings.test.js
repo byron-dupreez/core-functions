@@ -460,7 +460,13 @@ function checkStringify(t, wrapInString) {
   checkWithArgs(task, false, false, false, wrapInString ? '[object Object]' : '{"name":"Task1","executable":true,"state":{"code":"Unstarted","completed":false,"rejected":false},"attempts":1,"lastExecutedAt":"2016-12-01T05:09:09.119Z","subTasks":[]}');
 
   // explicit avoidToJSONMethods must NOT use toJSON method
-  checkWithArgs(task, false, true, false, wrapInString ? '[object Object]' : '{"name":"Task1","definition":{"name":"Task1","executable":true,"execute":[Function: anonymous],"subTaskDefs":[],"parent":undefined},"executable":true,"execute":[Function: anonymous],"_subTasks":[],"_subTasksByName":{},"parent":undefined,"_state":{"code":"Unstarted","completed":false,"error":undefined,"rejected":false,"reason":undefined},"_attempts":1,"_lastExecutedAt":"2016-12-01T05:09:09.119Z","_result":undefined,"_error":undefined,"_slaveTasks":[],"_frozen":true,"toJSON":[Function: toJSON]}');
+  if (process && process.version) {
+    if (process.version.startsWith("4.3.")) {
+      checkWithArgs(task, false, true, false, wrapInString ? '[object Object]' : '{"name":"Task1","definition":{"name":"Task1","executable":true,"execute":[Function: anonymous],"subTaskDefs":[],"parent":undefined},"executable":true,"execute":[Function: anonymous],"_subTasks":[],"_subTasksByName":{},"parent":undefined,"_state":{"code":"Unstarted","completed":false,"error":undefined,"rejected":false,"reason":undefined},"_attempts":1,"_began":"2016-12-01T05:09:09.119Z","_result":undefined,"_error":undefined,"_slaveTasks":[],"_frozen":true,"toJSON":[Function: toJSON]}');
+    } else if (process.version.startsWith("6.10.")) {
+      checkWithArgs(task, false, true, false, wrapInString ? '[object Object]' : '{"name":"Task1","definition":{"name":"Task1","executable":true,"execute":[Function: execute],"subTaskDefs":[],"parent":undefined},"executable":true,"execute":[Function: execute],"_subTasks":[],"_subTasksByName":{},"parent":undefined,"_state":{"code":"Unstarted","completed":false,"error":undefined,"rejected":false,"reason":undefined},"_attempts":1,"_began":"2016-12-01T05:09:09.119Z","_result":undefined,"_error":undefined,"_slaveTasks":[],"_frozen":true,"toJSON":[Function: toJSON]}');
+    }
+  }
 }
 
 function checkTrim(t, wrapInString) {

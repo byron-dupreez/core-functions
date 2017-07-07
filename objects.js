@@ -121,7 +121,17 @@ function copy(object, deep) {
   const history = new WeakMap();
 
   function newDest(object) {
-    return Array.isArray(object) ? new Array(object.length) : Object.create(object.__proto__);
+    if (Array.isArray(object)) {
+      return new Array(object.length);
+    }
+    const prototype = Object.getPrototypeOf(object); //
+    if (prototype === undefined) {
+      console.trace(`#################### WARNING - Object.getPrototypeOf(object) has an undefined prototype - stringified: (${Strings.stringify(object)}) inspected: (${require('util').inspect(object)}) - using Object.create(null) instead!`);
+    }
+    if (object.__proto__ === undefined) {
+      console.trace(`#################### WARNING - object.__proto__ has an undefined prototype - stringified: (${Strings.stringify(object)}) inspected: (${require('util').inspect(object)}) - using Object.create(null) instead!`);
+    }
+    return Object.create(prototype || null);
   }
 
   function copyWithHistory(src, dest) {

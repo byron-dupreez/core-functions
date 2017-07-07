@@ -1,4 +1,4 @@
-# core-functions v2.0.14
+# core-functions v2.0.15
 
 Core functions, utilities and classes for working with Node/JavaScript primitives and built-in objects, including 
 strings, booleans, Promises, base 64, Arrays, Objects, standard AppErrors, etc.
@@ -103,6 +103,10 @@ See the [package source](https://github.com/byron-dupreez/core-functions) for mo
 
 ## Changes
 
+### 2.0.15
+- Backport of `objects` module `copy` function fix for TypeError thrown when `Object.create(o.__proto__)` was invoked & `o.__proto__` was undefined
+- Backport of fix for `strings.test.js` equality failure that surfaces when run under Node 6.10.x
+ 
 ### 2.0.14
 - Added `copyNamedProperties` function to `objects.js` module
 

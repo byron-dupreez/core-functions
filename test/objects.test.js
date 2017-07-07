@@ -850,3 +850,18 @@ test('copyNamedProperties - non-compact', t => {
 
   t.end();
 });
+
+test('copy with undefined prototype', t => {
+  let o = Object.create(null);
+
+  t.equal(o.__proto__, undefined, `o.__proto__ must be undefined`);
+
+  t.throws(() => Object.create(o.__proto__), TypeError, `Object.create(o.__proto__) must throw TypeError`);
+
+  t.equal(Object.getPrototypeOf(o), null, `Object.getPrototypeOf(o) must be null`);
+
+  t.doesNotThrow(() => Object.create(Object.getPrototypeOf(o)), `Object.create(Object.getPrototypeOf(o)) must NOT throw an error`);
+  t.doesNotThrow(() => Objects.copy(o), `copy(o)) must NOT throw an error`);
+
+  t.end();
+});
