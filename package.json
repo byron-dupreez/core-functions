@@ -1,6 +1,6 @@
 {
   "name": "core-functions",
-  "version": "2.0.15",
+  "version": "2.0.16",
   "description": "Core functions, utilities and classes for working with Node/JavaScript primitives and built-in objects, including strings, booleans, Promises, base 64, Arrays, Objects, standard AppErrors, etc.",
   "author": "Byron du Preez",
   "license": "Apache-2.0",
@@ -9,6 +9,9 @@
   },
   "scripts": {
     "test": "tape ./test/*.test.js"
+  },
+  "devDependencies": {
+    "tape": "^4.7.0"
   },
   "repository": "https://github.com/byron-dupreez/core-functions"
 }

@@ -1,4 +1,4 @@
-# core-functions v2.0.15
+# core-functions v2.0.16
 
 Core functions, utilities and classes for working with Node/JavaScript primitives and built-in objects, including 
 strings, booleans, Promises, base 64, Arrays, Objects, standard AppErrors, etc.
@@ -102,6 +102,9 @@ This module's unit tests were developed with and must be run with [tape](https:/
 See the [package source](https://github.com/byron-dupreez/core-functions) for more details.
 
 ## Changes
+
+### 2.0.16
+- Moved test devDependencies to package.json & removed test/package.json
 
 ### 2.0.15
 - Backport of `objects` module `copy` function fix for TypeError thrown when `Object.create(o.__proto__)` was invoked & `o.__proto__` was undefined
