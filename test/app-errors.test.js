@@ -52,6 +52,19 @@ function immutable(t, obj, propertyName, prefix) {
   }
 }
 
+function mutable(t, obj, propertyName, prefix) {
+  const now = new Date().toISOString();
+  const opts = {quoteStrings: true};
+  try {
+    obj[propertyName] = now;
+    // Expect NO error on attempted mutation of mutable property
+    t.pass(`${prefix ? prefix : ''}${stringify(obj, opts)} ${propertyName} is mutable`);
+  } catch (err) {
+    t.fail(`${prefix ? prefix : ''}${stringify(obj, opts)} ${propertyName} is supposed to be mutable`);
+    //console.log(`Expected error ${err}`);
+  }
+}
+
 test('AppError must be initialized ', t => {
   function check(appError, message, code, httpStatus, cause, causeStatus) {
     t.equal(appError.message, message, `${appError} message must be ${message}`);
@@ -78,11 +91,11 @@ test('AppError must be initialized ', t => {
 
 test('AppError must be immutable', t => {
   function check(appError) {
-    immutable(t, appError, 'message');
-    immutable(t, appError, 'code');
+    mutable(t, appError, 'message');
+    mutable(t, appError, 'code');
     immutable(t, appError, 'httpStatus');
-    immutable(t, appError, 'cause');
-    immutable(t, appError, 'causeStatus');
+    mutable(t, appError, 'cause');
+    mutable(t, appError, 'causeStatus');
   }
 
   check(new AppError('AE msg', 'AE code', 417, new Error('AE cause')));
@@ -427,6 +440,17 @@ test('toAppError attempt to recreate NOT instanceof BadRequest bug', t => {
   t.notEquals(br4, br1, `br4 must NOT be same instance as br1`);
   t.ok(br4 instanceof BadRequest, `br4 must be instanceof BadRequest`);
   t.equals(br4.cause, cause.toString(), `br4.cause must be ${cause.toString()}`);
+
+  t.end();
+});
+
+test('AppError toJSON', t => {
+  const e = new AppError('AE msg', 'AE code', 417, new ReferenceError('AE cause'));
+
+  const json = {message: e.message, code: e.code, httpStatus: e.httpStatus, cause: e.cause};
+  const jsonText = JSON.stringify(json);
+  t.deepEqual(e.toJSON(), json, `${e} toJSON must be ${jsonText}`);
+  t.deepEqual(JSON.parse(JSON.stringify(e)), json, `JSON.parse(JSON.stringify(${e})) must be ${jsonText}`);
 
   t.end();
 });

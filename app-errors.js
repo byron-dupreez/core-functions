@@ -42,30 +42,43 @@ class AppError extends Error {
    */
   constructor(message, code, httpStatus, cause) {
     super(toMessage(message, cause));
-    Object.defineProperty(this, 'message', {writable: false, enumerable: true, configurable: false});
 
-    // Set the name to the class name
-    Object.defineProperty(this, 'name', {value: this.constructor.name});
+    setTypeName(this.constructor);
 
     // Attempt to derive a usable code (or default to the name)
-    Object.defineProperty(this, 'code', {value: toCode(code, cause, this.name), enumerable: true});
+    Object.defineProperty(this, 'code', {
+      value: toCode(code, cause, this.constructor.name), enumerable: false, writable: true, configurable: true
+    });
 
     // Attempt to convert the given HTTP status code into an integer, but if the conversion fails, then stringify it
     const status = toHttpStatus(httpStatus);
-    Object.defineProperty(this, 'httpStatus', {value: status, enumerable: true});
+    Object.defineProperty(this, 'httpStatus', {value: status, enumerable: false, writable: false, configurable: false});
 
     // If given both a message and a cause (with a different message) then include the cause's message as a cause
     // property on this object
     const causeMessage = toCauseMessage(cause, this.message);
-    Object.defineProperty(this, 'cause', {value: causeMessage, enumerable: true});
+    Object.defineProperty(this, 'cause', {value: causeMessage, enumerable: false, writable: true, configurable: true});
 
     const causeStatus = getHttpStatus(cause);
-    Object.defineProperty(this, 'causeStatus', {value: causeStatus, enumerable: true});
+    Object.defineProperty(this, 'causeStatus', {
+      value: causeStatus, enumerable: false, writable: true, configurable: true
+    });
 
     // Use the given error's stack instead of this object's own stack
     if (cause instanceof Error) {
       this.stack = cause.stack;
     }
+  }
+
+  toJSON() {
+    const json = {
+      message: this.message,
+      code: this.code,
+      httpStatus: this.httpStatus
+    };
+    if (this.cause) json.cause = this.cause;
+    if (this.causeStatus) json.causeStatus = this.causeStatus;
+    return json;
   }
 }
 
@@ -246,7 +259,7 @@ function toAppErrorForApiGateway(error, message, code, allowedHttpStatusCodes) {
     // TODO perhaps add explicit support for HTTP status >= 300 & < 400 ... redirects?
     // else if (httpStatus >= 300 && httpStatus < 400) {
     // }
-    // TODO perhaps add explicit add support for HTTP status < 300? ... successes?
+    // TODO perhaps add explicit support for HTTP status < 300? ... successes?
     // else if (httpStatus < 300) {
     // }
     else {
@@ -332,6 +345,7 @@ function toHttpStatusStrict(httpStatus) {
   const httpStatusCode = Number(trim(httpStatus));
   return Number.isNaN(httpStatusCode) ? -1 : httpStatusCode;
 }
+
 /**
  * Returns the given message trimmed and stringified (if defined); or attempts to derive a message from the given cause
  * (if defined) (see {@linkcode toCauseMessage}); otherwise returns an empty string.
@@ -395,5 +409,14 @@ module.exports = {
   // Error conversion functions
   toAppError: toAppError,
   toAppErrorForApiGateway: toAppErrorForApiGateway,
-  getHttpStatus: getHttpStatus
+  getHttpStatus: getHttpStatus,
+
+  setTypeName: setTypeName
 };
+
+function setTypeName(type) {
+  const prototype = type.prototype;
+  if (!prototype.hasOwnProperty('name')) {
+    Object.defineProperty(prototype, 'name', {value: type.name, enumerable: false, writable: true, configurable: true});
+  }
+}
