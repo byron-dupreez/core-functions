@@ -78,6 +78,16 @@ class AppError extends Error {
     };
     if (this.cause) json.cause = this.cause;
     if (this.causeStatus) json.causeStatus = this.causeStatus;
+
+    // Copy any and all enumerable own properties across too
+    const names = Object.keys(this); //.filter(n => !json.hasOwnProperty(n));
+    for (let i = 0; i < names.length; ++i) {
+      const name = names[i];
+      const value = this[name];
+      if (value !== undefined && typeof value !== 'function') {
+        json[name] = value;
+      }
+    }
     return json;
   }
 }

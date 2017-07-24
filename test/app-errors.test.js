@@ -392,10 +392,10 @@ test('toAppErrorForApiGateway', t => {
   });
 
   // Check errors with httpStatusCode, httpStatus & statusCode become appropriate errors
-  check({httpStatusCode: " 400 ", httpStatus: " 401 ", statusCode: " 404 " }, BadRequest);
-  check({httpStatusCode: "MY 400 ", httpStatus: " 401 ", statusCode: " 404 " }, Unauthorized);
-  check({httpStatusCode: "MY 400 ", httpStatus: "MY 401 ", statusCode: " 404 " }, NotFound);
-  check({httpStatusCode: "MY 400 ", httpStatus: "MY 401 ", statusCode: "MY 404 " }, InternalServerError);
+  check({httpStatusCode: " 400 ", httpStatus: " 401 ", statusCode: " 404 "}, BadRequest);
+  check({httpStatusCode: "MY 400 ", httpStatus: " 401 ", statusCode: " 404 "}, Unauthorized);
+  check({httpStatusCode: "MY 400 ", httpStatus: "MY 401 ", statusCode: " 404 "}, NotFound);
+  check({httpStatusCode: "MY 400 ", httpStatus: "MY 401 ", statusCode: "MY 404 "}, InternalServerError);
 
   // Check default unsupported AppErrors get changed
   check(new AppError('AE msg', 'AE code', 199, new Error('AE cause')), InternalServerError, 'OverrideMsg', 'OverrideCode');
@@ -447,8 +447,30 @@ test('toAppError attempt to recreate NOT instanceof BadRequest bug', t => {
 test('AppError toJSON', t => {
   const e = new AppError('AE msg', 'AE code', 417, new ReferenceError('AE cause'));
 
-  const json = {message: e.message, code: e.code, httpStatus: e.httpStatus, cause: e.cause};
-  const jsonText = JSON.stringify(json);
+  let json = {message: e.message, code: e.code, httpStatus: e.httpStatus, cause: e.cause};
+  let jsonText = JSON.stringify(json);
+  t.deepEqual(e.toJSON(), json, `${e} toJSON must be ${jsonText}`);
+  t.deepEqual(JSON.parse(JSON.stringify(e)), json, `JSON.parse(JSON.stringify(${e})) must be ${jsonText}`);
+
+  // Add additional enumerable properties
+  e.awsRequestId = 'e72617f3-4cb2-40ba-9a16-e75b3e4226cf';
+  e.nowYouSeeMe = "Now you don't";
+
+  json = {
+    message: e.message, code: e.code, httpStatus: e.httpStatus, cause: e.cause, awsRequestId: e.awsRequestId,
+    nowYouSeeMe: e.nowYouSeeMe
+  };
+  jsonText = JSON.stringify(json);
+  t.deepEqual(e.toJSON(), json, `${e} toJSON must be ${jsonText}`);
+  t.deepEqual(JSON.parse(JSON.stringify(e)), json, `JSON.parse(JSON.stringify(${e})) must be ${jsonText}`);
+
+  // Change nowYouSeeMe to non-enumerable
+  Object.defineProperty(e, 'nowYouSeeMe', {enumerable: false});
+
+  json = {
+    message: e.message, code: e.code, httpStatus: e.httpStatus, cause: e.cause, awsRequestId: e.awsRequestId
+  };
+  jsonText = JSON.stringify(json);
   t.deepEqual(e.toJSON(), json, `${e} toJSON must be ${jsonText}`);
   t.deepEqual(JSON.parse(JSON.stringify(e)), json, `JSON.parse(JSON.stringify(${e})) must be ${jsonText}`);
 

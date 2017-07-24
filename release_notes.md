@@ -1,5 +1,8 @@
 ## Changes
 
+### 3.0.9
+- Fixed `toJSON` method in `AppError` class to also include any enumerable own properties
+
 ### 3.0.8
 - Added a new `errors` module with a new `FatalError` class
 - Changed `AppError` & its subclasses in `app-errors` module to better conform to the `Error` class contract
