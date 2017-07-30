@@ -65,6 +65,8 @@ module.exports = {
   wrap: wrap,
   /** Returns a function that will wrap and convert a node-style method into a Promise-returning function */
   wrapMethod: wrapMethod,
+  /** Returns a function that will wrap and convert a named node-style method into a Promise-returning function */
+  wrapNamedMethod: wrapNamedMethod,
   /** Triggers execution of the given (typically synchronous) no-arg function, which may throw an error, within a new promise and returns the new promise */
   try: attempt,
   /** Starts a simple timeout Promise, which will resolve after the specified delay in milliseconds */
@@ -139,11 +141,11 @@ function toPromise(promiseLike) {
 }
 
 /**
- * Wraps and converts the given node-style function into a Promise-returning function, which when invoked must be passed
- * all of the wrapped function's arguments other than its last callback argument.
+ * Wraps and converts the given callback-last Node-style function into a Promise-returning function, which when invoked
+ * must be passed all of the wrapped function's arguments other than its last callback argument.
  *
- * NB: This function must be passed a node-style function that accepts as its last parameter a callback that in turn
- * accepts 2 parameters: error; and data.
+ * NB: This function must be passed a Node-style function that accepts as its last parameter a Node-style callback that
+ * in turn accepts 2 parameters: error; and data.
  *
  * Borrowed and slightly tweaked from "You don't know JavaScript - Async & Performance" (thanks Kyle Simpson)
  * (https://github.com/getify/You-Dont-Know-JS/blob/master/async%20%26%20performance/README.md)
@@ -177,8 +179,9 @@ function toPromise(promiseLike) {
  *     OR instead use the Promises.wrapMethod function below.
  *
  * @param {Function} fn - a Node-callback style function to promisify
- * @returns {Function} a function, which when invoked will return a new Promise that will resolve or reject based on the
- * outcome of the callback
+ * @returns {function(...args: *): Promise.<R>} a function, which when invoked will return a new Promise that will
+ * resolve or reject based on the outcome of the callback
+ * @template R
  */
 function wrap(fn) {
   return function () {
@@ -201,11 +204,11 @@ function wrap(fn) {
 }
 
 /**
- * Wraps and converts the given node-style method call into a promise-returning function, which will later apply the
- * method to the given object and which accepts all of the wrapped method's arguments other than its last callback
- * argument.
- * NB: This function must be passed an object and a node-style method, which is defined on the object and which accepts
- * as its last parameter a callback that in turn accepts 2 parameters: error; and data.
+ * Wraps and converts the given callback-last Node-style method into a promise-returning function, which will later
+ * apply the method to the given object and which accepts all of the wrapped method's arguments other than its last
+ * callback argument.
+ * NB: This function must be passed an object and a Node-style method, which is defined on the object and which accepts
+ * as its last parameter a Node-style callback that in turn accepts 2 parameters: error; and data.
  * Example:
  *   const Promises = require('core-functions/promises');
  *
@@ -229,8 +232,9 @@ function wrap(fn) {
  *
  * @param {Object} obj - the object on which to execute the given method
  * @param {Function} method - a Node-callback style method (of the given object) to promisify
- * @returns {Function} a function, which when invoked will return a new Promise that will resolve or reject based on the
- * outcome of the callback
+ * @returns {function(...args: *): Promise.<R>} a function, which when invoked will return a new Promise that will
+ * resolve or reject based on the outcome of the callback
+ * @template R
  */
 function wrapMethod(obj, method) {
   return function () {
@@ -250,6 +254,18 @@ function wrapMethod(obj, method) {
       }
     );
   }
+}
+
+/**
+ * Returns a function that will wrap and convert a named callback-last Node-style method into a Promise-returning
+ * function.
+ * @param {Object} obj - the object on which to execute the given method
+ * @param {string} methodName - the name of a Node callback-last style method (of the given object) to promisify
+ * @returns {function(...args: *): Promise.<R>}
+ * @template R
+ */
+function wrapNamedMethod(obj, methodName) {
+  return wrapMethod(obj, obj[methodName]);
 }
 
 /**

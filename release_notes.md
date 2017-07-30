@@ -1,5 +1,15 @@
 ## Changes
 
+### 3.0.10
+- Changes to `errors` module:
+  - Removed `usePrefix` argument from `FatalError` constructor
+  - Removed `blocking` property from `FatalError` prototype
+  - Added new `TransientError` & `TimeoutError` Error subclasses
+  - Added new `toJSON` function
+  - Added new `toJSON` methods to all 3 Error subclasses that delegate to the new `toJSON` function
+- Changes to `promises` module:
+  - Added convenience `wrapNamedMethod` version of `wrapMethod` function
+
 ### 3.0.9
 - Fixed `toJSON` method in `AppError` class to also include any enumerable own properties
 

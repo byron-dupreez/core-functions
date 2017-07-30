@@ -237,6 +237,36 @@ test('Promises.wrapMethod with node-style method that calls back with a successf
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
+// Promises.wrapNamedMethod
+// ---------------------------------------------------------------------------------------------------------------------
+
+test('Promises.wrapNamedMethod with node-style method that calls back with an error', t => {
+  const promiseReturningMethod = Promises.wrapNamedMethod(objWithNodeStyleMethod, 'nodeStyleMethod');
+  promiseReturningMethod(true)
+    .then(result => {
+      t.fail(`Promises.wrapNamedMethod(...)(true).then should NOT have got result (${result})`);
+      t.end(err);
+    })
+    .catch(err => {
+      t.pass(`Promises.wrapNamedMethod(...)(true).catch should have got error (${err})`);
+      t.end();
+    });
+});
+
+test('Promises.wrapNamedMethod with node-style method that calls back with a successful result', t => {
+  const promiseReturningMethod = Promises.wrapNamedMethod(objWithNodeStyleMethod, 'nodeStyleMethod');
+  promiseReturningMethod(false)
+    .then(result => {
+      t.pass(`Promises.wrapNamedMethod(...)(false).then should have got result (${result})`);
+      t.end();
+    })
+    .catch(err => {
+      t.fail(`Promises.wrapNamedMethod(...)(false).catch should NOT have got error (${err})`);
+      t.end(err);
+    });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
 // Using standard Promise.resolve with a synchronous function that throws an error (reason for Promises.try)
 // ---------------------------------------------------------------------------------------------------------------------
 
