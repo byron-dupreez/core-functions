@@ -1,5 +1,14 @@
 ## Changes
 
+### 3.0.11
+- Changes to `strings` module:
+  - Changed `stringify` to survive a getter that throws an error
+- Changes to `objects` module:
+  - Added new `hasOwnPropertyWithKeys` & `hasOwnPropertyWithCompoundName` functions
+- Changes to `promises` module:
+  - Changed `wrap` function to also support wrapping of Node-style methods
+  - Deprecated now redundant `wrapMethod` & `wrapNamedMethod` functions
+
 ### 3.0.10
 - Changes to `errors` module:
   - Removed `usePrefix` argument from `FatalError` constructor

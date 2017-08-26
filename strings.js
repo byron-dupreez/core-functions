@@ -1,5 +1,6 @@
 'use strict';
 
+// noinspection JSUnusedGlobalSymbols
 /**
  * Module containing utilities for working with strings.
  * @module core-functions/strings
@@ -128,16 +129,16 @@ function stringify(value, opts) {
     opts = {avoidErrorToString: !opts, avoidToJSONMethods: !!arguments[3], quoteStrings: !!arguments[4]};
   }
   // Resolve any options requested
-  const useJSONStringify = !!opts && opts.useJSONStringify == true;
+  const useJSONStringify = !!opts && opts.useJSONStringify === true;
   if (useJSONStringify) {
     const replacer = opts && opts.replacer ? opts.replacer : undefined;
     const space = opts && opts.space ? opts.space : undefined;
     return JSON.stringify(value, replacer, space);
   }
 
-  const avoidErrorToString = !!opts && opts.avoidErrorToString == true;
-  const avoidToJSONMethods = !!opts && opts.avoidToJSONMethods == true;
-  const quoteStrings = !!opts && opts.quoteStrings == true;
+  const avoidErrorToString = !!opts && opts.avoidErrorToString === true;
+  const avoidToJSONMethods = !!opts && opts.avoidToJSONMethods === true;
+  const quoteStrings = !!opts && opts.quoteStrings === true;
 
   const history = new WeakMap();
 
@@ -252,11 +253,16 @@ function stringify(value, opts) {
       let result = prefix;
       for (let i = 0; i < names.length; ++i) {
         const propertyName = names[i];
-        const propertyValue = value[propertyName];
         if (i > 0) {
           result += ',';
         }
-        result += `"${propertyName}":${stringifyWithHistory(propertyValue, `${name}.${propertyName}`, true)}`
+        // Avoid failing if an error is thrown from a getter
+        try {
+          const propertyValue = value[propertyName];
+          result += `"${propertyName}":${stringifyWithHistory(propertyValue, `${name}.${propertyName}`, true)}`;
+        } catch (err) {
+          result += `"${propertyName}":[Getter failed - ${err}]`;
+        }
       }
       result += suffix;
       return result;

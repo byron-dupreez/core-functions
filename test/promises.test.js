@@ -38,30 +38,61 @@ function fallibleAsync(fail) {
 }
 
 function nodeStyleFn(fail, callback) {
-  function fn() {
+  // console.log(`In nodeStyleFn: this = ${JSON.stringify(this)}`);
+  // const this1 = this;
+
+  const fn = () => {
+    // console.log(`In nodeStyleFn fn: this = ${JSON.stringify(this)} (this is this1? ${this === this1})`);
     if (fail) {
+      error.n = `(${this})`;
       callback(error);
     } else {
-      callback(null, 'ok');
+      callback(null, `ok (${this})`);
     }
-  }
+  };
 
   setTimeout(fn, 10); // Simulate an async function call
 }
 
 const objWithNodeStyleMethod = {
-  nodeStyleMethod: (fail, callback) => {
+  n: 42,
+  nodeStyleMethod(fail, callback) {
+    // console.log(`In nodeStyleMethod: this = ${JSON.stringify(this)}`);
+    const self = this;
+
     function fn() {
       if (fail) {
+        error.n = `(${self.n})`;
         callback(error);
       } else {
-        callback(null, 'ok');
+        callback(null, `ok (${self.n})`);
       }
     }
 
     setTimeout(fn, 10); // Simulate an async function call
   }
 };
+
+class Abc {
+  constructor(n) {
+    this.n = `Abc ${n}`;
+  }
+
+  nodeStyleMethod(fail, callback) {
+    // console.log(`In Abc.nodeStyleMethod: this = ${JSON.stringify(this)}`);
+
+    const fn = () => {
+      if (fail) {
+        error.n = `(${this.n})`;
+        callback(error);
+      } else {
+        callback(null, `ok (${this.n})`);
+      }
+    };
+
+    setTimeout(fn, 10); // Simulate an async function call
+  }
+}
 
 // Arbitrary Promises
 const p1 = Promise.resolve('p1');
@@ -177,7 +208,7 @@ test('Promises.isPromiseLike', t => {
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Promises.wrap
+// Promises.wrap with node-style function
 // ---------------------------------------------------------------------------------------------------------------------
 
 test('Promises.wrap with node-style function that calls back with an error', t => {
@@ -185,10 +216,10 @@ test('Promises.wrap with node-style function that calls back with an error', t =
   promiseReturningFn(true)
     .then(result => {
       t.fail(`Promises.wrap(nodeStyleFn)(true).then should NOT have got result (${result})`);
-      t.end(err);
+      t.end();
     })
     .catch(err => {
-      t.pass(`Promises.wrap(nodeStyleFn)(true).catch should have got error (${err})`);
+      t.pass(`Promises.wrap(nodeStyleFn)(true).catch should have got error (${err} ${err.n})`);
       t.end();
     });
 });
@@ -201,7 +232,217 @@ test('Promises.wrap with node-style function that calls back with a successful r
       t.end();
     })
     .catch(err => {
-      t.fail(`Promises.wrap(nodeStyleFn)(false).catch should NOT have got error (${err})`);
+      t.fail(`Promises.wrap(nodeStyleFn)(false).catch should NOT have got error (${err} ${err.n})`);
+      t.end(err);
+    });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Promises.wrap of literal object's node-style method
+// ---------------------------------------------------------------------------------------------------------------------
+
+test(`OPTION 1: Promises.wrap of literal object's node-style method that calls back with an error`, t => {
+  const promiseStyleMethod = Promises.wrap(objWithNodeStyleMethod.nodeStyleMethod);
+  promiseStyleMethod.call(objWithNodeStyleMethod, true)
+    .then(result => {
+      t.fail(`Promises.wrap(...)(true).then should NOT have got result (${result})`);
+      t.end();
+    })
+    .catch(err => {
+      t.pass(`Promises.wrap(...)(true).catch should have got error (${err} ${err.n})`);
+      t.end();
+    });
+});
+
+test(`OPTION 1: Promises.wrap of literal object's node-style method that calls back with a successful result`, t => {
+  const promiseStyleMethod = Promises.wrap(objWithNodeStyleMethod.nodeStyleMethod);
+  promiseStyleMethod.call(objWithNodeStyleMethod, false)
+    .then(result => {
+      t.pass(`Promises.wrap(...)(false).then should have got result (${result})`);
+      t.end();
+    })
+    .catch(err => {
+      t.fail(`Promises.wrap(...)(false).catch should NOT have got error (${err} ${err.n})`);
+      t.end(err);
+    });
+});
+
+test(`OPTION 2: Promises.wrap of literal object's node-style method (installed as instance promiseStyleMethod) that calls back with an error`, t => {
+  objWithNodeStyleMethod.promiseStyleMethod = Promises.wrap(objWithNodeStyleMethod.nodeStyleMethod);
+  objWithNodeStyleMethod.promiseStyleMethod(true)
+    .then(result => {
+      t.fail(`Promises.wrap(...)(true).then should NOT have got result (${result})`);
+      t.end();
+    })
+    .catch(err => {
+      t.pass(`Promises.wrap(...)(true).catch should have got error (${err} ${err.n})`);
+      t.end();
+    });
+});
+
+test(`OPTION 2: Promises.wrap of literal object's node-style method (installed as instance promiseStyleMethod) that calls back with a successful result`, t => {
+  objWithNodeStyleMethod.promiseStyleMethod = Promises.wrap(objWithNodeStyleMethod.nodeStyleMethod);
+  objWithNodeStyleMethod.promiseStyleMethod(false)
+    .then(result => {
+      t.pass(`Promises.wrap(...)(false).then should have got result (${result})`);
+      t.end();
+    })
+    .catch(err => {
+      t.fail(`Promises.wrap(...)(false).catch should NOT have got error (${err} ${err.n})`);
+      t.end(err);
+    });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Promises.wrap of a DIFFERENT literal object's node-style method
+// ---------------------------------------------------------------------------------------------------------------------
+
+test(`OPTION 1: Promises.wrap of a DIFFERENT literal object's node-style method that calls back with an error`, t => {
+  const obj = {n:43};
+  const promiseStyleMethod = Promises.wrap(objWithNodeStyleMethod.nodeStyleMethod);
+  promiseStyleMethod.call(obj, true)
+    .then(result => {
+      t.fail(`Promises.wrap(...)(true).then should NOT have got result (${result})`);
+      t.end();
+    })
+    .catch(err => {
+      t.pass(`Promises.wrap(...)(true).catch should have got error (${err} ${err.n})`);
+      t.end();
+    });
+});
+
+test(`OPTION 1: Promises.wrap of a DIFFERENT literal object's node-style method that calls back with a successful result`, t => {
+  const obj = {n:44};
+  const promiseStyleMethod = Promises.wrap(objWithNodeStyleMethod.nodeStyleMethod);
+  promiseStyleMethod.call(obj, false)
+    .then(result => {
+      t.pass(`Promises.wrap(...)(false).then should have got result (${result})`);
+      t.end();
+    })
+    .catch(err => {
+      t.fail(`Promises.wrap(...)(false).catch should NOT have got error (${err} ${err.n})`);
+      t.end(err);
+    });
+});
+
+test(`OPTION 2: Promises.wrap of a DIFFERENT literal object's node-style method (installed as instance promiseStyleMethod) that calls back with an error`, t => {
+  const obj = {n:45};
+  obj.promiseStyleMethod = Promises.wrap(objWithNodeStyleMethod.nodeStyleMethod);
+  obj.promiseStyleMethod(true)
+    .then(result => {
+      t.fail(`Promises.wrap(...)(true).then should NOT have got result (${result})`);
+      t.end();
+    })
+    .catch(err => {
+      t.pass(`Promises.wrap(...)(true).catch should have got error (${err} ${err.n})`);
+      t.end();
+    });
+});
+
+test(`OPTION 2: Promises.wrap of a DIFFERENT literal object's node-style method (installed as instance promiseStyleMethod) that calls back with a successful result`, t => {
+  const obj = {n:46};
+  obj.promiseStyleMethod = Promises.wrap(objWithNodeStyleMethod.nodeStyleMethod);
+  obj.promiseStyleMethod(false)
+    .then(result => {
+      t.pass(`Promises.wrap(...)(false).then should have got result (${result})`);
+      t.end();
+    })
+    .catch(err => {
+      t.fail(`Promises.wrap(...)(false).catch should NOT have got error (${err} ${err.n})`);
+      t.end(err);
+    });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Promises.wrap of non-literal object's node-style method
+// ---------------------------------------------------------------------------------------------------------------------
+
+test(`OPTION 1: Promises.wrap of non-literal object's prototype's node-style method that calls back with an error`, t => {
+  const promiseStyleMethod = Promises.wrap(Abc.prototype.nodeStyleMethod);
+
+  const abc = new Abc(1);
+  promiseStyleMethod.call(abc, true)
+    .then(result => {
+      t.fail(`Promises.wrap(...)(true).then should NOT have got result (${result})`);
+      t.end();
+    })
+    .catch(err => {
+      t.pass(`Promises.wrap(...)(true).catch should have got error (${err} ${err.n})`);
+      t.end();
+    });
+});
+
+test(`OPTION 1: Promises.wrap of non-literal object's prototype's node-style method that calls back with a successful result`, t => {
+  const promiseStyleMethod = Promises.wrap(Abc.prototype.nodeStyleMethod);
+
+  const abc = new Abc(2);
+  promiseStyleMethod.call(abc, false)
+    .then(result => {
+      t.pass(`Promises.wrapMethod(...)(false).then should have got result (${result})`);
+      t.end();
+    })
+    .catch(err => {
+      t.fail(`Promises.wrapMethod(...)(false).catch should NOT have got error (${err} ${err.n})`);
+      t.end(err);
+    });
+});
+
+test(`OPTION 2: Promises.wrap of non-literal object's prototype's node-style method (installed as prototype promiseStyleMethod) that calls back with an error`, t => {
+  Abc.prototype.promiseStyleMethod = Promises.wrap(Abc.prototype.nodeStyleMethod);
+
+  const abc = new Abc(3);
+  abc.promiseStyleMethod(true)
+    .then(result => {
+      t.fail(`Promises.wrap(...)(true).then should NOT have got result (${result})`);
+      t.end();
+    })
+    .catch(err => {
+      t.pass(`Promises.wrap(...)(true).catch should have got error (${err} ${err.n})`);
+      t.end();
+    });
+});
+
+test(`OPTION 2: Promises.wrap of non-literal object's prototype's node-style method (installed as prototype promiseStyleMethod) that calls back with an error`, t => {
+  Abc.prototype.promiseStyleMethod = Promises.wrap(Abc.prototype.nodeStyleMethod);
+
+  const abc = new Abc(4);
+  abc.promiseStyleMethod(false)
+    .then(result => {
+      t.pass(`Promises.wrap(...)(false).then should have got result (${result})`);
+      t.end();
+    })
+    .catch(err => {
+      t.fail(`Promises.wrap(...)(false).catch should NOT have got error (${err} ${err.n})`);
+      t.end(err);
+    });
+});
+
+test(`OPTION 2: Promises.wrap of non-literal object's node-style method (installed as instance promiseStyleMethod) that calls back with an error`, t => {
+  const abc = new Abc(5);
+  abc.promiseStyleMethod = Promises.wrap(abc.nodeStyleMethod);
+
+  abc.promiseStyleMethod(true)
+    .then(result => {
+      t.fail(`Promises.wrap(...)(true).then should NOT have got result (${result})`);
+      t.end();
+    })
+    .catch(err => {
+      t.pass(`Promises.wrap(...)(true).catch should have got error (${err} ${err.n})`);
+      t.end();
+    });
+});
+
+test(`OPTION 2: Promises.wrap of non-literal object's node-style method (installed as instance promiseStyleMethod) that calls back with an error`, t => {
+  const abc = new Abc(6);
+  abc.promiseStyleMethod = Promises.wrap(abc.nodeStyleMethod);
+
+  abc.promiseStyleMethod(false)
+    .then(result => {
+      t.pass(`Promises.wrap(...)(false).then should have got result (${result})`);
+      t.end();
+    })
+    .catch(err => {
+      t.fail(`Promises.wrap(...)(false).catch should NOT have got error (${err} ${err.n})`);
       t.end(err);
     });
 });
@@ -211,11 +452,11 @@ test('Promises.wrap with node-style function that calls back with a successful r
 // ---------------------------------------------------------------------------------------------------------------------
 
 test('Promises.wrapMethod with node-style method that calls back with an error', t => {
-  const promiseReturningMethod = Promises.wrapMethod(objWithNodeStyleMethod, objWithNodeStyleMethod.nodeStyleMethod);
-  promiseReturningMethod(true)
+  const promiseStyleMethod = Promises.wrapMethod(objWithNodeStyleMethod, objWithNodeStyleMethod.nodeStyleMethod);
+  promiseStyleMethod(true)
     .then(result => {
       t.fail(`Promises.wrapMethod(...)(true).then should NOT have got result (${result})`);
-      t.end(err);
+      t.end();
     })
     .catch(err => {
       t.pass(`Promises.wrapMethod(...)(true).catch should have got error (${err})`);
@@ -224,8 +465,8 @@ test('Promises.wrapMethod with node-style method that calls back with an error',
 });
 
 test('Promises.wrapMethod with node-style method that calls back with a successful result', t => {
-  const promiseReturningMethod = Promises.wrapMethod(objWithNodeStyleMethod, objWithNodeStyleMethod.nodeStyleMethod);
-  promiseReturningMethod(false)
+  const promiseStyleMethod = Promises.wrapMethod(objWithNodeStyleMethod, objWithNodeStyleMethod.nodeStyleMethod);
+  promiseStyleMethod(false)
     .then(result => {
       t.pass(`Promises.wrapMethod(...)(false).then should have got result (${result})`);
       t.end();
@@ -241,11 +482,11 @@ test('Promises.wrapMethod with node-style method that calls back with a successf
 // ---------------------------------------------------------------------------------------------------------------------
 
 test('Promises.wrapNamedMethod with node-style method that calls back with an error', t => {
-  const promiseReturningMethod = Promises.wrapNamedMethod(objWithNodeStyleMethod, 'nodeStyleMethod');
-  promiseReturningMethod(true)
+  const promiseStyleMethod = Promises.wrapNamedMethod(objWithNodeStyleMethod, 'nodeStyleMethod');
+  promiseStyleMethod(true)
     .then(result => {
       t.fail(`Promises.wrapNamedMethod(...)(true).then should NOT have got result (${result})`);
-      t.end(err);
+      t.end();
     })
     .catch(err => {
       t.pass(`Promises.wrapNamedMethod(...)(true).catch should have got error (${err})`);
@@ -254,8 +495,8 @@ test('Promises.wrapNamedMethod with node-style method that calls back with an er
 });
 
 test('Promises.wrapNamedMethod with node-style method that calls back with a successful result', t => {
-  const promiseReturningMethod = Promises.wrapNamedMethod(objWithNodeStyleMethod, 'nodeStyleMethod');
-  promiseReturningMethod(false)
+  const promiseStyleMethod = Promises.wrapNamedMethod(objWithNodeStyleMethod, 'nodeStyleMethod');
+  promiseStyleMethod(false)
     .then(result => {
       t.pass(`Promises.wrapNamedMethod(...)(false).then should have got result (${result})`);
       t.end();

@@ -29,7 +29,9 @@ class CancelledError extends Error {
     Object.defineProperty(this, 'name', {value: this.constructor.name, enumerable: false});
     Object.defineProperty(this, 'resolvedOutcomes', {value: resolvedOutcomes, enumerable: false});
     Object.defineProperty(this, 'unresolvedInputs', {value: unresolvedInputs, enumerable: false});
-    Object.defineProperty(this, 'completed', {value: unresolvedInputs ? incompleteCount === 0 : undefined, enumerable: false});
+    Object.defineProperty(this, 'completed',
+      {value: unresolvedInputs ? incompleteCount === 0 : undefined, enumerable: false}
+    );
     // Alias for unresolvedInputs for backward-compatibility
     Object.defineProperty(this, 'unresolvedPromises', {value: unresolvedInputs, enumerable: false});
   }
@@ -63,9 +65,9 @@ module.exports = {
   toPromise: toPromise,
   /** Returns a function that will wrap and convert a node-style function into a Promise-returning function */
   wrap: wrap,
-  /** Returns a function that will wrap and convert a node-style method into a Promise-returning function */
+  /** @deprecated Use `wrap` instead - see OPTION 1 or 2 in its JDoc comments */
   wrapMethod: wrapMethod,
-  /** Returns a function that will wrap and convert a named node-style method into a Promise-returning function */
+  /** @deprecated Use `wrap` instead - see OPTION 1 or 2 in its JDoc comments */
   wrapNamedMethod: wrapNamedMethod,
   /** Triggers execution of the given (typically synchronous) no-arg function, which may throw an error, within a new promise and returns the new promise */
   try: attempt,
@@ -127,17 +129,17 @@ function isPromiseLike(value) {
  */
 function toPromise(promiseLike) {
   return promiseLike instanceof Promise ? promiseLike : isPromiseLike(promiseLike) ?
-      new Promise((resolve, reject) => {
-        try {
-          // Assumption: "then-able" accepts the same arguments as Promise.then
-          promiseLike.then(
-            result => resolve(result),
-            error => reject(error)
-          );
-        } catch (err) {
-          reject(err)
-        }
-      }) : Promise.resolve(promiseLike);
+    new Promise((resolve, reject) => {
+      try {
+        // Assumption: "then-able" accepts the same arguments as Promise.then
+        promiseLike.then(
+          result => resolve(result),
+          error => reject(error)
+        );
+      } catch (err) {
+        reject(err)
+      }
+    }) : Promise.resolve(promiseLike);
 }
 
 /**
@@ -161,30 +163,79 @@ function toPromise(promiseLike) {
  *       callback(new Error('arg1 undefined'));
  *     }
  *     // example asynchronous invocation of callback with data
- *     setTimeout(function () {
+ *     setTimeout(() => {
  *       callback(null, 'Completed successfully');
  *     }, 5000);
  *   }
  *
- *   Promises.wrap(nodeStyleFunction)(arg1, arg2, ..., argN)
- *       .then(result => ...)
- *       .catch(err => ...);
+ *   const promiseStyleFunction = Promises.wrap(nodeStyleFunction);
+ *   ...
+ *   promiseStyleFunction(arg1, arg2, ..., argN)
+ *     .then(result => ...)
+ *     .catch(err => ...);
  *
- * NB: If the function passed is actually a method call on an object then EITHER call wrap using a bind on the method:
- *    Example:
- *      Promises.wrap(obj.nodeStyleMethod.bind(obj))(arg1, arg2, ..., argN)
+ * NB: If the function passed is actually a method on an object:
+ *
+ *   // crude example of a node-style method
+ *   class Abc {
+ *     nodeStyleMethod(arg1, arg2, ..., argN, callback) {
+ *       // example synchronous invocation of callback with error
+ *       if (!arg1) {
+ *         callback(new Error('arg1 undefined'));
+ *       }
+ *       // example asynchronous invocation of callback with data
+ *       setTimeout(function () {
+ *         callback(null, 'Completed successfully);
+ *       }, 5000);
+ *     }
+ *   }
+ *
+ * ... then ensure that you invoke the wrapped method on the target object by using one of the following approaches:
+ *
+ *   OPTION 1 - Use `call` (or `apply`) and pass the target object as its `thisArg`:
+ *     Example:
+ *       const promiseStyleMethod = Promises.wrap(Abc.prototype.nodeStyleMethod);
+ *       ...
+ *       const abc = new Abc();
+ *       // OR: const promiseStyleMethod = Promises.wrap(abc.nodeStyleMethod);
+ *
+ *       promiseStyleMethod.call(abc, arg1, arg2, ..., argN)
  *         .then(result => ...)
  *         .catch(err => ...);
  *
- *     OR instead use the Promises.wrapMethod function below.
+ *   OPTION 2 - Install the wrapped method on the target object or on its prototype (with a different name to the method
+ *              being wrapped) and then invoke the installed method on the target object:
+ *     Example:
+ *       Abc.prototype.promiseStyleMethod = Promises.wrap(Abc.prototype.nodeStyleMethod);
+ *       ...
+ *       const abc = new Abc();
+ *       // OR: abc.promiseStyleMethod = Promises.wrap(abc.nodeStyleMethod);
  *
- * @param {Function} fn - a Node-callback style function to promisify
+ *       abc.promiseStyleMethod(arg1, arg2, ..., argN)
+ *         .then(result => ...)
+ *         .catch(err => ...);
+ *
+ *   OPTION 3 - Call `wrap` using a bind on the method, but note that this will permanently bind the wrapped method to
+ *              the bound object:
+ *     Example:
+ *       const abc = new Abc();
+ *       Promises.wrap(abc.nodeStyleMethod.bind(abc))(arg1, arg2, ..., argN)
+ *         .then(result => ...)
+ *         .catch(err => ...);
+ *
+ *   WORST OPTION 4 - Use the DEPRECATED `wrapMethod` function below, but note that this will ALSO permanently bind the
+ *                    wrapped method to the passed object.
+ *
+ *   NOTE: Prefer the more flexible OPTION 1 or 2 over the less flexible OPTION 3 or 4
+ *
+ * @param {Function} fn - a Node-callback style function to "promisify"
  * @returns {function(...args: *): Promise.<R>} a function, which when invoked will return a new Promise that will
  * resolve or reject based on the outcome of the callback
  * @template R
  */
 function wrap(fn) {
   return function () {
+    const self = this;
     //var args = [].slice.call( arguments );
     // potentially faster than slice
     const len = arguments.length;
@@ -197,13 +248,14 @@ function wrap(fn) {
           if (err) reject(err);
           else resolve(v);
         };
-        fn.apply(null, args);
+        fn.apply(self, args);
       }
     );
   };
 }
 
 /**
+ * @deprecated Use `wrap` instead - see OPTION 1 or 2 in its JDoc comments
  * Wraps and converts the given callback-last Node-style method into a promise-returning function, which will later
  * apply the method to the given object and which accepts all of the wrapped method's arguments other than its last
  * callback argument.
@@ -257,6 +309,7 @@ function wrapMethod(obj, method) {
 }
 
 /**
+ * @deprecated Use `wrap` instead - see OPTION 1 or 2 in its JDoc comments
  * Returns a function that will wrap and convert a named callback-last Node-style method into a Promise-returning
  * function.
  * @param {Object} obj - the object on which to execute the given method

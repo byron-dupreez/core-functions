@@ -10,6 +10,8 @@ const test = require('tape');
 const Objects = require('../objects');
 const toKeyValuePairs = Objects.toKeyValuePairs;
 const getOwnPropertyNamesRecursively = Objects.getOwnPropertyNamesRecursively;
+const getPropertyValueByCompoundName = Objects.getPropertyValueByCompoundName;
+const hasOwnPropertyWithCompoundName = Objects.hasOwnPropertyWithCompoundName;
 
 const strings = require('../strings');
 const stringify = strings.stringify;
@@ -86,7 +88,7 @@ test('getOwnPropertyNamesRecursively', t => {
 
 test(`getOwnPropertyNamesRecursively with onlyEnumerable`, t => {
   const onlyE = true;
-  const skip = true;
+  // const skip = true;
 
   const o1 = {a: 1, b: 2, c: {d: 4, e: {f: {g: 7}, h: 8}}, i: {j: 10, k: 11}};
   Object.defineProperty(o1, 'b', {enumerable: false});
@@ -118,19 +120,53 @@ test(`getOwnPropertyNamesRecursively with onlyEnumerable`, t => {
   t.end();
 });
 
+// =====================================================================================================================
+// getPropertyValueByCompoundName
+// =====================================================================================================================
+
 test('getPropertyValueByCompoundName', t => {
-  t.equal(Objects.getPropertyValueByCompoundName(undefined, 'a.b.c'), undefined, `undefined.a.b.c must be undefined`);
-  t.equal(Objects.getPropertyValueByCompoundName(null, 'a.b.c'), undefined, `null.a.b.c must be undefined`);
-  t.equal(Objects.getPropertyValueByCompoundName({}, 'a.b.c'), undefined, `{}.a.b.c must be undefined`);
-  t.equal(Objects.getPropertyValueByCompoundName([], 'a.b.c'), undefined, `[].a.b.c must be undefined`);
+  t.equal(getPropertyValueByCompoundName(undefined, 'a.b.c'), undefined, `undefined.a.b.c must be undefined`);
+  t.equal(getPropertyValueByCompoundName(null, 'a.b.c'), undefined, `null.a.b.c must be undefined`);
+  t.equal(getPropertyValueByCompoundName({}, 'a.b.c'), undefined, `{}.a.b.c must be undefined`);
+  t.equal(getPropertyValueByCompoundName([], 'a.b.c'), undefined, `[].a.b.c must be undefined`);
 
   const o = {a: 1, b: {c: 'c', d: {e: 'e'}}};
-  t.deepEqual(Objects.getPropertyValueByCompoundName(o, 'a'), 1, 'o.a must be 1');
-  t.deepEqual(Objects.getPropertyValueByCompoundName(o, 'b'), {c: 'c', d: {e: 'e'}}, `o.b must be {c: 'c', d: {e: 'e'}}`);
-  t.deepEqual(Objects.getPropertyValueByCompoundName(o, 'b.c'), 'c', `o.b.c must be 'c'`);
-  t.deepEqual(Objects.getPropertyValueByCompoundName(o, 'b.d'), {e: 'e'}, `o.b.d must be {e: 'e'}`);
-  t.deepEqual(Objects.getPropertyValueByCompoundName(o, 'b.d.e'), 'e', `o.b.d.e must be 'e'`);
-  t.deepEqual(Objects.getPropertyValueByCompoundName(o, 'x.y.z'), undefined, `o.x.y.z must be undefined`);
+  t.deepEqual(getPropertyValueByCompoundName(o, 'a'), 1, 'o.a must be 1');
+  t.deepEqual(getPropertyValueByCompoundName(o, 'b'), {c: 'c', d: {e: 'e'}}, `o.b must be {c: 'c', d: {e: 'e'}}`);
+  t.deepEqual(getPropertyValueByCompoundName(o, 'b.c'), 'c', `o.b.c must be 'c'`);
+  t.deepEqual(getPropertyValueByCompoundName(o, 'b.d'), {e: 'e'}, `o.b.d must be {e: 'e'}`);
+  t.deepEqual(getPropertyValueByCompoundName(o, 'b.d.e'), 'e', `o.b.d.e must be 'e'`);
+  t.deepEqual(getPropertyValueByCompoundName(o, 'x.y.z'), undefined, `o.x.y.z must be undefined`);
   t.end();
 });
 
+// =====================================================================================================================
+// hasOwnPropertyWithCompoundName
+// =====================================================================================================================
+
+test('hasOwnPropertyWithCompoundName', t => {
+  t.equal(hasOwnPropertyWithCompoundName(undefined, 'a.b.c'), false, `undefined.a.b.c must not exist`);
+  t.equal(hasOwnPropertyWithCompoundName(null, 'a.b.c'), false, `null.a.b.c must not exist`);
+  t.equal(hasOwnPropertyWithCompoundName({}, 'a.b.c'), false, `{}.a.b.c must not exist`);
+  t.equal(hasOwnPropertyWithCompoundName([], 'a.b.c'), false, `[].a.b.c must not exist`);
+
+  const o = {a: 1, b: {c: 'c', d: {e: 'e', n: null}, u: undefined}, u: undefined, n: null};
+  t.equal(hasOwnPropertyWithCompoundName(o, 'a'), true, 'o.a must exist');
+  t.equal(hasOwnPropertyWithCompoundName(o, 'b'), true, `o.b must exist`);
+  t.equal(hasOwnPropertyWithCompoundName(o, 'b.c'), true, `o.b.c must exist`);
+  t.equal(hasOwnPropertyWithCompoundName(o, 'b.d'), true, `o.b.d must exist`);
+  t.equal(hasOwnPropertyWithCompoundName(o, 'b.d.e'), true, `o.b.d.e must exist`);
+  t.equal(hasOwnPropertyWithCompoundName(o, 'x.y.z'), false, `o.x.y.z must not exist`);
+
+  // properties containing undefined or null must still exist
+  t.equal(hasOwnPropertyWithCompoundName(o, 'u'), true, 'o.u must exist');
+  t.equal(hasOwnPropertyWithCompoundName(o, 'n'), true, 'o.n must exist');
+  t.equal(hasOwnPropertyWithCompoundName(o, 'b.u'), true, 'o.b.u must exist');
+  t.equal(hasOwnPropertyWithCompoundName(o, 'b.d.n'), true, 'o.b.d.n must exist');
+
+  const p = Object.create(o);
+  t.equal(hasOwnPropertyWithCompoundName(p, 'a'), false, 'p.a must not exist');
+  t.equals(p.a, o.a, 'p.a must be o.a');
+
+  t.end();
+});

@@ -829,3 +829,19 @@ test('stringify on console & Console', t => {
   t.end();
 });
 
+test('stringify must survive a broken getter', t => {
+  const o = {x: {reading: true}, get y() { return this.x.reading; }};
+  let expected = '{"x":{"reading":true},"y":true}';
+  t.equal(Strings.stringify(o), expected, `stringify({x: {reading: true}, get y() { return this.x.reading; }}) must be '${expected}'`);
+
+  // Now break the 'y' getter
+  o.x = null;
+  t.throws(() => o.y, TypeError, 'o.y must throw a TypeError');
+  t.throws(() => o['y'], TypeError, `o['y'] must throw a TypeError`);
+
+  // but regardless, stringify must NOT break
+  expected = '{"x":null,"y":[Getter failed - TypeError: Cannot read property \'reading\' of null]}';
+  t.equal(Strings.stringify(o), expected, `stringify({x: null, get y() { return this.x.reading; }}) must be '${expected}'`);
+
+  t.end();
+});

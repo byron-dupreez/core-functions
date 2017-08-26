@@ -22,9 +22,6 @@ module.exports = {
 const strings = require('./strings');
 const isString = strings.isString;
 
-//const numbers = require('./numbers');
-//const isNumber = numbers.isNumber;
-
 /**
  * Attempts to convert the given data object or value into a JSON string and then encodes that to a base 64 string (if
  * data is decodable and encodable and NOT undefined); or throws a TypeError (if not decodable or not encodable);

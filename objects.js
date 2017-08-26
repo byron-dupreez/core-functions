@@ -8,6 +8,7 @@ const any = require('./any');
 
 const propertyIsEnumerable = Object.prototype.propertyIsEnumerable;
 
+// noinspection JSUnusedGlobalSymbols
 /**
  * Module containing utilities for working with objects.
  * @module core-functions/objects
@@ -24,6 +25,8 @@ module.exports = {
   getPropertyValueByKeys: getPropertyValueByKeys,
   getPropertyDescriptorByKeys: getPropertyDescriptorByKeys,
   getPropertyValueByCompoundName: getPropertyValueByCompoundName,
+  hasOwnPropertyWithKeys: hasOwnPropertyWithKeys,
+  hasOwnPropertyWithCompoundName: hasOwnPropertyWithCompoundName,
   /** @deprecated */
   copy: copy,
   /** @deprecated */
@@ -162,6 +165,38 @@ function getPropertyValueByCompoundName(object, compoundOrSimpleName) {
 }
 
 /**
+ * Traverses the given list of property keys starting from the given object to determine whether the targeted property
+ * exists according to `hasOwnProperty` or not.
+ * @param {Object} object - the object from which to start traversing
+ * @param {PropertyKey[]} keys - the list of property keys to be traversed to check if the targeted property exists
+ * @returns {boolean} true if the targeted property exists; otherwise false
+ */
+function hasOwnPropertyWithKeys(object, keys) {
+  let next = object;
+  const last = keys.length - 1;
+  for (let i = 0; i < last; ++i) {
+    if (!next || typeof next !== 'object') {
+      return false;
+    }
+    next = next[keys[i]];
+  }
+  return next && typeof next === 'object' && last >= 0 ? next.hasOwnProperty(keys[last]) : false;
+}
+
+/**
+ * Traverses the components of the given compound or simple property name starting from the given object to determine
+ * whether the targeted property exists according to `hasOwnProperty` or not. A compound property name is one that
+ * contains multiple property names separated by fullstops.
+ * @param {Object} object - the object from which to start traversing
+ * @param {string} compoundOrSimpleName - the compound or simple name of the property to check
+ * @returns {boolean} true if the targeted property exists; otherwise false
+ */
+function hasOwnPropertyWithCompoundName(object, compoundOrSimpleName) {
+  const names = compoundOrSimpleName.split(".").map(n => trim(n)).filter(name => isNotBlank(name));
+  return hasOwnPropertyWithKeys(object, names);
+}
+
+/**
  * Creates & returns a copy of the given object by copying its properties into a new object of a similar type if the
  * given object is copyable (e.g. non-null, non-Promise object); otherwise simply returns the given object. Executes a
  * deep copy if `opts.deep` is true; otherwise only does a shallow copy.
@@ -267,6 +302,7 @@ function getOwnPropertyNamesRecursively(object, opts) {
   function isTraversable(o) {
     return !!o && typeof o === 'object' && !(o instanceof Promise) && o !== console;
   }
+
   if (!isTraversable(object)) return [];
 
   const onlyEnumerable = !!opts && opts.onlyEnumerable === true;
