@@ -18,6 +18,7 @@ const checkEqual = testing.checkEqual;
 // const checkMethodEqual = testing.checkMethodEqual;
 
 function wrap(value, wrapInString) {
+  // noinspection JSPrimitiveTypeWrapperUsage
   return wrapInString && !(value instanceof String) ? new String(value) : value;
 }
 
@@ -711,6 +712,23 @@ test('nthIndexOf', t => {
   t.equal(Strings.nthIndexOf(s, '', 1), 0, `nthIndexOf('', 1) must be 0`);
   t.equal(Strings.nthIndexOf(s, '', 2), 0, `nthIndexOf('', 2) must be 0`);
   t.equal(Strings.nthIndexOf(s, '', 100), 0, `nthIndexOf('', 100) must be 0`);
+
+  t.end();
+});
+
+test('stringify must survive a broken getter', t => {
+  const o = {x: {reading: true}, get y() { return this.x.reading; }};
+  let expected = '{"x":{"reading":true},"y":true}';
+  t.equal(Strings.stringify(o), expected, `stringify({x: {reading: true}, get y() { return this.x.reading; }}) must be '${expected}'`);
+
+  // Now break the 'y' getter
+  o.x = null;
+  t.throws(() => o.y, TypeError, 'o.y must throw a TypeError');
+  t.throws(() => o['y'], TypeError, `o['y'] must throw a TypeError`);
+
+  // but regardless, stringify must NOT break
+  expected = '{"x":null,"y":[Getter failed - TypeError: Cannot read property \'reading\' of null]}';
+  t.equal(Strings.stringify(o), expected, `stringify({x: null, get y() { return this.x.reading; }}) must be '${expected}'`);
 
   t.end();
 });

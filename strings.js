@@ -1,5 +1,6 @@
 'use strict';
 
+// noinspection JSUnusedGlobalSymbols
 /**
  * Module containing utilities for working with strings.
  * @module core-functions/strings
@@ -169,11 +170,16 @@ function stringify(value, useToStringForErrors, avoidToJSONMethods, quoteStrings
       let result = '{';
       for (let i = 0; i < names.length; ++i) {
         const propertyName = names[i];
-        const propertyValue = value[propertyName];
         if (i > 0) {
           result += ',';
         }
-        result += `"${propertyName}":${stringifyWithHistory(propertyValue, `${name}.${propertyName}`, true)}`
+        // Avoid failing if an error is thrown from a getter
+        try {
+          const propertyValue = value[propertyName];
+          result += `"${propertyName}":${stringifyWithHistory(propertyValue, `${name}.${propertyName}`, true)}`;
+        } catch (err) {
+          result += `"${propertyName}":[Getter failed - ${err}]`;
+        }
       }
       result += '}';
       return result;
