@@ -1,37 +1,26 @@
 'use strict';
 
-// noinspection JSUnusedGlobalSymbols
+const inspectOpts = {depth: null, breakLength: Infinity}; // unfortunately breakLength is only available in later Node versions than 4.3.2
+const breakRegex = /\s*[\n\r]+\s*/g;
+const promiseInspectRegex = /^(Promise \{)([\s\n\r]+)(.*)([\s\n\r]+)(})$/;
+
 /**
  * Module containing utilities for working with strings.
  * @module core-functions/strings
  * @author Byron du Preez
  */
-module.exports = {
-  /** Returns true if the given value is a string; false otherwise */
-  isString: isString,
-  /** Returns true if the given string is blank (i.e. undefined, null, empty or contains only whitespace); false otherwise */
-  isBlank: isBlank,
-  /** Returns true if the given string is NOT blank (i.e. NOT undefined, null, empty or contains only whitespace); false otherwise */
-  isNotBlank: isNotBlank,
-  /** Trims the given value if it is a string; otherwise returns a non-string value as is */
-  trim: trim,
-  /**
-   * Alias for trim
-   * @deprecated since 1.1.0
-   */
-  safeTrim: trim,
-  /** Trims the given value (if it's a string) or returns an empty string (if it's undefined or null); otherwise returns the non-undefined, non-null, non-string value as is. */
-  trimOrEmpty: trimOrEmpty,
-  /** Returns the given value as a string with special case handling for various types */
-  stringify: stringify,
-  nthIndexOf: nthIndexOf,
-  toLowerCase: toLowerCase,
-  stringifyKeyValuePairs: stringifyKeyValuePairs
-};
+module.exports.isString = isString;
+module.exports.isBlank = isBlank;
+module.exports.isNotBlank = isNotBlank;
+module.exports.trim = trim;
+module.exports.trimOrEmpty = trimOrEmpty;
+module.exports.stringify = stringify;
+module.exports.nthIndexOf = nthIndexOf;
+module.exports.toLowerCase = toLowerCase;
+module.exports.stringifyKeyValuePairs = stringifyKeyValuePairs;
 
-const inspectOpts = {depth: null, breakLength: Infinity}; // unfortunately breakLength is only available in later Node versions than 4.3.2
-const breakRegex = /\s*[\n\r]+\s*/g;
-const promiseInspectRegex = /^(Promise \{)([\s\n\r]+)(.*)([\s\n\r]+)(})$/;
+/** @deprecated since 1.1.0, use trim instead */
+module.exports.safeTrim = trim;
 
 // Attempts to get Node's util.js inspect function (if available)
 const inspect = (() => {

@@ -1,5 +1,8 @@
 ## Changes
 
+### 3.0.12
+- Changed all exports to modifications of the default `module.exports` object instead of replacing the default object
+
 ### 3.0.11
 - Changes to `strings` module:
   - Changed `stringify` to survive a getter that throws an error

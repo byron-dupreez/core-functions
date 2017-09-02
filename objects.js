@@ -1,47 +1,45 @@
 'use strict';
 
-const Strings = require('./strings');
-const trim = Strings.trim;
-const isNotBlank = Strings.isNotBlank;
+const strings = require('./strings');
+const trim = strings.trim;
+const isNotBlank = strings.isNotBlank;
 
 const any = require('./any');
 
 const propertyIsEnumerable = Object.prototype.propertyIsEnumerable;
 
-// noinspection JSUnusedGlobalSymbols
 /**
  * Module containing utilities for working with objects.
  * @module core-functions/objects
  * @author Byron du Preez
  */
-module.exports = {
-  /** @deprecated - use {@linkcode core-functions/any#valueOf} instead */
-  valueOf: any.valueOf,
-  isTypedArray: isTypedArray,
-  getPropertyNames: getPropertyNames,
-  getPropertySymbols: getPropertySymbols,
-  getPropertyKeys: getPropertyKeys,
-  getPropertyDescriptors: getPropertyDescriptors,
-  getPropertyValueByKeys: getPropertyValueByKeys,
-  getPropertyDescriptorByKeys: getPropertyDescriptorByKeys,
-  getPropertyValueByCompoundName: getPropertyValueByCompoundName,
-  hasOwnPropertyWithKeys: hasOwnPropertyWithKeys,
-  hasOwnPropertyWithCompoundName: hasOwnPropertyWithCompoundName,
-  /** @deprecated */
-  copy: copy,
-  /** @deprecated */
-  merge: merge,
-  /** @deprecated */
-  copyNamedProperties: copyNamedProperties,
-  toKeyValuePairs: toKeyValuePairs,
-  getOwnPropertyNamesRecursively: getOwnPropertyNamesRecursively
-};
+module.exports.isTypedArray = isTypedArray;
+module.exports.getPropertyNames = getPropertyNames;
+module.exports.getPropertySymbols = getPropertySymbols;
+module.exports.getPropertyKeys = getPropertyKeys;
+module.exports.getPropertyDescriptors = getPropertyDescriptors;
+module.exports.getPropertyValueByKeys = getPropertyValueByKeys;
+module.exports.getPropertyDescriptorByKeys = getPropertyDescriptorByKeys;
+module.exports.getPropertyValueByCompoundName = getPropertyValueByCompoundName;
+module.exports.hasOwnPropertyWithKeys = hasOwnPropertyWithKeys;
+module.exports.hasOwnPropertyWithCompoundName = hasOwnPropertyWithCompoundName;
+module.exports.toKeyValuePairs = toKeyValuePairs;
+module.exports.getOwnPropertyNamesRecursively = getOwnPropertyNamesRecursively;
+
+/** @deprecated use {@linkcode core-functions/any#valueOf} instead */
+module.exports.valueOf = any.valueOf;
+/** @deprecated */
+module.exports.copy = copy;
+/** @deprecated */
+module.exports.copyNamedProperties = copyNamedProperties;
+/** @deprecated */
+module.exports.merge = merge;
 
 /**
  * Returns true if object is a subclass instance of TypedArray; false otherwise.
  * @param {TypedArray|*} object - the object to test
  * @returns {boolean} true if object is a subclass instance of TypedArray; false otherwise
- */
+fffffffff */
 function isTypedArray(object) {
   return object instanceof Int8Array || object instanceof Uint8Array || object instanceof Uint8ClampedArray ||
     object instanceof Int16Array || object instanceof Uint16Array ||

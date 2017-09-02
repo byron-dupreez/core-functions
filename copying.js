@@ -5,9 +5,9 @@ const isTypedArray = Objects.isTypedArray;
 const getPropertyKeys = Objects.getPropertyKeys;
 const getPropertyValueByKeys = Objects.getPropertyValueByKeys;
 
-const Strings = require('./strings');
-const trim = Strings.trim;
-const isNotBlank = Strings.isNotBlank;
+const strings = require('./strings');
+const trim = strings.trim;
+const isNotBlank = strings.isNotBlank;
 
 const hasOwnProperty = Object.prototype.hasOwnProperty;
 const allocUnsafe = Buffer && Buffer.allocUnsafe ? Buffer.allocUnsafe : undefined;
@@ -18,19 +18,19 @@ const symbolValueOf = Symbol.prototype.valueOf;
  * @module core-functions/copying
  * @author Byron du Preez
  */
-module.exports = {
-  // Public API
-  copy: copy,
-  copyNamedProperties: copyNamedProperties,
-  copyDescriptor: copyDescriptor,
-  // Internal API
-  configureCopyContext: configureCopyContext,
-  isCopyableObject: isCopyableObject,
-  copyObject: copyObject,
-  createObject: createObject,
-  copyPropertyDescriptors: copyPropertyDescriptors,
-  copyPropertyDescriptor: copyPropertyDescriptor
-};
+// Public API
+// noinspection JSDeprecatedSymbols
+module.exports.copy = copy;
+module.exports.copyNamedProperties = copyNamedProperties;
+module.exports.copyDescriptor = copyDescriptor;
+
+// Internal API
+module.exports.configureCopyContext = configureCopyContext;
+module.exports.isCopyableObject = isCopyableObject;
+module.exports.copyObject = copyObject;
+module.exports.createObject = createObject;
+module.exports.copyPropertyDescriptors = copyPropertyDescriptors;
+module.exports.copyPropertyDescriptor = copyPropertyDescriptor;
 
 /**
  * Creates & returns a copy of the given object by copying its properties into a new object of a similar type if the

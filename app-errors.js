@@ -1,5 +1,12 @@
 "use strict";
 
+const strings = require('./strings');
+const isNotBlank = strings.isNotBlank;
+const trim = strings.trim;
+const trimOrEmpty = strings.trimOrEmpty;
+const stringify = strings.stringify;
+const isString = strings.isString;
+
 /**
  * Module containing a collection of standard application AppError subclasses for more commonly used error-related HTTP
  * status codes, which should be thrown in services in place of other errors in order to provide additional information
@@ -8,6 +15,12 @@
  * @module core-functions/app-errors
  * @author Byron du Preez
  */
+// Error conversion functions
+module.exports.toAppError = toAppError;
+module.exports.toAppErrorForApiGateway = toAppErrorForApiGateway;
+module.exports.getHttpStatus = getHttpStatus;
+
+module.exports.setTypeName = setTypeName;
 
 /** A list of all of the 400-series HTTP status codes currently directly supported (and to be mapped on API Gateway). */
 const supported400Codes = [400, 401, 403, 404, 408, 429];
@@ -18,12 +31,7 @@ const supported500Codes = [500, 502, 503, 504];
 /** A list of all of the HTTP status codes currently directly supported (and to be mapped on API Gateway). */
 const supportedCodes = supported400Codes.concat(supported500Codes);
 
-const Strings = require('./strings');
-const isNotBlank = Strings.isNotBlank;
-const trim = Strings.trim;
-const trimOrEmpty = Strings.trimOrEmpty;
-const stringify = Strings.stringify;
-const isString = Strings.isString;
+module.exports.supportedHttpStatusCodes = Object.freeze(supportedCodes);
 
 /**
  * A "base class" for standard app errors, which can also be used to create a new AppError with an HTTP status code
@@ -394,39 +402,27 @@ function toCauseMessage(cause, finalisedMessage) {
 }
 
 // Exports for each of the AppError "classes" and other related utility functions.
+module.exports.AppError = AppError;
 
-module.exports = {
-  /** A "base class" for standard app errors, which can also be used to create a new AppError with an unsupported HTTP status code */
-  AppError: AppError,
+// 400-series
+module.exports.BadRequest = BadRequest;
+module.exports.Unauthorized = Unauthorized;
+module.exports.Forbidden = Forbidden;
+module.exports.NotFound = NotFound;
+module.exports.RequestTimeout = RequestTimeout;
+module.exports.TooManyRequests = TooManyRequests;
 
-  // 400-series
-  BadRequest: BadRequest,
-  Unauthorized: Unauthorized,
-  Forbidden: Forbidden,
-  NotFound: NotFound,
-  RequestTimeout: RequestTimeout,
-  TooManyRequests: TooManyRequests,
-
-  // 500-series
-  InternalServerError: InternalServerError,
-  BadGateway: BadGateway,
-  ServiceUnavailable: ServiceUnavailable,
-  GatewayTimeout: GatewayTimeout,
-
-  /** HTTP status codes with explicit class support and allowed to pass through to API Gateway by default */
-  supportedHttpStatusCodes: Object.freeze(supportedCodes),
-
-  // Error conversion functions
-  toAppError: toAppError,
-  toAppErrorForApiGateway: toAppErrorForApiGateway,
-  getHttpStatus: getHttpStatus,
-
-  setTypeName: setTypeName
-};
+// 500-series
+module.exports.InternalServerError = InternalServerError;
+module.exports.BadGateway = BadGateway;
+module.exports.ServiceUnavailable = ServiceUnavailable;
+module.exports.GatewayTimeout = GatewayTimeout;
 
 function setTypeName(type) {
   const prototype = type.prototype;
   if (!prototype.hasOwnProperty('name')) {
-    Object.defineProperty(prototype, 'name', {value: type.name, enumerable: false, writable: true, configurable: true});
+    Object.defineProperty(prototype, 'name',
+      {value: type.name, enumerable: false, writable: true, configurable: true}
+    );
   }
 }

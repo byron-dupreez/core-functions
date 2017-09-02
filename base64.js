@@ -1,26 +1,19 @@
 'use strict';
 
+// inter-dependencies
+const strings = require('./strings');
+const isString = strings.isString;
+
 /**
  * General utilities for encoding/decoding between Base 64 and UTF-8.
  * @module core-functions/base64
  * @author Byron du Preez
  */
-module.exports = {
-  /** Attempts to convert the given data object or value into a JSON string and then encodes that to a base 64 string */
-  toBase64: toBase64,
-  /** Attempts to convert the given base 64 decodable/encodable into a utf-8 encoded string and then parses that into a JSON object or value */
-  fromBase64: fromBase64,
-  /** Attempts to convert the given utf-8 decodable/encodable into a base 64 encoded string */
-  toBase64FromUtf8: toBase64FromUtf8,
-  /** Attempts to convert the given base 64 decodable/encodable into a utf-8 encoded string. */
-  toUtf8FromBase64: toUtf8FromBase64,
-  /** Returns true if the given value is a string, Buffer or Array and hence are PROBABLY encodable/decodable. */
-  isEncodableDecodable: isEncodableDecodable
-};
-
-// inter-dependencies
-const strings = require('./strings');
-const isString = strings.isString;
+module.exports.toBase64 = toBase64;
+module.exports.fromBase64 = fromBase64;
+module.exports.toBase64FromUtf8 = toBase64FromUtf8;
+module.exports.toUtf8FromBase64 = toUtf8FromBase64;
+module.exports.isEncodableDecodable = isEncodableDecodable;
 
 /**
  * Attempts to convert the given data object or value into a JSON string and then encodes that to a base 64 string (if

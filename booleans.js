@@ -5,12 +5,8 @@
  * @module core-functions/booleans
  * @author Byron du Preez
  */
-module.exports = {
-  /** Returns true if the given value is actually a boolean or Boolean; false otherwise. */
-  isBoolean : isBoolean,
-  /** Returns true if the given value actually contains true or false or is a Boolean */
-  isTrueOrFalse: isTrueOrFalse
-};
+module.exports.isBoolean = isBoolean;
+module.exports.isTrueOrFalse = isTrueOrFalse;
 
 /**
  * Returns true if the given value is actually a boolean or Boolean (i.e. is explicitly defined as boolean); false

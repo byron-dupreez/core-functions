@@ -5,11 +5,11 @@
  * @module core-functions/any
  * @author Byron du Preez
  */
-module.exports = {
-  defined: defined,
-  notDefined: notDefined,
-  valueOf: valueOf
-};
+module.exports.defined = defined;
+module.exports.notDefined = notDefined;
+
+// noinspection JSDeprecatedSymbols
+module.exports.valueOf = valueOf;
 
 /**
  * Determines whether the given value is defined (i.e. NOT undefined and NOT null) or not.

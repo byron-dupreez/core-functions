@@ -8,6 +8,26 @@ const Numbers = require('./numbers');
 const Dates = require('./dates');
 
 /**
+ * Module containing utilities for sorting.
+ * @module core-functions/sorting
+ * @author Byron du Preez
+ */
+module.exports.compareUndefinedOrNull = compareUndefinedOrNull;
+module.exports.compareNumbers = compareNumbers;
+module.exports.compareStrings = compareStrings;
+module.exports.compareBooleans = compareBooleans;
+module.exports.compareDates = compareDates;
+module.exports.compareIntegerLikes = compareIntegerLikes;
+module.exports.toSortable = toSortable;
+module.exports.sortSortable = sortSortable;
+
+module.exports.sortKeyValuePairsByKey = sortKeyValuePairsByKey;
+
+// Deprecated
+/** @deprecated - use {@linkcode core-functions/any#notDefined} instead */
+module.exports.isUndefinedOrNull = any.notDefined;
+
+/**
  * An enum for the types of sorting currently identified & supported
  * @enum {string}
  * @readonly
@@ -23,29 +43,7 @@ const SortType = {
   UNKNOWN: 'UNKNOWN'
 };
 Object.freeze(SortType);
-
-/**
- * Module containing utilities for sorting.
- * @module core-functions/sorting
- * @author Byron du Preez
- */
-module.exports = {
-  SortType: SortType,
-
-  /** @deprecated - use {@linkcode core-functions/any#notDefined} instead */
-  isUndefinedOrNull: any.notDefined,
-
-  compareUndefinedOrNull: compareUndefinedOrNull,
-  compareNumbers: compareNumbers,
-  compareStrings: compareStrings,
-  compareBooleans: compareBooleans,
-  compareDates: compareDates,
-  compareIntegerLikes: compareIntegerLikes,
-  toSortable: toSortable,
-  sortSortable: sortSortable,
-
-  sortKeyValuePairsByKey: sortKeyValuePairsByKey
-};
+module.exports.SortType = SortType;
 
 /**
  * Compares two undefined or null values for sorting of a useless array consisting entirely of undefined or null values.
@@ -221,9 +219,9 @@ function toSortable(values) {
   // Resolve the sort type based on the values types
   const sortType = allUndefinedOrNull ? SortType.UNDEFINED_OR_NULL :
     allNumbers ? SortType.NUMBER : allIntegersOrIntegerLikes ? SortType.INTEGER_LIKE :
-        allNumbersOrNumberLike ? SortType.NUMBER : allBooleans ? SortType.BOOLEAN :
-            allDatesOrDateLikes ? SortType.DATE : allDateTimesOrDateTimeLikes ? SortType.DATE_TIME :
-                allStrings ? SortType.STRING : SortType.UNKNOWN;
+      allNumbersOrNumberLike ? SortType.NUMBER : allBooleans ? SortType.BOOLEAN :
+        allDatesOrDateLikes ? SortType.DATE : allDateTimesOrDateTimeLikes ? SortType.DATE_TIME :
+          allStrings ? SortType.STRING : SortType.UNKNOWN;
 
   // Finally normalize mixed types of values all to the same sortable type based on the resolved sort type
   let compare = null;

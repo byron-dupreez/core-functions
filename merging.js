@@ -14,18 +14,18 @@ const copyPropertyDescriptor = copying.copyPropertyDescriptor;
 
 const hasOwnProperty = Object.prototype.hasOwnProperty;
 
+// noinspection JSDeprecatedSymbols
 /**
  * Module containing a `merge` function for merging state from one object into another object.
  * @module core-functions/objects
  * @author Byron du Preez
  */
-module.exports = {
-  // Public API
-  merge: merge,
-  // // Internal API
-  // configureMergeContext: configureMergeContext,
-  // mergeObject: mergeObject
-};
+// Public API
+module.exports.merge = merge;
+
+// // Internal API
+// module.exports.configureMergeContext = configureMergeContext;
+// module.exports.mergeObject = mergeObject;
 
 /**
  * Merges the properties of the given 'from' object into the given 'to' object, only replacing same named properties in

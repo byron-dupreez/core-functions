@@ -17,32 +17,30 @@ const extendedISODateRegex = /^([+-]\d{0,2})?\d{4}-(0[1-9]|1[0-2])(-(0[1-9]|[12]
  * @module core-functions/dates
  * @author Byron du Preez
  */
-module.exports = {
-  // Regular expressions
-  simpleISODateTimeRegex: simpleISODateTimeRegex,
-  simpleISODateRegex: simpleISODateRegex,
-  extendedISODateTimeRegex: extendedISODateTimeRegex,
-  extendedISODateRegex: extendedISODateRegex,
+// Regular expressions
+module.exports.simpleISODateTimeRegex = simpleISODateTimeRegex;
+module.exports.simpleISODateRegex = simpleISODateRegex;
+module.exports.extendedISODateTimeRegex = extendedISODateTimeRegex;
+module.exports.extendedISODateRegex = extendedISODateRegex;
 
-  // Date string matching
-  isSimpleISODateTimeLike: isSimpleISODateTimeLike,
-  isSimpleISODateLike: isSimpleISODateLike,
-  isExtendedISODateTimeLike: isExtendedISODateTimeLike,
-  isExtendedISODateLike: isExtendedISODateLike,
+// Date string matching
+module.exports.isSimpleISODateTimeLike = isSimpleISODateTimeLike;
+module.exports.isSimpleISODateLike = isSimpleISODateLike;
+module.exports.isExtendedISODateTimeLike = isExtendedISODateTimeLike;
+module.exports.isExtendedISODateLike = isExtendedISODateLike;
 
-  // Date matching
-  isSimpleISODateTime: isSimpleISODateTime,
-  isSimpleISODate: isSimpleISODate,
-  isExtendedISODateTime: isExtendedISODateTime,
-  isExtendedISODate: isExtendedISODate,
+// Date matching
+module.exports.isSimpleISODateTime = isSimpleISODateTime;
+module.exports.isSimpleISODate = isSimpleISODate;
+module.exports.isExtendedISODateTime = isExtendedISODateTime;
+module.exports.isExtendedISODate = isExtendedISODate;
 
-  // Conversion to Date
-  toSimpleISODateTime: toSimpleISODateTime,
-  toSimpleISODate: toSimpleISODate,
-  toDateTime: toDateTime,
-  toExtendedISODate: toExtendedISODate,
-  isValidDate: isValidDate
-};
+// Conversion to Date
+module.exports.toSimpleISODateTime = toSimpleISODateTime;
+module.exports.toSimpleISODate = toSimpleISODate;
+module.exports.toDateTime = toDateTime;
+module.exports.toExtendedISODate = toExtendedISODate;
+module.exports.isValidDate = isValidDate;
 
 /**
  * Returns true if the given date string matches the simple ISO-8601 date-time format; false otherwise.

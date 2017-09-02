@@ -17,43 +17,37 @@ const trailingZeroesRegex = /^([^.]*\.(?:\d+?))0+(([eE][+-]?\d+)?)$/;
  * @module core-functions/numbers
  * @author Byron du Preez
  */
-module.exports = {
-  /** Returns true if the given value is a number; false otherwise. */
-  isNumber: isNumber,
-  /** Returns true if the given value is a number and finite; false otherwise. */
-  isFiniteNumber: isFiniteNumber,
-  /** Returns true if the value is Infinity, -Infinity or NaN; false otherwise. */
-  isSpecialNumber: isSpecialNumber,
-  /** Returns true if the number is NaN or if it is an instance of Number and its value is NaN; false otherwise. */
-  isNaN: isNaN,
-  isInteger: isInteger,
-  isSafeInteger: isSafeInteger,
-  toInteger: toInteger,
+module.exports.isNumber = isNumber;
+module.exports.isFiniteNumber = isFiniteNumber;
+module.exports.isSpecialNumber = isSpecialNumber;
+module.exports.isNaN = isNaN;
+module.exports.isInteger = isInteger;
+module.exports.isSafeInteger = isSafeInteger;
+module.exports.toInteger = toInteger;
 
-  integerRegex: integerRegex,
-  numberRegex: numberRegex,
+module.exports.integerRegex = integerRegex;
+module.exports.numberRegex = numberRegex;
 
-  isNumberLike: isNumberLike,
-  isIntegerLike: isIntegerLike,
-  isZeroLike: isZeroLike,
+module.exports.isNumberLike = isNumberLike;
+module.exports.isIntegerLike = isIntegerLike;
+module.exports.isZeroLike = isZeroLike;
 
-  toNumberLike: toNumberLike,
+module.exports.toNumberLike = toNumberLike;
 
-  toDecimalLike: toDecimalLike,
-  toDecimalLikeOrNaN: toDecimalLikeOrNaN,
+module.exports.toDecimalLike = toDecimalLike;
+module.exports.toDecimalLikeOrNaN = toDecimalLikeOrNaN;
 
-  toIntegerLike: toIntegerLike,
-  toIntegerLikeOrNaN: toIntegerLikeOrNaN,
+module.exports.toIntegerLike = toIntegerLike;
+module.exports.toIntegerLikeOrNaN = toIntegerLikeOrNaN;
 
-  toNumberOrIntegerLike: toNumberOrIntegerLike,
+module.exports.toNumberOrIntegerLike = toNumberOrIntegerLike;
 
-  removeLeadingZeroes: removeLeadingZeroes,
-  removeTrailingZeroes: removeTrailingZeroes,
-  zeroPadLeft: zeroPadLeft,
-  removeSignIfZero: removeSignIfZeroLike,
+module.exports.removeLeadingZeroes = removeLeadingZeroes;
+module.exports.removeTrailingZeroes = removeTrailingZeroes;
+module.exports.zeroPadLeft = zeroPadLeft;
+module.exports.removeSignIfZero = removeSignIfZeroLike;
 
-  nearlyEqual: nearlyEqual
-};
+module.exports.nearlyEqual = nearlyEqual;
 
 /**
  * Returns true if the given value is a number; false otherwise.
@@ -321,6 +315,7 @@ function removeLeadingZeroes(numberString) {
   return typeof numberString === 'string' ? numberString.replace(leadingZeroesRegex, '$1$2') :
     !numberString ? numberString : undefined;
 }
+
 /**
  * Returns the given number string without superfluous trailing zeroes.
  * @param {string} numberString - the number string
@@ -388,12 +383,13 @@ function nearlyEqual(a, b) {
   // Use a relative epsilon check for floating-point comparisons
   //let m = Math.abs(a) + Math.abs(b);
   //let m = Math.max(Math.abs(a), Math.abs(b));
-  let m = Math.abs(a)/2 + Math.abs(b)/2; // average magnitude, seems to work better than sum
+  let m = Math.abs(a) / 2 + Math.abs(b) / 2; // average magnitude, seems to work better than sum
   // Constrain m to be within the range MIN_VALUE to MAX_VALUE to avoid divide/times by zero & +/- infinities
   m = Math.min(Math.max(m, Number.MIN_VALUE), Number.MAX_VALUE);
   //return Math.abs((a - b) / m) < Number.EPSILON;
   return Math.abs(a - b) < Number.EPSILON * m;
 }
+
 // // Algorithm translated from http://floating-point-gui.de/errors/comparison/
 // function nearlyEqual_0(a, b) {
 //   const absA = Math.abs(a);

@@ -5,6 +5,9 @@
  * @module core-functions/errors
  * @author Byron du Preez
  */
+module.exports.setTypeName = setTypeName;
+module.exports.prefixMessage = prefixMessage;
+module.exports.toJSON = toJSON;
 
 /**
  * An Error subclass that indicates a "fatal" failure, which will block processing indefinitely and which is typically
@@ -25,6 +28,7 @@ class FatalError extends Error {
     return toJSON(this);
   }
 }
+module.exports.FatalError = FatalError;
 
 /**
  * An Error subclass that indicates a transient failure. The failed operation should be re-attempted again later.
@@ -43,6 +47,7 @@ class TransientError extends Error {
     return toJSON(this);
   }
 }
+module.exports.TransientError = TransientError;
 
 /**
  * An Error subclass that indicates that an operation timed out.
@@ -61,15 +66,7 @@ class TimeoutError extends Error {
     return toJSON(this);
   }
 }
-
-module.exports = {
-  FatalError: FatalError,
-  TransientError: TransientError,
-  TimeoutError: TimeoutError,
-  setTypeName: setTypeName,
-  prefixMessage: prefixMessage,
-  toJSON: toJSON
-};
+module.exports.TimeoutError = TimeoutError;
 
 function prefixMessage(prefix, message) {
   const pfx = prefix ? prefix.toString() : '';

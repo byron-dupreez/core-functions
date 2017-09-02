@@ -290,6 +290,8 @@ class Try {
 
 }
 
+module.exports.Try = Try;
+
 /**
  * Synonym for {@linkcode Try.attempt}
  * @type {function(f: function():*|*)}: (Success|Failure)
@@ -350,6 +352,8 @@ class Success extends Try {
   }
 }
 
+module.exports.Success = Success;
+
 /**
  * A Failure represents a failed execution of a function and contains the error thrown by the function
  */
@@ -402,8 +406,4 @@ class Failure extends Try {
   }
 }
 
-module.exports = {
-  Try: Try,
-  Success: Success,
-  Failure: Failure
-};
+module.exports.Failure = Failure;
