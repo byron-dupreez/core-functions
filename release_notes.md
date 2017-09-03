@@ -1,5 +1,8 @@
 ## Changes
 
+### 3.0.13
+- Changed almost all exports to modifications of the default `exports` object instead of replacing the default object
+
 ### 3.0.12
 - Changed all exports to modifications of the default `module.exports` object instead of replacing the default object
 

@@ -13,33 +13,33 @@ const propertyIsEnumerable = Object.prototype.propertyIsEnumerable;
  * @module core-functions/objects
  * @author Byron du Preez
  */
-module.exports.isTypedArray = isTypedArray;
-module.exports.getPropertyNames = getPropertyNames;
-module.exports.getPropertySymbols = getPropertySymbols;
-module.exports.getPropertyKeys = getPropertyKeys;
-module.exports.getPropertyDescriptors = getPropertyDescriptors;
-module.exports.getPropertyValueByKeys = getPropertyValueByKeys;
-module.exports.getPropertyDescriptorByKeys = getPropertyDescriptorByKeys;
-module.exports.getPropertyValueByCompoundName = getPropertyValueByCompoundName;
-module.exports.hasOwnPropertyWithKeys = hasOwnPropertyWithKeys;
-module.exports.hasOwnPropertyWithCompoundName = hasOwnPropertyWithCompoundName;
-module.exports.toKeyValuePairs = toKeyValuePairs;
-module.exports.getOwnPropertyNamesRecursively = getOwnPropertyNamesRecursively;
+exports.isTypedArray = isTypedArray;
+exports.getPropertyNames = getPropertyNames;
+exports.getPropertySymbols = getPropertySymbols;
+exports.getPropertyKeys = getPropertyKeys;
+exports.getPropertyDescriptors = getPropertyDescriptors;
+exports.getPropertyValueByKeys = getPropertyValueByKeys;
+exports.getPropertyDescriptorByKeys = getPropertyDescriptorByKeys;
+exports.getPropertyValueByCompoundName = getPropertyValueByCompoundName;
+exports.hasOwnPropertyWithKeys = hasOwnPropertyWithKeys;
+exports.hasOwnPropertyWithCompoundName = hasOwnPropertyWithCompoundName;
+exports.toKeyValuePairs = toKeyValuePairs;
+exports.getOwnPropertyNamesRecursively = getOwnPropertyNamesRecursively;
 
 /** @deprecated use {@linkcode core-functions/any#valueOf} instead */
-module.exports.valueOf = any.valueOf;
+exports.valueOf = any.valueOf;
 /** @deprecated */
-module.exports.copy = copy;
+exports.copy = copy;
 /** @deprecated */
-module.exports.copyNamedProperties = copyNamedProperties;
+exports.copyNamedProperties = copyNamedProperties;
 /** @deprecated */
-module.exports.merge = merge;
+exports.merge = merge;
 
 /**
  * Returns true if object is a subclass instance of TypedArray; false otherwise.
  * @param {TypedArray|*} object - the object to test
  * @returns {boolean} true if object is a subclass instance of TypedArray; false otherwise
-fffffffff */
+ */
 function isTypedArray(object) {
   return object instanceof Int8Array || object instanceof Uint8Array || object instanceof Uint8ClampedArray ||
     object instanceof Int16Array || object instanceof Uint16Array ||

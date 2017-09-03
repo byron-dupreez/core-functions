@@ -9,11 +9,11 @@ const isString = strings.isString;
  * @module core-functions/base64
  * @author Byron du Preez
  */
-module.exports.toBase64 = toBase64;
-module.exports.fromBase64 = fromBase64;
-module.exports.toBase64FromUtf8 = toBase64FromUtf8;
-module.exports.toUtf8FromBase64 = toUtf8FromBase64;
-module.exports.isEncodableDecodable = isEncodableDecodable;
+exports.toBase64 = toBase64;
+exports.fromBase64 = fromBase64;
+exports.toBase64FromUtf8 = toBase64FromUtf8;
+exports.toUtf8FromBase64 = toUtf8FromBase64;
+exports.isEncodableDecodable = isEncodableDecodable;
 
 /**
  * Attempts to convert the given data object or value into a JSON string and then encodes that to a base 64 string (if

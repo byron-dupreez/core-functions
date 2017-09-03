@@ -5,8 +5,8 @@
  * @module core-functions/booleans
  * @author Byron du Preez
  */
-module.exports.isBoolean = isBoolean;
-module.exports.isTrueOrFalse = isTrueOrFalse;
+exports.isBoolean = isBoolean;
+exports.isTrueOrFalse = isTrueOrFalse;
 
 /**
  * Returns true if the given value is actually a boolean or Boolean (i.e. is explicitly defined as boolean); false

@@ -11,25 +11,25 @@ const Failure = tries.Failure;
  * @module core-functions/promises
  * @author Byron du Preez
  */
-module.exports.isPromise = isPromise;
-module.exports.isPromiseLike = isPromiseLike;
-module.exports.toPromise = toPromise;
-module.exports.wrap = wrap;
-module.exports.try = attempt;
-module.exports.delay = delay;
-module.exports.allOrOne = allOrOne;
-module.exports.every = every;
-module.exports.one = one;
-module.exports.flatten = flatten;
-module.exports.chain = chain;
-module.exports.installCancel = installCancel;
-module.exports.installCancelTimeout = installCancelTimeout;
-module.exports.avoidUnhandledPromiseRejectionWarning = avoidUnhandledPromiseRejectionWarning;
+exports.isPromise = isPromise;
+exports.isPromiseLike = isPromiseLike;
+exports.toPromise = toPromise;
+exports.wrap = wrap;
+exports.try = attempt;
+exports.delay = delay;
+exports.allOrOne = allOrOne;
+exports.every = every;
+exports.one = one;
+exports.flatten = flatten;
+exports.chain = chain;
+exports.installCancel = installCancel;
+exports.installCancelTimeout = installCancelTimeout;
+exports.avoidUnhandledPromiseRejectionWarning = avoidUnhandledPromiseRejectionWarning;
 
 /** @deprecated */
-module.exports.wrapMethod = wrapMethod;
+exports.wrapMethod = wrapMethod;
 /** @deprecated */
-module.exports.wrapNamedMethod = wrapNamedMethod;
+exports.wrapNamedMethod = wrapNamedMethod;
 
 /**
  * An Error subclass thrown to cancel/short-circuit a promise that is waiting for a list of promises to resolve (see
@@ -63,7 +63,7 @@ class CancelledError extends Error {
   }
 }
 
-module.exports.CancelledError = CancelledError;
+exports.CancelledError = CancelledError;
 
 class DelayCancelledError extends Error {
   /**
@@ -79,7 +79,7 @@ class DelayCancelledError extends Error {
   }
 }
 
-module.exports.DelayCancelledError = DelayCancelledError;
+exports.DelayCancelledError = DelayCancelledError;
 
 /**
  * Returns true if the given value is a native Promise; otherwise false.

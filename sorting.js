@@ -12,20 +12,20 @@ const Dates = require('./dates');
  * @module core-functions/sorting
  * @author Byron du Preez
  */
-module.exports.compareUndefinedOrNull = compareUndefinedOrNull;
-module.exports.compareNumbers = compareNumbers;
-module.exports.compareStrings = compareStrings;
-module.exports.compareBooleans = compareBooleans;
-module.exports.compareDates = compareDates;
-module.exports.compareIntegerLikes = compareIntegerLikes;
-module.exports.toSortable = toSortable;
-module.exports.sortSortable = sortSortable;
+exports.compareUndefinedOrNull = compareUndefinedOrNull;
+exports.compareNumbers = compareNumbers;
+exports.compareStrings = compareStrings;
+exports.compareBooleans = compareBooleans;
+exports.compareDates = compareDates;
+exports.compareIntegerLikes = compareIntegerLikes;
+exports.toSortable = toSortable;
+exports.sortSortable = sortSortable;
 
-module.exports.sortKeyValuePairsByKey = sortKeyValuePairsByKey;
+exports.sortKeyValuePairsByKey = sortKeyValuePairsByKey;
 
 // Deprecated
 /** @deprecated - use {@linkcode core-functions/any#notDefined} instead */
-module.exports.isUndefinedOrNull = any.notDefined;
+exports.isUndefinedOrNull = any.notDefined;
 
 /**
  * An enum for the types of sorting currently identified & supported
@@ -43,7 +43,7 @@ const SortType = {
   UNKNOWN: 'UNKNOWN'
 };
 Object.freeze(SortType);
-module.exports.SortType = SortType;
+exports.SortType = SortType;
 
 /**
  * Compares two undefined or null values for sorting of a useless array consisting entirely of undefined or null values.

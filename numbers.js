@@ -17,37 +17,37 @@ const trailingZeroesRegex = /^([^.]*\.(?:\d+?))0+(([eE][+-]?\d+)?)$/;
  * @module core-functions/numbers
  * @author Byron du Preez
  */
-module.exports.isNumber = isNumber;
-module.exports.isFiniteNumber = isFiniteNumber;
-module.exports.isSpecialNumber = isSpecialNumber;
-module.exports.isNaN = isNaN;
-module.exports.isInteger = isInteger;
-module.exports.isSafeInteger = isSafeInteger;
-module.exports.toInteger = toInteger;
+exports.isNumber = isNumber;
+exports.isFiniteNumber = isFiniteNumber;
+exports.isSpecialNumber = isSpecialNumber;
+exports.isNaN = isNaN;
+exports.isInteger = isInteger;
+exports.isSafeInteger = isSafeInteger;
+exports.toInteger = toInteger;
 
-module.exports.integerRegex = integerRegex;
-module.exports.numberRegex = numberRegex;
+exports.integerRegex = integerRegex;
+exports.numberRegex = numberRegex;
 
-module.exports.isNumberLike = isNumberLike;
-module.exports.isIntegerLike = isIntegerLike;
-module.exports.isZeroLike = isZeroLike;
+exports.isNumberLike = isNumberLike;
+exports.isIntegerLike = isIntegerLike;
+exports.isZeroLike = isZeroLike;
 
-module.exports.toNumberLike = toNumberLike;
+exports.toNumberLike = toNumberLike;
 
-module.exports.toDecimalLike = toDecimalLike;
-module.exports.toDecimalLikeOrNaN = toDecimalLikeOrNaN;
+exports.toDecimalLike = toDecimalLike;
+exports.toDecimalLikeOrNaN = toDecimalLikeOrNaN;
 
-module.exports.toIntegerLike = toIntegerLike;
-module.exports.toIntegerLikeOrNaN = toIntegerLikeOrNaN;
+exports.toIntegerLike = toIntegerLike;
+exports.toIntegerLikeOrNaN = toIntegerLikeOrNaN;
 
-module.exports.toNumberOrIntegerLike = toNumberOrIntegerLike;
+exports.toNumberOrIntegerLike = toNumberOrIntegerLike;
 
-module.exports.removeLeadingZeroes = removeLeadingZeroes;
-module.exports.removeTrailingZeroes = removeTrailingZeroes;
-module.exports.zeroPadLeft = zeroPadLeft;
-module.exports.removeSignIfZero = removeSignIfZeroLike;
+exports.removeLeadingZeroes = removeLeadingZeroes;
+exports.removeTrailingZeroes = removeTrailingZeroes;
+exports.zeroPadLeft = zeroPadLeft;
+exports.removeSignIfZero = removeSignIfZeroLike;
 
-module.exports.nearlyEqual = nearlyEqual;
+exports.nearlyEqual = nearlyEqual;
 
 /**
  * Returns true if the given value is a number; false otherwise.

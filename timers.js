@@ -7,8 +7,8 @@
  * @module core-functions/timers
  * @author Byron du Preez
  */
-module.exports.cancelTimeout = cancelTimeout;
-module.exports.cancelInterval = cancelInterval;
+exports.cancelTimeout = cancelTimeout;
+exports.cancelInterval = cancelInterval;
 
 /**
  * Attempts to cancel the given normal timeout, which was created by a call to {@linkcode setTimeout} using the

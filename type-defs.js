@@ -188,12 +188,9 @@
 /**
  * @typedef {Object} CopyContext - a completely configured context to use during copying, which contains the settings, the `isCopyable`, `createCustomObject` & `copyCustomContent` functions and the `history` cache to use
  * @property {boolean} deep - Executes a deep copy if deep is true, otherwise only does a shallow copy (defaults to shallow)
- * @property {boolean} deepMapKeys - Executes a deep copy of any Map's keys if true (AND if `deep` is true), otherwise only does a shallow copy (defaults to shallow)
- * Rationale: Generally don't want to copy a Map's Object keys, since a Map uses reference equality to compare keys
- * @property {boolean} deepMapValues - Executes a deep copy of any Map's values if true (AND if `deep` is true), otherwise only does a shallow copy (defaults to shallow)
- * Rationale: Generally don't want to copy a Map's Object values, since Maps are typically used to cache values for look-up purposes
- * @property {boolean} deepSets - Executes a deep copy of any Set's elements if true (AND if `deep` is true), otherwise only does a shallow copy (defaults to shallow)
- * Rationale: Generally don't want to copy a Set's Object elements, since a Set uses reference equality to compare elements & identify duplicates
+ * @property {boolean} deepMapKeys - Executes a deep copy of any Map's keys if true (AND if `deep` is true), otherwise only does a shallow copy (defaults to shallow) Rationale: Generally don't want to copy a Map's Object keys, since a Map uses reference equality to compare keys
+ * @property {boolean} deepMapValues - Executes a deep copy of any Map's values if true (AND if `deep` is true), otherwise only does a shallow copy (defaults to shallow) Rationale: Generally don't want to copy a Map's Object values, since Maps are typically used to cache values for look-up purposes
+ * @property {boolean} deepSets - Executes a deep copy of any Set's elements if true (AND if `deep` is true), otherwise only does a shallow copy (defaults to shallow) Rationale: Generally don't want to copy a Set's Object elements, since a Set uses reference equality to compare elements & identify duplicates
  * @property {boolean} onlyEnumerable - whether to copy ONLY enumerable properties or ALL own properties (default is false, i.e. copy all)
  * @property {boolean} onlyValues - whether to copy ONLY property values & ignore descriptors (if true) or copy property descriptors (if false - default)
  * @property {boolean} omitAccessors - whether to omit any descriptors' accessors & replace them with value properties with cloned values (if true) or to copy accessors & ignore cloned values when accessors are present (if false) (default is false, i.e. copy accessors)

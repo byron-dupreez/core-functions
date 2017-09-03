@@ -18,29 +18,29 @@ const extendedISODateRegex = /^([+-]\d{0,2})?\d{4}-(0[1-9]|1[0-2])(-(0[1-9]|[12]
  * @author Byron du Preez
  */
 // Regular expressions
-module.exports.simpleISODateTimeRegex = simpleISODateTimeRegex;
-module.exports.simpleISODateRegex = simpleISODateRegex;
-module.exports.extendedISODateTimeRegex = extendedISODateTimeRegex;
-module.exports.extendedISODateRegex = extendedISODateRegex;
+exports.simpleISODateTimeRegex = simpleISODateTimeRegex;
+exports.simpleISODateRegex = simpleISODateRegex;
+exports.extendedISODateTimeRegex = extendedISODateTimeRegex;
+exports.extendedISODateRegex = extendedISODateRegex;
 
 // Date string matching
-module.exports.isSimpleISODateTimeLike = isSimpleISODateTimeLike;
-module.exports.isSimpleISODateLike = isSimpleISODateLike;
-module.exports.isExtendedISODateTimeLike = isExtendedISODateTimeLike;
-module.exports.isExtendedISODateLike = isExtendedISODateLike;
+exports.isSimpleISODateTimeLike = isSimpleISODateTimeLike;
+exports.isSimpleISODateLike = isSimpleISODateLike;
+exports.isExtendedISODateTimeLike = isExtendedISODateTimeLike;
+exports.isExtendedISODateLike = isExtendedISODateLike;
 
 // Date matching
-module.exports.isSimpleISODateTime = isSimpleISODateTime;
-module.exports.isSimpleISODate = isSimpleISODate;
-module.exports.isExtendedISODateTime = isExtendedISODateTime;
-module.exports.isExtendedISODate = isExtendedISODate;
+exports.isSimpleISODateTime = isSimpleISODateTime;
+exports.isSimpleISODate = isSimpleISODate;
+exports.isExtendedISODateTime = isExtendedISODateTime;
+exports.isExtendedISODate = isExtendedISODate;
 
 // Conversion to Date
-module.exports.toSimpleISODateTime = toSimpleISODateTime;
-module.exports.toSimpleISODate = toSimpleISODate;
-module.exports.toDateTime = toDateTime;
-module.exports.toExtendedISODate = toExtendedISODate;
-module.exports.isValidDate = isValidDate;
+exports.toSimpleISODateTime = toSimpleISODateTime;
+exports.toSimpleISODate = toSimpleISODate;
+exports.toDateTime = toDateTime;
+exports.toExtendedISODate = toExtendedISODate;
+exports.isValidDate = isValidDate;
 
 /**
  * Returns true if the given date string matches the simple ISO-8601 date-time format; false otherwise.

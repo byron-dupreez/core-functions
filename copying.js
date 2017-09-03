@@ -20,17 +20,17 @@ const symbolValueOf = Symbol.prototype.valueOf;
  */
 // Public API
 // noinspection JSDeprecatedSymbols
-module.exports.copy = copy;
-module.exports.copyNamedProperties = copyNamedProperties;
-module.exports.copyDescriptor = copyDescriptor;
+exports.copy = copy;
+exports.copyNamedProperties = copyNamedProperties;
+exports.copyDescriptor = copyDescriptor;
 
 // Internal API
-module.exports.configureCopyContext = configureCopyContext;
-module.exports.isCopyableObject = isCopyableObject;
-module.exports.copyObject = copyObject;
-module.exports.createObject = createObject;
-module.exports.copyPropertyDescriptors = copyPropertyDescriptors;
-module.exports.copyPropertyDescriptor = copyPropertyDescriptor;
+exports.configureCopyContext = configureCopyContext;
+exports.isCopyableObject = isCopyableObject;
+exports.copyObject = copyObject;
+exports.createObject = createObject;
+exports.copyPropertyDescriptors = copyPropertyDescriptors;
+exports.copyPropertyDescriptor = copyPropertyDescriptor;
 
 /**
  * Creates & returns a copy of the given object by copying its properties into a new object of a similar type if the

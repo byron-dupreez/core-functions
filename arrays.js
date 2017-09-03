@@ -3,10 +3,10 @@
  * @module core-functions/arrays
  * @author Byron du Preez
  */
-module.exports.distinct = distinct;
-module.exports.isDistinct = isDistinct;
-module.exports.isArrayOfType = isArrayOfType;
-module.exports.flatten = flatten;
+exports.distinct = distinct;
+exports.isDistinct = isDistinct;
+exports.isArrayOfType = isArrayOfType;
+exports.flatten = flatten;
 
 /**
  * Returns an array containing only the distinct, unique elements of the given array.

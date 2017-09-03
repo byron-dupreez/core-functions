@@ -290,7 +290,7 @@ class Try {
 
 }
 
-module.exports.Try = Try;
+exports.Try = Try;
 
 /**
  * Synonym for {@linkcode Try.attempt}
@@ -352,7 +352,7 @@ class Success extends Try {
   }
 }
 
-module.exports.Success = Success;
+exports.Success = Success;
 
 /**
  * A Failure represents a failed execution of a function and contains the error thrown by the function
@@ -406,4 +406,4 @@ class Failure extends Try {
   }
 }
 
-module.exports.Failure = Failure;
+exports.Failure = Failure;

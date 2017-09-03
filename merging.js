@@ -21,11 +21,11 @@ const hasOwnProperty = Object.prototype.hasOwnProperty;
  * @author Byron du Preez
  */
 // Public API
-module.exports.merge = merge;
+exports.merge = merge;
 
 // // Internal API
-// module.exports.configureMergeContext = configureMergeContext;
-// module.exports.mergeObject = mergeObject;
+// exports.configureMergeContext = configureMergeContext;
+// exports.mergeObject = mergeObject;
 
 /**
  * Merges the properties of the given 'from' object into the given 'to' object, only replacing same named properties in

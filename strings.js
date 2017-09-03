@@ -9,18 +9,18 @@ const promiseInspectRegex = /^(Promise \{)([\s\n\r]+)(.*)([\s\n\r]+)(})$/;
  * @module core-functions/strings
  * @author Byron du Preez
  */
-module.exports.isString = isString;
-module.exports.isBlank = isBlank;
-module.exports.isNotBlank = isNotBlank;
-module.exports.trim = trim;
-module.exports.trimOrEmpty = trimOrEmpty;
-module.exports.stringify = stringify;
-module.exports.nthIndexOf = nthIndexOf;
-module.exports.toLowerCase = toLowerCase;
-module.exports.stringifyKeyValuePairs = stringifyKeyValuePairs;
+exports.isString = isString;
+exports.isBlank = isBlank;
+exports.isNotBlank = isNotBlank;
+exports.trim = trim;
+exports.trimOrEmpty = trimOrEmpty;
+exports.stringify = stringify;
+exports.nthIndexOf = nthIndexOf;
+exports.toLowerCase = toLowerCase;
+exports.stringifyKeyValuePairs = stringifyKeyValuePairs;
 
 /** @deprecated since 1.1.0, use trim instead */
-module.exports.safeTrim = trim;
+exports.safeTrim = trim;
 
 // Attempts to get Node's util.js inspect function (if available)
 const inspect = (() => {
