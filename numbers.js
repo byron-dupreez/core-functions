@@ -17,6 +17,7 @@ const trailingZeroesRegex = /^([^.]*\.(?:\d+?))0+(([eE][+-]?\d+)?)$/;
  * @module core-functions/numbers
  * @author Byron du Preez
  */
+exports._ = '_'; //IDE workaround
 exports.isNumber = isNumber;
 exports.isFiniteNumber = isFiniteNumber;
 exports.isSpecialNumber = isSpecialNumber;

@@ -13,6 +13,7 @@ const propertyIsEnumerable = Object.prototype.propertyIsEnumerable;
  * @module core-functions/objects
  * @author Byron du Preez
  */
+exports._ = '_'; //IDE workaround
 exports.isTypedArray = isTypedArray;
 exports.getPropertyNames = getPropertyNames;
 exports.getPropertySymbols = getPropertySymbols;

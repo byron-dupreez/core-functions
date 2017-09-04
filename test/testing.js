@@ -4,15 +4,14 @@
  * Utilities for unit testing with tape
  * @author Byron du Preez
  */
-module.exports = {
-  okNotOk: okNotOk,
-  checkOkNotOk: checkOkNotOk,
-  checkMethodOkNotOk: checkMethodOkNotOk,
-  equal: equal,
-  checkEqual: checkEqual,
-  checkMethodEqual: checkMethodEqual,
-  immutable: immutable
-};
+exports._ = '_'; //IDE workaround
+exports.okNotOk = okNotOk;
+exports.checkOkNotOk = checkOkNotOk;
+exports.checkMethodOkNotOk = checkMethodOkNotOk;
+exports.equal = equal;
+exports.checkEqual = checkEqual;
+exports.checkMethodEqual = checkMethodEqual;
+exports.immutable = immutable;
 
 const Strings = require('../strings');
 const stringify = Strings.stringify;

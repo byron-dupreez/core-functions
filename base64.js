@@ -9,6 +9,7 @@ const isString = strings.isString;
  * @module core-functions/base64
  * @author Byron du Preez
  */
+exports._ = '_'; //IDE workaround
 exports.toBase64 = toBase64;
 exports.fromBase64 = fromBase64;
 exports.toBase64FromUtf8 = toBase64FromUtf8;

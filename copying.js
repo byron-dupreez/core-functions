@@ -18,9 +18,11 @@ const symbolValueOf = Symbol.prototype.valueOf;
  * @module core-functions/copying
  * @author Byron du Preez
  */
+exports._ = '_'; //IDE workaround
 // Public API
 // noinspection JSDeprecatedSymbols
 exports.copy = copy;
+// noinspection JSDeprecatedSymbols
 exports.copyNamedProperties = copyNamedProperties;
 exports.copyDescriptor = copyDescriptor;
 

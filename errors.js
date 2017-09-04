@@ -5,6 +5,7 @@
  * @module core-functions/errors
  * @author Byron du Preez
  */
+exports._ = '_'; //IDE workaround
 exports.setTypeName = setTypeName;
 exports.prefixMessage = prefixMessage;
 exports.toJSON = toJSON;

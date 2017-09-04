@@ -20,7 +20,9 @@ const hasOwnProperty = Object.prototype.hasOwnProperty;
  * @module core-functions/objects
  * @author Byron du Preez
  */
+exports._ = '_'; //IDE workaround
 // Public API
+// noinspection JSDeprecatedSymbols
 exports.merge = merge;
 
 // // Internal API

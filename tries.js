@@ -1,5 +1,7 @@
 'use strict';
 
+exports._ = '_'; //IDE workaround
+
 const errorMessages = {
   NoValueOrError: 'No value or error'
 };

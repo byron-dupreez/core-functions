@@ -17,6 +17,7 @@ const extendedISODateRegex = /^([+-]\d{0,2})?\d{4}-(0[1-9]|1[0-2])(-(0[1-9]|[12]
  * @module core-functions/dates
  * @author Byron du Preez
  */
+exports._ = '_'; //IDE workaround
 // Regular expressions
 exports.simpleISODateTimeRegex = simpleISODateTimeRegex;
 exports.simpleISODateRegex = simpleISODateRegex;

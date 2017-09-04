@@ -7,6 +7,7 @@
  * @module core-functions/timers
  * @author Byron du Preez
  */
+exports._ = '_'; //IDE workaround
 exports.cancelTimeout = cancelTimeout;
 exports.cancelInterval = cancelInterval;
 

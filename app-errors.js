@@ -15,6 +15,7 @@ const isString = strings.isString;
  * @module core-functions/app-errors
  * @author Byron du Preez
  */
+exports._ = '_'; //IDE workaround
 // Error conversion functions
 exports.toAppError = toAppError;
 exports.toAppErrorForApiGateway = toAppErrorForApiGateway;
