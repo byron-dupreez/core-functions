@@ -107,7 +107,7 @@ function isEncodableDecodable(value) {
  */
 function handleError(value, err, returnUndefinedInsteadOfThrow) {
   if (isEncodableDecodable(value)) {
-    console.error(`Unexpected error (${err}), since ${JSON.stringify(value)} was supposed to be encodable/decodable`, err.stack);
+    console.error(`Unexpected error (${err}), since ${JSON.stringify(value)} was supposed to be encodable/decodable`, err);
     if (returnUndefinedInsteadOfThrow) {
       return undefined;
     } else {

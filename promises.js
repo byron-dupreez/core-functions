@@ -374,7 +374,7 @@ function delay(ms, cancellable) {
         try {
           clearTimeout(timeout);
         } catch (err) {
-          console.error('Failed to clear timeout', err.stack);
+          console.error('Failed to clear timeout', err);
         } finally {
           if (mustResolve) {
             resolve(triggered);

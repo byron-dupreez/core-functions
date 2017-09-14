@@ -1,4 +1,4 @@
-# core-functions v3.0.14
+# core-functions v3.0.15
 
 Core functions, utilities and classes for working with Node/JavaScript primitives and built-in objects, including 
 strings, numbers, booleans, Dates, Promises, base 64, Arrays, Objects, standard AppErrors, sorting utilities, etc.
@@ -125,7 +125,7 @@ const outcome4 = outcome.map(
     return value * 42;
   },
   err => {
-    console.log(err.stack);
+    console.log(err);
     return -1;
   }  
 );

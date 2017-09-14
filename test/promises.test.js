@@ -144,7 +144,7 @@ function genDelayedPromise(err, name, ms, delayCancellable, cancellable) {
     })
     .catch(err => {
       const msElapsed = Date.now() - startTime;
-      console.log(`Delayed promise ${name} failed at ${msElapsed} ms out of ${ms} ms delay`, err.stack);
+      console.log(`Delayed promise ${name} failed at ${msElapsed} ms out of ${ms} ms delay`, err);
       throw err;
     });
   Promises.avoidUnhandledPromiseRejectionWarning(promise);
@@ -1259,7 +1259,7 @@ test("Promises.every([d1,d2,d3,d4]) cancelled during d4 will resolve d1, d2, d3 
       t.end();
     },
     err => {
-      t.end(`Promises.every([d1,d2,d3,d4]) when cancelled too late, must NOT reject with error`, err.stack);
+      t.end(`Promises.every([d1,d2,d3,d4]) when cancelled too late, must NOT reject with error`, err);
     }
   );
   t.ok(typeof cancellable.cancel === "function", `cancellable.cancel must be installed`);
@@ -1279,7 +1279,7 @@ test("Promises.one(undefined)", t => {
       t.end();
     },
     err => {
-      t.fail(`Promises.one(undefined) must NOT fail`, err.stack);
+      t.fail(`Promises.one(undefined) must NOT fail`, err);
       t.end();
     });
 });
@@ -1294,7 +1294,7 @@ test("Promises.one(null)", t => {
       t.end();
     },
     err => {
-      t.fail(`Promises.one(null) must NOT fail`, err.stack);
+      t.fail(`Promises.one(null) must NOT fail`, err);
       t.end();
     });
 });
@@ -1309,7 +1309,7 @@ test("Promises.one(1)", t => {
       t.end();
     },
     err => {
-      t.fail(`Promises.one(1) must NOT fail`, err.stack);
+      t.fail(`Promises.one(1) must NOT fail`, err);
       t.end();
     });
 });
@@ -1324,7 +1324,7 @@ test("Promises.one({})", t => {
       t.end();
     },
     err => {
-      t.fail(`Promises.one({}) must NOT fail`, err.stack);
+      t.fail(`Promises.one({}) must NOT fail`, err);
       t.end();
     });
 });
@@ -1339,7 +1339,7 @@ test("Promises.one([])", t => {
       t.end();
     },
     err => {
-      t.fail(`Promises.one([]) must NOT fail`, err.stack);
+      t.fail(`Promises.one([]) must NOT fail`, err);
       t.end();
     });
 });
@@ -1354,7 +1354,7 @@ test("Promises.one({a:1})", t => {
       t.end();
     },
     err => {
-      t.fail(`Promises.one({a:1}) must NOT fail`, err.stack);
+      t.fail(`Promises.one({a:1}) must NOT fail`, err);
       t.end();
     });
 });
@@ -1369,7 +1369,7 @@ test("Promises.one([1,'2',3])", t => {
       t.end();
     },
     err => {
-      t.fail(`Promises.one([1,'2',3]) must NOT fail`, err.stack);
+      t.fail(`Promises.one([1,'2',3]) must NOT fail`, err);
       t.end();
     });
 });
@@ -1384,7 +1384,7 @@ test("Promises.one([p1])", t => {
       t.end();
     },
     err => {
-      t.fail(`Promises.one(p1) must NOT fail`, err.stack);
+      t.fail(`Promises.one(p1) must NOT fail`, err);
       t.end();
     });
 });
@@ -1399,7 +1399,7 @@ test("Promises.one(p1)", t => {
       t.end();
     },
     err => {
-      t.fail(`Promises.one(p1) must NOT fail`, err.stack);
+      t.fail(`Promises.one(p1) must NOT fail`, err);
       t.end();
     });
 });
@@ -1414,7 +1414,7 @@ test("Promises.one(p2)", t => {
       t.end();
     },
     err => {
-      t.fail(`Promises.one(p2) must NOT fail`, err.stack);
+      t.fail(`Promises.one(p2) must NOT fail`, err);
       t.end();
     });
 });
@@ -1430,7 +1430,7 @@ test("Promises.one(t1) with 'then-able' t1 that returns a result", t => {
       t.end();
     },
     err => {
-      t.fail(`Promises.one(t1) must NOT fail`, err.stack);
+      t.fail(`Promises.one(t1) must NOT fail`, err);
       t.end();
     });
 });
@@ -1446,7 +1446,7 @@ test("Promises.one(t2) with 'then-able' t2 that rejects with an error", t => {
       t.end();
     },
     err => {
-      t.fail(`Promises.one(t2) must NOT fail`, err.stack);
+      t.fail(`Promises.one(t2) must NOT fail`, err);
       t.end();
     });
 });
@@ -1462,7 +1462,7 @@ test("Promises.one(t3) with 'then-able' t3 that throws an error synchronously", 
       t.end();
     },
     err => {
-      t.fail(`Promises.one(t3) must NOT fail`, err.stack);
+      t.fail(`Promises.one(t3) must NOT fail`, err);
       t.end();
     });
 });
@@ -1481,7 +1481,7 @@ test("Promises.toPromise(undefined)", t => {
       t.end();
     },
     err => {
-      t.fail(`Promises.toPromise(undefined) must NOT fail`, err.stack);
+      t.fail(`Promises.toPromise(undefined) must NOT fail`, err);
       t.end();
     });
 });
@@ -1496,7 +1496,7 @@ test("Promises.toPromise(null)", t => {
       t.end();
     },
     err => {
-      t.fail(`Promises.toPromise(null) must NOT fail`, err.stack);
+      t.fail(`Promises.toPromise(null) must NOT fail`, err);
       t.end();
     });
 });
@@ -1511,7 +1511,7 @@ test("Promises.toPromise(1)", t => {
       t.end();
     },
     err => {
-      t.fail(`Promises.toPromise(1) must NOT fail`, err.stack);
+      t.fail(`Promises.toPromise(1) must NOT fail`, err);
       t.end();
     });
 });
@@ -1526,7 +1526,7 @@ test("Promises.toPromise({})", t => {
       t.end();
     },
     err => {
-      t.fail(`Promises.toPromise({}) must NOT fail`, err.stack);
+      t.fail(`Promises.toPromise({}) must NOT fail`, err);
       t.end();
     });
 });
@@ -1541,7 +1541,7 @@ test("Promises.toPromise([])", t => {
       t.end();
     },
     err => {
-      t.fail(`Promises.toPromise([]) must NOT fail`, err.stack);
+      t.fail(`Promises.toPromise([]) must NOT fail`, err);
       t.end();
     });
 });
@@ -1556,7 +1556,7 @@ test("Promises.toPromise({a:1})", t => {
       t.end();
     },
     err => {
-      t.fail(`Promises.toPromise({a:1}) must NOT fail`, err.stack);
+      t.fail(`Promises.toPromise({a:1}) must NOT fail`, err);
       t.end();
     });
 });
@@ -1571,7 +1571,7 @@ test("Promises.toPromise([1,'2',3])", t => {
       t.end();
     },
     err => {
-      t.fail(`Promises.toPromise([1,'2',3]) must NOT fail`, err.stack);
+      t.fail(`Promises.toPromise([1,'2',3]) must NOT fail`, err);
       t.end();
     });
 });
@@ -1587,7 +1587,7 @@ test("Promises.toPromise([p1])", t => {
       t.end();
     },
     err => {
-      t.fail(`Promises.toPromise([p1]) must NOT fail`, err.stack);
+      t.fail(`Promises.toPromise([p1]) must NOT fail`, err);
       t.end();
     });
 });
@@ -1603,7 +1603,7 @@ test("Promises.toPromise(p1)", t => {
       t.end();
     },
     err => {
-      t.fail(`Promises.toPromise(p1) must NOT fail`, err.stack);
+      t.fail(`Promises.toPromise(p1) must NOT fail`, err);
       t.end();
     });
 });
@@ -1635,7 +1635,7 @@ test("Promises.toPromise(t1) with 'then-able' t1 that resolves with a result", t
       t.end();
     },
     err => {
-      t.fail(`Promises.toPromise(t1) must NOT reject with ${stringify(err)}`, err.stack);
+      t.fail(`Promises.toPromise(t1) must NOT reject with ${stringify(err)}`, err);
       t.end();
     });
 });
@@ -1699,7 +1699,7 @@ test('Promises.chain(e => e, [])', t => {
       t.end();
     },
     err => {
-      t.end(`Promises.chain(e => e, [1, 2, 3]) must not fail with an error` + err.stack);
+      t.end(`Promises.chain(e => e, [1, 2, 3]) must not fail with an error` + err);
     }
   );
 });
@@ -1716,7 +1716,7 @@ test('Promises.chain(e => e, [1])', t => {
       t.end();
     },
     err => {
-      t.end(`Promises.chain(e => e, [1]) must not fail with an error` + err.stack);
+      t.end(`Promises.chain(e => e, [1]) must not fail with an error` + err);
     }
   );
 });
@@ -1733,7 +1733,7 @@ test('Promises.chain(e => e, [1, 2, 3])', t => {
       t.end();
     },
     err => {
-      t.end(`Promises.chain(e => e, [1, '2', 3]) must not fail with an error` + err.stack);
+      t.end(`Promises.chain(e => e, [1, '2', 3]) must not fail with an error` + err);
     }
   );
 });
@@ -1750,7 +1750,7 @@ test('Promises.chain(e => e * 20, [5])', t => {
       t.end();
     },
     err => {
-      t.end(`Promises.chain(e => e * 20, [5]) must not fail with an error` + err.stack);
+      t.end(`Promises.chain(e => e * 20, [5]) must not fail with an error` + err);
     }
   );
 });
@@ -1767,7 +1767,7 @@ test('Promises.chain(e => e * 20, [1, 2, 3])', t => {
       t.end();
     },
     err => {
-      t.end(`Promises.chain(e => e * 20, [1, '2', 3]) must not fail with an error` + err.stack);
+      t.end(`Promises.chain(e => e * 20, [1, '2', 3]) must not fail with an error` + err);
     }
   );
 });
@@ -2179,7 +2179,7 @@ test('installCancelTimeout - cancel multiple delays with single cancellable usin
       t.end();
     },
     err => {
-      t.end(`Unexpected error`, err.stack);
+      t.end(`Unexpected error`, err);
     }
   );
 });
@@ -2197,7 +2197,7 @@ test('installCancelTimeout - cancel multiple delays with single cancellable usin
       return 1;
     },
     err => {
-      console.log(`########### p1 cancelled`, err.stack);
+      console.log(`########### p1 cancelled`, err);
       // return -1;
       throw err;
     }
@@ -2209,7 +2209,7 @@ test('installCancelTimeout - cancel multiple delays with single cancellable usin
       return 2;
     },
     err => {
-      console.log(`########### p2 cancelled`, err.stack);
+      console.log(`########### p2 cancelled`, err);
       // return -2;
       throw err;
     }
@@ -2230,7 +2230,7 @@ test('installCancelTimeout - cancel multiple delays with single cancellable usin
       t.end();
     },
     err => {
-      t.end(`Unexpected error`, err.stack);
+      t.end(`Unexpected error`, err);
     }
   );
 });
@@ -3265,7 +3265,7 @@ test("Promises.flatten([d1,d2,d3,d4]) cancelled during d4 will resolve d1, d2, d
       t.end();
     },
     err => {
-      t.end(`Promises.flatten([d1,d2,d3,d4]) when cancelled too late, must NOT reject with error`, err.stack);
+      t.end(`Promises.flatten([d1,d2,d3,d4]) when cancelled too late, must NOT reject with error`, err);
     }
   );
   t.ok(typeof cancellable.cancel === "function", `cancellable.cancel must be installed`);

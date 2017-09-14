@@ -584,7 +584,7 @@ test('Success toPromise', t => {
           t.end();
         },
         err => {
-          t.fail(`success.toPromise() followed by Promises.one(p) should NEVER have failed as a rejected promise`, err.stack);
+          t.fail(`success.toPromise() followed by Promises.one(p) should NEVER have failed as a rejected promise`, err);
           t.end();
         }
       );
@@ -616,7 +616,7 @@ test('Failure toPromise', t => {
           t.end();
         },
         err => {
-          t.fail(`failure.toPromise() followed by Promises.one(p) should NEVER have failed as a rejected promise`, err.stack);
+          t.fail(`failure.toPromise() followed by Promises.one(p) should NEVER have failed as a rejected promise`, err);
           t.end();
         }
       );
@@ -644,7 +644,7 @@ test('Try toPromise', t => {
           t.end();
         },
         err => {
-          t.fail(`tried.toPromise() followed by Promises.one(p) should NEVER have failed as a rejected promise`, err.stack);
+          t.fail(`tried.toPromise() followed by Promises.one(p) should NEVER have failed as a rejected promise`, err);
           t.end();
         }
       );
@@ -672,7 +672,6 @@ test('countSuccess, countFailure, count & describeSuccessAndFailureCounts - with
 
   const s = new Success(42);
   const f = new Failure(new Error('43'));
-  const strict = false;
 
   const strictValues = [false, undefined];
   for (let strict of strictValues) {

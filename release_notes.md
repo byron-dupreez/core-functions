@@ -1,5 +1,8 @@
 ## Changes
 
+### 3.0.15
+- Replaced all logging of `error.stack` with logging of just the error
+
 ### 3.0.14
 - Added dummy first exports (`exports._ = '_'; //IDE workaround`) to most modules as a temporary workaround for IDE issue 
 
