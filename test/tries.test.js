@@ -590,7 +590,7 @@ test('Success toPromise', t => {
       );
     },
     e => {
-      t.fail(`success.toPromise() should NOT have failed as a rejected promise`, e.stack);
+      t.fail(`success.toPromise() should NOT have failed as a rejected promise`, e);
       t.end();
     }
   );

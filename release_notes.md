@@ -1,5 +1,12 @@
 ## Changes
 
+### 3.0.16
+- Changes to `errors` module:
+  - Added new optional `cause` constructor parameters & properties to `FatalError`, `TransientError` & `TimeoutError` classes
+- Changes to `promises` module:
+  - Added new optional `logger` parameters to `flatten` & `avoidUnhandledPromiseRejectionWarning` functions to enable or
+    disable TRACE-level logging of their attempts to avoid unhandled promise rejection warnings
+
 ### 3.0.15
 - Replaced all logging of `error.stack` with logging of just the error
 

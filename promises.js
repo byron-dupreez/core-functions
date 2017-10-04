@@ -519,30 +519,31 @@ function one(promise) {
  * @param {Object|Cancellable|*} [cancellable] - an arbitrary object onto which a `cancel` method will be installed
  * @param {Object|undefined} [opts] - optional options to use to alter the behaviour of this flatten function
  * @param {Object|undefined} [opts.skipSimplifyOutcomes] - whether to skip applying `Try.simplify` to any list of outcomes or not (defaults to simplifying with `Try.simplify`)
+ * @param {BasicLogger|undefined} [logger] - an optional alternative logger to use instead of the default `console` logger
  * @returns {*|Promise.<*>|Promise.<Outcomes|CancelledError>} the given non-promise value or a single promise of one or
  * more non-promise values/outcomes (if not cancelled); or a rejected promise with a `CancelledError` (if cancelled)
  */
-function flatten(value, cancellable, opts) {
+function flatten(value, cancellable, opts, logger) {
   if (isPromiseLike(value)) {
-    // If value is a promise or promise-like then flatten its resolved value or rejected error
-    const p = value.then(v => flatten(v, cancellable, opts));
-    avoidUnhandledPromiseRejectionWarning(p);
+    // If value is a promise or promise-like then flatten its resolved value
+    const p = value.then(v => flatten(v, cancellable, opts, logger));
+    avoidUnhandledPromiseRejectionWarning(p, logger);
     return p;
   }
   const isArray = Array.isArray(value);
   if (isArray && value.some(v => isPromiseLike(v))) {
     // If value is an array containing at least one Promise or promise-like, then first flatten each of its promises and
     // then use the `every` function to "flatten" all of its resulting promises into a single promise of "simplified" outcomes
-    const promise = every(value.map(v => flatten(v, cancellable, opts)), cancellable);
+    const promise = every(value.map(v => flatten(v, cancellable, opts, logger)), cancellable);
     return !opts || !opts.skipSimplifyOutcomes ? promise.then(outcomes => Try.simplify(outcomes)) : promise;
 
   } else if (value instanceof Success) {
     // If value is a Success outcome, then flatten its Success value too
-    return value.map(v => flatten(v, cancellable, opts));
+    return value.map(v => flatten(v, cancellable, opts, logger));
 
   } else if (isArray && value.some(v => v instanceof Success)) {
     // If value is an array containing at least one Success outcome, then flatten any Success values too
-    const outcomes = value.map(v => v instanceof Success ? v.map(vv => flatten(vv, cancellable, opts)) : v);
+    const outcomes = value.map(v => v instanceof Success ? v.map(vv => flatten(vv, cancellable, opts, logger)) : v);
     return !opts || !opts.skipSimplifyOutcomes ? Try.simplify(outcomes) : outcomes;
   }
   return value;
@@ -678,12 +679,13 @@ function installCancelTimeout(cancellable, cancelTimeout) {
 /**
  * Attaches an arbitrary `catch` clause to the given promise to avoid an unneeded UnhandledPromiseRejectionWarning.
  * @param {Promise|PromiseLike|*} p - a promise to which to attach an arbitrary `catch`
+ * @param {BasicLogger|undefined} [logger] - an optional alternative logger to use instead of the default `console` logger
  */
-function avoidUnhandledPromiseRejectionWarning(p) {
+function avoidUnhandledPromiseRejectionWarning(p, logger) {
   if (p && p.catch) {
     p.catch(err => {
       // Avoid unneeded warnings: (node:18304) UnhandledPromiseRejectionWarning: Unhandled promise rejection (rejection id: ...): ...
-      console.log(`Avoided UnhandledPromiseRejectionWarning - ${err}`);
+      (logger && logger.log ? logger : console).log('TRACE', `Avoiding UnhandledPromiseRejectionWarning - ${err}`);
     });
   }
 }

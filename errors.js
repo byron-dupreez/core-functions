@@ -19,10 +19,14 @@ class FatalError extends Error {
   /**
    * Constructs a new FatalError.
    * @param {string} message - a message for this error.
+   * @param {Error|undefined} [cause] - the error that caused this fatal error (if any)
    */
-  constructor(message) {
+  constructor(message, cause) {
     super(message);
     setTypeName(this.constructor);
+    if (cause) {
+      Object.defineProperty(this, 'cause', {value: cause, enumerable: false, writable: false, configurable: false});
+    }
   }
 
   toJSON() {
@@ -38,10 +42,14 @@ class TransientError extends Error {
   /**
    * Constructs a new TransientError.
    * @param {string} message - a message for this error.
+   * @param {Error|undefined} [cause] - the error that caused this transient error (if any)
    */
-  constructor(message) {
+  constructor(message, cause) {
     super(message);
     setTypeName(this.constructor);
+    if (cause) {
+      Object.defineProperty(this, 'cause', {value: cause, enumerable: false, writable: false, configurable: false});
+    }
   }
 
   toJSON() {
@@ -57,10 +65,14 @@ class TimeoutError extends Error {
   /**
    * Constructs a new TimeoutError.
    * @param {string} message - a message for this error.
+   * @param {Error|undefined} [cause] - the error that caused this fatal error (if any)
    */
-  constructor(message) {
+  constructor(message, cause) {
     super(message);
     setTypeName(this.constructor);
+    if (cause) {
+      Object.defineProperty(this, 'cause', {value: cause, enumerable: false, writable: false, configurable: false});
+    }
   }
 
   toJSON() {

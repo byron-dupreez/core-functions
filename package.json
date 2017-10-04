@@ -1,6 +1,6 @@
 {
   "name": "core-functions",
-  "version": "3.0.15",
+  "version": "3.0.16",
   "description": "Core functions, utilities and classes for working with Node/JavaScript primitives and built-in objects, including strings, booleans, Promises, base 64, Arrays, Objects, standard AppErrors, etc.",
   "author": "Byron du Preez",
   "license": "Apache-2.0",
