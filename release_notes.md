@@ -1,5 +1,19 @@
 ## Changes
 
+### 3.0.17
+- Changes to `promises` module:
+  - Changed the `avoidUnhandledPromiseRejectionWarning` function to log each error and its stack trace at WARN-level
+  - Added a new, convenience `avoidUnhandledPromiseRejectionWarnings` function that applies the 
+    `avoidUnhandledPromiseRejectionWarning` function to each of the promises it is given
+  - Changes to the `every` function:
+    - Added a new optional `logger` 3rd parameter to the `every` function to enable use of a custom logger instead of console 
+    - Fixed the `every` function to call the new `avoidUnhandledPromiseRejectionWarnings` function on any unresolved 
+      promises before throwing a `CancelledError`
+  - Changes to the `flatten` function:
+    - Completely refactored the logic of the `flatten` function to ALWAYS return a Promise
+    - Changed `flatten` function to rely on the fixed `every` function to avoid UnhandledPromiseRejectionWarnings 
+      instead of calling `avoidUnhandledPromiseRejectionWarning` itself
+
 ### 3.0.16
 - Changes to `errors` module:
   - Added new optional `cause` constructor parameters & properties to `FatalError`, `TransientError` & `TimeoutError` classes

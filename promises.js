@@ -26,6 +26,7 @@ exports.chain = chain;
 exports.installCancel = installCancel;
 exports.installCancelTimeout = installCancelTimeout;
 exports.avoidUnhandledPromiseRejectionWarning = avoidUnhandledPromiseRejectionWarning;
+exports.avoidUnhandledPromiseRejectionWarnings = avoidUnhandledPromiseRejectionWarnings;
 
 /** @deprecated */
 exports.wrapMethod = wrapMethod;
@@ -97,7 +98,16 @@ function isPromise(value) {
  * @returns {boolean|*} true if its a promise or a promise-like ("then-able") object; false otherwise
  */
 function isPromiseLike(value) {
-  return value instanceof Promise || (!!value && !!value.then && typeof value.then === 'function');
+  return value instanceof Promise || (!!value && typeof value.then === 'function');
+}
+
+/**
+ * Returns true if the given value is a "then-able" object, i.e. if it has a `then` function; otherwise false.
+ * @param {*} value - the value to check
+ * @returns {boolean|*} true if "then-able"; false otherwise
+ */
+function isThenable(value) {
+  return !!value && typeof value.then === 'function';
 }
 
 /**
@@ -417,11 +427,12 @@ function allOrOne(result) {
  *
  * @param {Promise[]|*[]} promises - a list of promises from which to collect their outcomes
  * @param {Object|Cancellable|*} [cancellable] - an arbitrary object onto which a `cancel` method will be installed
+ * @param {BasicLogger|undefined} [logger] - an optional alternative logger to use instead of the default `console` logger
  * @returns {Promise.<Outcomes|CancelledError>} a promise that will resolve with a list of Success or Failure outcomes
  * for the given promises (if not cancelled); or reject with a `CancelledError` (if cancelled)
  * @throws {Error} an error if the given `promises` is not an array
  */
-function every(promises, cancellable) {
+function every(promises, cancellable, logger) {
   if (!Array.isArray(promises)) {
     throw new Error('The `every` function only accepts `promises` as an array of promises and/or non-promises');
   }
@@ -440,6 +451,14 @@ function every(promises, cancellable) {
     return completed;
   });
 
+  /** Short-circuit by throwing a cancelled error with the outcomes collected so far */
+  function throwCancelledError(i) {
+    const unresolvedPromises = promises.slice(i + 1);
+    // Attach `catch` clauses to the remaining unresolved promises to avoid unneeded warnings, since we will probably never do anything more with them
+    avoidUnhandledPromiseRejectionWarnings(unresolvedPromises, logger);
+    throw new CancelledError(outcomes.slice(0, i + 1), unresolvedPromises);
+  }
+
   function next(i) {
     let p = promises[i];
     if (i > 0) {
@@ -447,8 +466,7 @@ function every(promises, cancellable) {
       if (!isPromiseLike(p)) {
         outcomes[i] = new Success(p);
         if (i < last) {
-          // Short-circuit if cancelled by throwing a cancelled error with the outcomes collected so far
-          if (cancelled) throw new CancelledError(outcomes.slice(0, i + 1), promises.slice(i + 1));
+          if (cancelled) throwCancelledError(i);
           return next(i + 1);
         }
         completed = true;
@@ -464,8 +482,7 @@ function every(promises, cancellable) {
         outcomes[i] = new Success(value);
         // If still not at the last element, then continue with a recursive call; otherwise return outcomes, since done
         if (i < last) {
-          // Short-circuit if cancelled by throwing a cancelled error with the outcomes collected so far
-          if (cancelled) throw new CancelledError(outcomes.slice(0, i + 1), promises.slice(i + 1));
+          if (cancelled) throwCancelledError(i);
           return next(i + 1);
         }
         completed = true;
@@ -475,8 +492,7 @@ function every(promises, cancellable) {
         outcomes[i] = new Failure(err);
         // If still not at the last element, then continue with a recursive call; otherwise return outcomes, since done
         if (i < last) {
-          // Short-circuit if cancelled by throwing a cancelled error with the outcomes collected so far
-          if (cancelled) throw new CancelledError(outcomes.slice(0, i + 1), promises.slice(i + 1));
+          if (cancelled) throwCancelledError(i);
           return next(i + 1);
         }
         completed = true;
@@ -506,47 +522,45 @@ function one(promise) {
 
 /**
  * Recursively flattens the given value, which is expected to be typically either a single promise or an array of
- * promises, into either the given value (if its neither a promise nor an array of at least one promise) or into a
- * single promise containing either a non-promise value or an array of Success or Failure non-promise outcomes.
+ * promises, into a SINGLE promise containing: a resolved non-promise value (if value is NOT an array) or a rejected
+ * error or an array of resolved Success and/or Failure non-promise outcomes (if value is an array). The "flattening"
+ * refers to the recursive resolution of any and all of the value's promise(s) into a SINGLE promise.
  *
  * If any non-null object is passed into this function as the `cancellable` argument, then this function will also
  * install a `cancel` method on it (see {@link installCancel}), which expects no arguments and returns true if all of
  * the promises have already resolved; or false otherwise. If this `cancel` method is subsequently invoked, it will
- * attempt to short-circuit any current `every` promise that is waiting for all of its remaining promises to complete by
- * instead throwing a `CancelledError`.
+ * attempt to short-circuit any current `every` promise that is still waiting for all of its remaining promises to
+ * complete by instead throwing a `CancelledError`.
  *
- * @param {Promise|Promise[]|*} value - the value to be flattened
+ * @param {Promise|Promise[]|*} [value] - the value to be flattened
  * @param {Object|Cancellable|*} [cancellable] - an arbitrary object onto which a `cancel` method will be installed
  * @param {Object|undefined} [opts] - optional options to use to alter the behaviour of this flatten function
  * @param {Object|undefined} [opts.skipSimplifyOutcomes] - whether to skip applying `Try.simplify` to any list of outcomes or not (defaults to simplifying with `Try.simplify`)
  * @param {BasicLogger|undefined} [logger] - an optional alternative logger to use instead of the default `console` logger
- * @returns {*|Promise.<*>|Promise.<Outcomes|CancelledError>} the given non-promise value or a single promise of one or
+ * @returns {Promise.<*|Outcomes|CancelledError>} a single promise of the resolved value or a rejected error or the given non-promise value or a single promise of one or
  * more non-promise values/outcomes (if not cancelled); or a rejected promise with a `CancelledError` (if cancelled)
  */
 function flatten(value, cancellable, opts, logger) {
-  if (isPromiseLike(value)) {
-    // If value is a promise or promise-like then flatten its resolved value
-    const p = value.then(v => flatten(v, cancellable, opts, logger));
-    avoidUnhandledPromiseRejectionWarning(p, logger);
-    return p;
-  }
-  const isArray = Array.isArray(value);
-  if (isArray && value.some(v => isPromiseLike(v))) {
-    // If value is an array containing at least one Promise or promise-like, then first flatten each of its promises and
-    // then use the `every` function to "flatten" all of its resulting promises into a single promise of "simplified" outcomes
-    const promise = every(value.map(v => flatten(v, cancellable, opts, logger)), cancellable);
-    return !opts || !opts.skipSimplifyOutcomes ? promise.then(outcomes => Try.simplify(outcomes)) : promise;
+  const simplifyOutcomes = !opts || !opts.skipSimplifyOutcomes;
 
-  } else if (value instanceof Success) {
-    // If value is a Success outcome, then flatten its Success value too
-    return value.map(v => flatten(v, cancellable, opts, logger));
-
-  } else if (isArray && value.some(v => v instanceof Success)) {
-    // If value is an array containing at least one Success outcome, then flatten any Success values too
-    const outcomes = value.map(v => v instanceof Success ? v.map(vv => flatten(vv, cancellable, opts, logger)) : v);
-    return !opts || !opts.skipSimplifyOutcomes ? Try.simplify(outcomes) : outcomes;
+  function splat(value) {
+    return isPromiseLike(value) ? value.then(splat) :
+      value instanceof Success ? value.map(splat) :
+        Array.isArray(value) ?
+          value.some(v => isPromiseLike(v) || v instanceof Success) ?
+            every(value.map(splat), cancellable, logger).then(os => simplifyOutcomes ? Try.simplify(os) : os) :
+            value :
+          value;
   }
-  return value;
+
+  return value instanceof Promise ? value.then(splat) :
+    isThenable(value) ? toPromise(value).then(splat) :
+      value instanceof Try ? value.toPromise().then(splat) :
+        Array.isArray(value) ?
+          value.some(v => isPromiseLike(v) || v instanceof Success) ?
+            every(value.map(splat), cancellable, logger).then(os => simplifyOutcomes ? Try.simplify(os) : os) :
+            Promise.resolve(value) :
+          Promise.resolve(value);
 }
 
 /**
@@ -677,15 +691,30 @@ function installCancelTimeout(cancellable, cancelTimeout) {
 }
 
 /**
- * Attaches an arbitrary `catch` clause to the given promise to avoid an unneeded UnhandledPromiseRejectionWarning.
- * @param {Promise|PromiseLike|*} p - a promise to which to attach an arbitrary `catch`
+ * Attaches an arbitrary `catch` clause to the given promise to avoid an UnhandledPromiseRejectionWarning.
+ * @param {Promise|PromiseLike|*} promise - a promise to which to attach an arbitrary `catch` clause
  * @param {BasicLogger|undefined} [logger] - an optional alternative logger to use instead of the default `console` logger
  */
-function avoidUnhandledPromiseRejectionWarning(p, logger) {
-  if (p && p.catch) {
-    p.catch(err => {
-      // Avoid unneeded warnings: (node:18304) UnhandledPromiseRejectionWarning: Unhandled promise rejection (rejection id: ...): ...
-      (logger && logger.log ? logger : console).log('TRACE', `Avoiding UnhandledPromiseRejectionWarning - ${err}`);
+function avoidUnhandledPromiseRejectionWarning(promise, logger) {
+  if (promise && promise.catch) {
+    promise.catch(err => {
+      // Avoid unneeded warnings: e.g. (node:18304) UnhandledPromiseRejectionWarning: Unhandled promise rejection (rejection id: ...): ...
+      const msg = 'Avoiding UnhandledPromiseRejectionWarning -';
+      if (!logger || logger.warn)
+        (logger || console).warn(msg, err);
+      else
+        (logger || console).log('WARN', msg, err);
     });
+  }
+}
+
+/**
+ * Attaches an arbitrary `catch` clause to each of the given promises to avoid UnhandledPromiseRejectionWarnings.
+ * @param {Array.<Promise|PromiseLike|*>} promises - an array of promise to which to attach arbitrary `catch` clauses
+ * @param {BasicLogger|undefined} [logger] - an optional alternative logger to use instead of the default `console` logger
+ */
+function avoidUnhandledPromiseRejectionWarnings(promises, logger) {
+  if (Array.isArray(promises)) {
+    promises.forEach(p => avoidUnhandledPromiseRejectionWarning(p, logger));
   }
 }

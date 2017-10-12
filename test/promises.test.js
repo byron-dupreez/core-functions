@@ -123,8 +123,8 @@ const e4Error = new Error('e4 error');
 
 function genDelayedPromise(err, name, ms, delayCancellable, cancellable) {
   const startTime = Date.now();
-  const promise = Promises.delay(ms, delayCancellable)
-    .then(() => {
+  return Promises.delay(ms, delayCancellable)
+    .then(triggered => {
       if (cancellable) {
         if (cancellable.cancel) {
           const completed = cancellable.cancel();
@@ -134,8 +134,9 @@ function genDelayedPromise(err, name, ms, delayCancellable, cancellable) {
         }
       }
       const msElapsed = Date.now() - startTime;
-      if (msElapsed >= ms) {
-        console.log(`Delayed promise ${name} completed at ${msElapsed} ms (original delay was ${ms} ms)`);
+      // if (msElapsed >= ms) {
+      if (triggered) {
+        console.log(`Delayed promise ${name} ended at ${msElapsed} ms (original delay was ${ms} ms)`);
       } else {
         console.log(`Delayed promise ${name} ended prematurely at ${msElapsed} ms out of ${ms} ms delay`);
       }
@@ -147,8 +148,6 @@ function genDelayedPromise(err, name, ms, delayCancellable, cancellable) {
       console.log(`Delayed promise ${name} failed at ${msElapsed} ms out of ${ms} ms delay`, err);
       throw err;
     });
-  Promises.avoidUnhandledPromiseRejectionWarning(promise);
-  return promise;
 }
 
 function genThenable(err, data, failSync, ms) {
@@ -2417,7 +2416,6 @@ test("installCancel - cancel multiple Promises.every with single cancellable", t
       throw err;
     }
   );
-  Promises.avoidUnhandledPromiseRejectionWarning(p2);
 
   t.ok(typeof cancellable.cancel === "function", `cancellable.cancel must still be installed`);
   t.notEquals(cancellable.cancel, prevCancel, `cancellable.cancel must NOT be previous cancel`);
@@ -2449,59 +2447,108 @@ test("installCancel - cancel multiple Promises.every with single cancellable", t
 
 // ---------------------------------------------------------------------------------------------------------------------
 test('Promises.flatten()', t => {
-  const expected = undefined;
-  t.deepEqual(Promises.flatten(), expected, `Promises.flatten() must be ${stringify(expected)}`);
-  t.end();
+  const p = Promises.flatten();
+  t.ok(p instanceof Promise, `Promises.flatten() must be an instance of Promise`);
+  p.then(
+    value => {
+      const expected = undefined;
+      t.deepEqual(value, expected, `Promises.flatten() must resolve to ${stringify(expected)}`);
+      t.end();
+    },
+    err => t.end(err)
+  );
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
 test('Promises.flatten(undefined)', t => {
-  const expected = undefined;
-  t.deepEqual(Promises.flatten(undefined), expected, `Promises.flatten(undefined) must be ${stringify(expected)}`);
-  t.end();
+  const p = Promises.flatten(undefined);
+  t.ok(p instanceof Promise, `Promises.flatten(undefined) must be an instance of Promise`);
+  p.then(
+    value => {
+      const expected = undefined;
+      t.deepEqual(value, expected, `Promises.flatten(undefined) must resolve to ${stringify(expected)}`);
+      t.end();
+    },
+    err => t.end(err)
+  );
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
 test('Promises.flatten(null)', t => {
-  const expected = null;
-  t.deepEqual(Promises.flatten(null), expected, `Promises.flatten(null) must be ${stringify(expected)}`);
-  t.end();
+  const p = Promises.flatten(null);
+  t.ok(p instanceof Promise, `Promises.flatten(null) must be an instance of Promise`);
+  p.then(
+    value => {
+      const expected = null;
+      t.deepEqual(value, expected, `Promises.flatten(null) must resolve to ${stringify(expected)}`);
+      t.end();
+    },
+    err => t.end(err)
+  );
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
 test('Promises.flatten(123)', t => {
-  const expected = 123;
-  t.deepEqual(Promises.flatten(123), expected, `Promises.flatten(123) must be ${stringify(expected)}`);
-  t.end();
+  const p = Promises.flatten(123);
+  t.ok(p instanceof Promise, `Promises.flatten(123) must be an instance of Promise`);
+  p.then(
+    value => {
+      const expected = 123;
+      t.deepEqual(value, expected, `Promises.flatten(123) must resolve to ${stringify(expected)}`);
+      t.end();
+    },
+    err => t.end(err)
+  );
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
 test('Promises.flatten("Xyz")', t => {
-  const expected = "Xyz";
-  t.deepEqual(Promises.flatten("Xyz"), expected, `Promises.flatten("Xyz") must be ${stringify(expected)}`);
-  t.end();
+  const p = Promises.flatten("Xyz");
+  t.ok(p instanceof Promise, `Promises.flatten("Xyz") must be an instance of Promise`);
+  p.then(
+    value => {
+      const expected = "Xyz";
+      t.deepEqual(value, expected, `Promises.flatten("Xyz") must resolve to ${stringify(expected)}`);
+      t.end();
+    },
+    err => t.end(err)
+  );
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
 test('Promises.flatten([])', t => {
-  const expected = [];
-  t.deepEqual(Promises.flatten([]), expected, `Promises.flatten([]) must be ${stringify(expected)}`);
-  t.end();
+  const p = Promises.flatten([]);
+  t.ok(p instanceof Promise, `Promises.flatten([]) must be an instance of Promise`);
+  p.then(
+    value => {
+      const expected = [];
+      t.deepEqual(value, expected, `Promises.flatten([]) must resolve to ${stringify(expected)}`);
+      t.end();
+    },
+    err => t.end(err)
+  );
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
 test('Promises.flatten(Promise.resolve(42))', t => {
-  Promises.flatten(Promise.resolve(42)).then(results => {
-    const expected = 42;
-    t.deepEqual(results, expected, `Promises.flatten(Promise.resolve(42)) must be ${stringify(expected)}`);
-    t.end();
-  });
+  const promise = Promise.resolve(42);
+  const p = Promises.flatten(promise);
+  t.ok(p instanceof Promise, `Promises.flatten(Promise.resolve(42)) must be an instance of Promise`);
+  t.ok(p !== promise, `Promises.flatten(Promise.resolve(42)) is NOT the same promise`);
+  p.then(
+    value => {
+      const expected = 42;
+      t.deepEqual(value, expected, `Promises.flatten(Promise.resolve(42)) must resolve to ${stringify(expected)}`);
+      t.end();
+    },
+    err => t.end(err)
+  );
 });
 
 test('Promises.flatten(Promise.resolve(42), null, simplifyOutcomesOpts)', t => {
   Promises.flatten(Promise.resolve(42), null, simplifyOutcomesOpts).then(results => {
     const expected = 42;
-    t.deepEqual(results, expected, `Promises.flatten(Promise.resolve(42)) must be ${stringify(expected)}`);
+    t.deepEqual(results, expected, `Promises.flatten(Promise.resolve(42)) must resolve to ${stringify(expected)}`);
     t.end();
   });
 });
@@ -2509,17 +2556,17 @@ test('Promises.flatten(Promise.resolve(42), null, simplifyOutcomesOpts)', t => {
 test('Promises.flatten(Promise.resolve(42), null, skipSimplifyOutcomesOpts)', t => {
   Promises.flatten(Promise.resolve(42), null, skipSimplifyOutcomesOpts).then(results => {
     const expected = 42;
-    t.deepEqual(results, expected, `Promises.flatten(Promise.resolve(42)) must be ${stringify(expected)}`);
+    t.deepEqual(results, expected, `Promises.flatten(Promise.resolve(42)) must resolve to ${stringify(expected)}`);
     t.end();
   });
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
 test('Promises.flatten(Promise.reject(new Error("43")))', t => {
-  Promises.flatten(Promise.reject(new Error("43")))
+  const error = new Error("43");
+  Promises.flatten(Promise.reject(error))
     .catch(err => {
-      const expected = new Error("43");
-      t.deepEqual(err, expected, `Promises.flatten(Promise.reject(new Error("43"))) must be reject with ${stringify(expected)}`);
+      t.equal(err, error, `Promises.flatten(Promise.reject(new Error("43"))) must reject with ${stringify(error)}`);
       t.end();
     });
 });
@@ -2529,53 +2576,87 @@ test('Promises.flatten(Promise.resolve(42).then(x => Promise.resolve(x * 2)).the
   Promises.flatten(Promise.resolve(42).then(x => Promise.resolve(x * 2)).then(y => Promise.resolve(y / 4)))
     .then(results => {
       const expected = 21;
-      t.deepEqual(results, expected, `Promises.flatten(Promise.resolve(42).then(x => Promise.resolve(x * 2)).then(y => Promise.resolve(y / 4))) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten(Promise.resolve(42).then(x => Promise.resolve(x * 2)).then(y => Promise.resolve(y / 4))) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
 test('Promises.flatten(Promise.resolve(Promise.reject(new Error("43"))))', t => {
-  Promises.flatten(Promise.resolve(Promise.reject(new Error("43")))).catch(err => {
-    const expected = new Error("43");
-    t.deepEqual(err, expected, `Promises.flatten(Promise.resolve(Promise.reject(new Error("43")))) must be reject with ${stringify(expected)}`);
+  const error = new Error("43");
+  Promises.flatten(Promise.resolve(Promise.reject(error))).catch(err => {
+    t.equal(err, error, `Promises.flatten(Promise.resolve(Promise.reject(new Error("43")))) must reject with ${stringify(error)}`);
     t.end();
   });
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
 test('Promises.flatten([undefined])', t => {
-  const expected = [undefined];
-  t.deepEqual(Promises.flatten([undefined]), expected, `Promises.flatten([undefined]) must be ${stringify(expected)}`);
-  t.end();
+  const array = [undefined];
+  const p = Promises.flatten(array);
+  t.ok(p instanceof Promise, `Promises.flatten(${stringify(array)}) must be an instance of Promise`);
+  p.then(
+    value => {
+      const expected = [undefined];
+      t.deepEqual(value, expected, `Promises.flatten(${stringify(array)}) must resolve to ${stringify(expected)}`);
+      t.end();
+    },
+    err => t.end(err)
+  );
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
 test('Promises.flatten([null])', t => {
-  const expected = [null];
-  t.deepEqual(Promises.flatten([null]), expected, `Promises.flatten([null]) must be ${stringify(expected)}`);
-  t.end();
+  const array = [null];
+  const p = Promises.flatten(array);
+  t.ok(p instanceof Promise, `Promises.flatten(${stringify(array)}) must be an instance of Promise`);
+  p.then(
+    value => {
+      const expected = [null];
+      t.deepEqual(value, expected, `Promises.flatten(${stringify(array)}) must resolve to ${stringify(expected)}`);
+      t.end();
+    },
+    err => t.end(err)
+  );
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
 test('Promises.flatten([1, 2, 3])', t => {
-  const expected = [1, 2, 3];
-  t.deepEqual(Promises.flatten([1, 2, 3]), expected, `Promises.flatten([1, 2, 3]) must be ${stringify(expected)}`);
-  t.end();
+  const array = [1, 2, 3];
+  const p = Promises.flatten(array);
+  t.ok(p instanceof Promise, `Promises.flatten(${stringify(array)}) must be an instance of Promise`);
+  p.then(
+    value => {
+      const expected = [1, 2, 3];
+      t.deepEqual(value, expected, `Promises.flatten(${stringify(array)}) must resolve to ${stringify(expected)}`);
+      t.end();
+    },
+    err => t.end(err)
+  );
+
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
 test("Promises.flatten([1, '2', 3])", t => {
-  const expected = [1, '2', 3];
-  t.deepEqual(Promises.flatten([1, '2', 3]), expected, `Promises.flatten([1, '2', 3]) must be ${stringify(expected)}`);
-  t.end();
+  const array = [1, '2', 3];
+  const p = Promises.flatten(array);
+  t.ok(p instanceof Promise, `Promises.flatten(${stringify(array)}) must be an instance of Promise`);
+  p.then(
+    value => {
+      const expected = [1, '2', 3];
+      t.deepEqual(value, expected, `Promises.flatten(${stringify(array)}) must resolve to ${stringify(expected)}`);
+      t.end();
+    },
+    err => t.end(err)
+  );
+
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
 test('Promises.flatten([Promise.resolve(null), undefined])', t => {
   Promises.flatten([Promise.resolve(null), undefined]).then(results => {
     const expected = [null, undefined];
-    t.deepEqual(results, expected, `Promises.flatten([Promise.resolve(null), undefined]) must be ${stringify(expected)}`);
+    t.deepEqual(results, expected, `Promises.flatten([Promise.resolve(null), undefined]) must resolve to ${stringify(expected)}`);
     t.end();
   });
 });
@@ -2583,7 +2664,7 @@ test('Promises.flatten([Promise.resolve(null), undefined])', t => {
 test('Promises.flatten([Promise.resolve(null), undefined], null, simplifyOutcomesOpts)', t => {
   Promises.flatten([Promise.resolve(null), undefined], null, simplifyOutcomesOpts).then(results => {
     const expected = [null, undefined];
-    t.deepEqual(results, expected, `Promises.flatten([Promise.resolve(null), undefined]) must be ${stringify(expected)}`);
+    t.deepEqual(results, expected, `Promises.flatten([Promise.resolve(null), undefined]) must resolve to ${stringify(expected)}`);
     t.end();
   });
 });
@@ -2591,7 +2672,7 @@ test('Promises.flatten([Promise.resolve(null), undefined], null, simplifyOutcome
 test('Promises.flatten([Promise.resolve(null), undefined], null, skipSimplifyOutcomesOpts)', t => {
   Promises.flatten([Promise.resolve(null), undefined], null, skipSimplifyOutcomesOpts).then(results => {
     const expected = [new Success(null), new Success(undefined)];
-    t.deepEqual(results, expected, `Promises.flatten([Promise.resolve(null), undefined]) must be ${stringify(expected)}`);
+    t.deepEqual(results, expected, `Promises.flatten([Promise.resolve(null), undefined]) must resolve to ${stringify(expected)}`);
     t.end();
   });
 });
@@ -2600,7 +2681,7 @@ test('Promises.flatten([Promise.resolve(null), undefined], null, skipSimplifyOut
 test("Promises.flatten([undefined, Promise.resolve(null)])", t => {
   Promises.flatten([undefined, Promise.resolve(null)]).then(results => {
     const expected = [undefined, null];
-    t.deepEqual(results, expected, `Promises.flatten([undefined, Promise.resolve(null)]) must be ${stringify(expected)}`);
+    t.deepEqual(results, expected, `Promises.flatten([undefined, Promise.resolve(null)]) must resolve to ${stringify(expected)}`);
     t.end();
   });
 });
@@ -2608,7 +2689,7 @@ test("Promises.flatten([undefined, Promise.resolve(null)])", t => {
 test("Promises.flatten([undefined, Promise.resolve(null)], null, simplifyOutcomesOpts)", t => {
   Promises.flatten([undefined, Promise.resolve(null)], null, simplifyOutcomesOpts).then(results => {
     const expected = [undefined, null];
-    t.deepEqual(results, expected, `Promises.flatten([undefined, Promise.resolve(null)]) must be ${stringify(expected)}`);
+    t.deepEqual(results, expected, `Promises.flatten([undefined, Promise.resolve(null)]) must resolve to ${stringify(expected)}`);
     t.end();
   });
 });
@@ -2616,7 +2697,7 @@ test("Promises.flatten([undefined, Promise.resolve(null)], null, simplifyOutcome
 test("Promises.flatten([undefined, Promise.resolve(null)], null, skipSimplifyOutcomesOpts)", t => {
   Promises.flatten([undefined, Promise.resolve(null)], null, skipSimplifyOutcomesOpts).then(results => {
     const expected = [new Success(undefined), new Success(null)];
-    t.deepEqual(results, expected, `Promises.flatten([undefined, Promise.resolve(null)]) must be ${stringify(expected)}`);
+    t.deepEqual(results, expected, `Promises.flatten([undefined, Promise.resolve(null)]) must resolve to ${stringify(expected)}`);
     t.end();
   });
 });
@@ -2625,7 +2706,7 @@ test("Promises.flatten([undefined, Promise.resolve(null)], null, skipSimplifyOut
 test("Promises.flatten([Promise.resolve(null), null])", t => {
   Promises.flatten([Promise.resolve(null), null]).then(results => {
     const expected = [null, null];
-    t.deepEqual(results, expected, `Promises.flatten([Promise.resolve(null), null]) must be ${stringify(expected)}`);
+    t.deepEqual(results, expected, `Promises.flatten([Promise.resolve(null), null]) must resolve to ${stringify(expected)}`);
     t.end();
   });
 });
@@ -2633,7 +2714,7 @@ test("Promises.flatten([Promise.resolve(null), null])", t => {
 test("Promises.flatten([Promise.resolve(null), null], null, simplifyOutcomesOpts)", t => {
   Promises.flatten([Promise.resolve(null), null], null, simplifyOutcomesOpts).then(results => {
     const expected = [null, null];
-    t.deepEqual(results, expected, `Promises.flatten([Promise.resolve(null), null]) must be ${stringify(expected)}`);
+    t.deepEqual(results, expected, `Promises.flatten([Promise.resolve(null), null]) must resolve to ${stringify(expected)}`);
     t.end();
   });
 });
@@ -2641,7 +2722,7 @@ test("Promises.flatten([Promise.resolve(null), null], null, simplifyOutcomesOpts
 test("Promises.flatten([Promise.resolve(null), null], null, skipSimplifyOutcomesOpts)", t => {
   Promises.flatten([Promise.resolve(null), null], null, skipSimplifyOutcomesOpts).then(results => {
     const expected = [new Success(null), new Success(null)];
-    t.deepEqual(results, expected, `Promises.flatten([Promise.resolve(null), null]) must be ${stringify(expected)}`);
+    t.deepEqual(results, expected, `Promises.flatten([Promise.resolve(null), null]) must resolve to ${stringify(expected)}`);
     t.end();
   });
 });
@@ -2650,7 +2731,7 @@ test("Promises.flatten([Promise.resolve(null), null], null, skipSimplifyOutcomes
 test("Promises.flatten([undefined, null, Promise.resolve(null), 123, 'ABCDEF'])", t => {
   Promises.flatten([undefined, null, Promise.resolve(null), 123, 'ABCDEF']).then(results => {
     const expected = [undefined, null, null, 123, 'ABCDEF'];
-    t.deepEqual(results, expected, `Promises.flatten([undefined, null, Promise.resolve(null), 123, 'ABCDEF']) must be ${stringify(expected)}`);
+    t.deepEqual(results, expected, `Promises.flatten([undefined, null, Promise.resolve(null), 123, 'ABCDEF']) must resolve to ${stringify(expected)}`);
     t.end();
   });
 });
@@ -2658,7 +2739,7 @@ test("Promises.flatten([undefined, null, Promise.resolve(null), 123, 'ABCDEF'])"
 test("Promises.flatten([undefined, null, Promise.resolve(null), 123, 'ABCDEF'], null, simplifyOutcomesOpts)", t => {
   Promises.flatten([undefined, null, Promise.resolve(null), 123, 'ABCDEF'], null, simplifyOutcomesOpts).then(results => {
     const expected = [undefined, null, null, 123, 'ABCDEF'];
-    t.deepEqual(results, expected, `Promises.flatten([undefined, null, Promise.resolve(null), 123, 'ABCDEF']) must be ${stringify(expected)}`);
+    t.deepEqual(results, expected, `Promises.flatten([undefined, null, Promise.resolve(null), 123, 'ABCDEF']) must resolve to ${stringify(expected)}`);
     t.end();
   });
 });
@@ -2666,7 +2747,7 @@ test("Promises.flatten([undefined, null, Promise.resolve(null), 123, 'ABCDEF'], 
 test("Promises.flatten([undefined, null, Promise.resolve(null), 123, 'ABCDEF'], null, skipSimplifyOutcomesOpts)", t => {
   Promises.flatten([undefined, null, Promise.resolve(null), 123, 'ABCDEF'], null, skipSimplifyOutcomesOpts).then(results => {
     const expected = [new Success(undefined), new Success(null), new Success(null), new Success(123), new Success('ABCDEF')];
-    t.deepEqual(results, expected, `Promises.flatten([undefined, null, Promise.resolve(null), 123, 'ABCDEF']) must be ${stringify(expected)}`);
+    t.deepEqual(results, expected, `Promises.flatten([undefined, null, Promise.resolve(null), 123, 'ABCDEF']) must resolve to ${stringify(expected)}`);
     t.end();
   });
 });
@@ -2675,7 +2756,7 @@ test("Promises.flatten([undefined, null, Promise.resolve(null), 123, 'ABCDEF'], 
 test("Promises.flatten(p1)", t => {
   Promises.flatten(p1).then(results => {
     const expected = 'p1';
-    t.deepEqual(results, expected, `Promises.flatten(p1) must be ${JSON.stringify(expected)}`);
+    t.deepEqual(results, expected, `Promises.flatten(p1) must resolve to ${JSON.stringify(expected)}`);
     t.end();
   });
 });
@@ -2684,7 +2765,7 @@ test("Promises.flatten(p1)", t => {
 test("Promises.flatten([p1])", t => {
   Promises.flatten([p1]).then(results => {
     const expected = ['p1'];
-    t.deepEqual(results, expected, `Promises.flatten([p1]) must be ${stringify(expected)}`);
+    t.deepEqual(results, expected, `Promises.flatten([p1]) must resolve to ${stringify(expected)}`);
     t.end();
   });
 });
@@ -2692,7 +2773,7 @@ test("Promises.flatten([p1])", t => {
 test("Promises.flatten([p1], null, simplifyOutcomesOpts)", t => {
   Promises.flatten([p1], null, simplifyOutcomesOpts).then(results => {
     const expected = ['p1'];
-    t.deepEqual(results, expected, `Promises.flatten([p1]) must be ${stringify(expected)}`);
+    t.deepEqual(results, expected, `Promises.flatten([p1]) must resolve to ${stringify(expected)}`);
     t.end();
   });
 });
@@ -2700,7 +2781,7 @@ test("Promises.flatten([p1], null, simplifyOutcomesOpts)", t => {
 test("Promises.flatten([p1], null, skipSimplifyOutcomesOpts)", t => {
   Promises.flatten([p1], null, skipSimplifyOutcomesOpts).then(results => {
     const expected = [new Success('p1')];
-    t.deepEqual(results, expected, `Promises.flatten([p1]) must be ${stringify(expected)}`);
+    t.deepEqual(results, expected, `Promises.flatten([p1]) must resolve to ${stringify(expected)}`);
     t.end();
   });
 });
@@ -2710,7 +2791,7 @@ test("Promises.flatten([p1, p2])", t => {
   Promises.flatten([p1, p2])
     .then(results => {
       const expected = [new Success('p1'), new Failure(p2Error)];
-      t.deepEqual(results, expected, `Promises.flatten([p1,p2]) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten([p1,p2]) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -2719,7 +2800,7 @@ test("Promises.flatten([p1, p2], null, simplifyOutcomesOpts)", t => {
   Promises.flatten([p1, p2], null, simplifyOutcomesOpts)
     .then(results => {
       const expected = [new Success('p1'), new Failure(p2Error)];
-      t.deepEqual(results, expected, `Promises.flatten([p1,p2]) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten([p1,p2]) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -2728,7 +2809,7 @@ test("Promises.flatten([p1, p2], null, skipSimplifyOutcomesOpts)", t => {
   Promises.flatten([p1, p2], null, skipSimplifyOutcomesOpts)
     .then(results => {
       const expected = [new Success('p1'), new Failure(p2Error)];
-      t.deepEqual(results, expected, `Promises.flatten([p1,p2]) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten([p1,p2]) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -2738,7 +2819,7 @@ test("Promises.flatten([p1, p3])", t => {
   Promises.flatten([p1, p3])
     .then(results => {
       const expected = ['p1', 'p3'];
-      t.deepEqual(results, expected, `Promises.flatten([p1,p3]) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten([p1,p3]) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -2747,7 +2828,7 @@ test("Promises.flatten([p1, p3], null, simplifyOutcomesOpts)", t => {
   Promises.flatten([p1, p3], null, simplifyOutcomesOpts)
     .then(results => {
       const expected = ['p1', 'p3'];
-      t.deepEqual(results, expected, `Promises.flatten([p1,p3]) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten([p1,p3]) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -2756,7 +2837,7 @@ test("Promises.flatten([p1, p3], null, skipSimplifyOutcomesOpts)", t => {
   Promises.flatten([p1, p3], null, skipSimplifyOutcomesOpts)
     .then(results => {
       const expected = [new Success('p1'), new Success('p3')];
-      t.deepEqual(results, expected, `Promises.flatten([p1,p3]) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten([p1,p3]) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -2766,7 +2847,7 @@ test("Promises.flatten([p2, p4])", t => {
   Promises.flatten([p2, p4])
     .then(results => {
       const expected = [new Failure(p2Error), new Failure(p4Error)];
-      t.deepEqual(results, expected, `Promises.flatten([p2,p4]) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten([p2,p4]) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -2775,7 +2856,7 @@ test("Promises.flatten([p2, p4], null, simplifyOutcomesOpts)", t => {
   Promises.flatten([p2, p4], null, simplifyOutcomesOpts)
     .then(results => {
       const expected = [new Failure(p2Error), new Failure(p4Error)];
-      t.deepEqual(results, expected, `Promises.flatten([p2,p4]) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten([p2,p4]) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -2784,7 +2865,7 @@ test("Promises.flatten([p2, p4], null, skipSimplifyOutcomesOpts)", t => {
   Promises.flatten([p2, p4], null, skipSimplifyOutcomesOpts)
     .then(results => {
       const expected = [new Failure(p2Error), new Failure(p4Error)];
-      t.deepEqual(results, expected, `Promises.flatten([p2,p4]) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten([p2,p4]) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -2794,7 +2875,7 @@ test("Promises.flatten([p1, p2, p3])", t => {
   Promises.flatten([p1, p2, p3])
     .then(results => {
       const expected = [new Success('p1'), new Failure(p2Error), new Success('p3')];
-      t.deepEqual(results, expected, `Promises.flatten([p1,p2,p3]) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten([p1,p2,p3]) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -2803,7 +2884,7 @@ test("Promises.flatten([p1, p2, p3], null, simplifyOutcomesOpts)", t => {
   Promises.flatten([p1, p2, p3], null, simplifyOutcomesOpts)
     .then(results => {
       const expected = [new Success('p1'), new Failure(p2Error), new Success('p3')];
-      t.deepEqual(results, expected, `Promises.flatten([p1,p2,p3]) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten([p1,p2,p3]) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -2812,7 +2893,7 @@ test("Promises.flatten([p1, p2, p3], null, skipSimplifyOutcomesOpts)", t => {
   Promises.flatten([p1, p2, p3], null, skipSimplifyOutcomesOpts)
     .then(results => {
       const expected = [new Success('p1'), new Failure(p2Error), new Success('p3')];
-      t.deepEqual(results, expected, `Promises.flatten([p1,p2,p3]) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten([p1,p2,p3]) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -2822,7 +2903,7 @@ test("Promises.flatten([p1, p2, p3, p4])", t => {
   Promises.flatten([p1, p2, p3, p4])
     .then(results => {
       const expected = [new Success('p1'), new Failure(p2Error), new Success('p3'), new Failure(p4Error),];
-      t.deepEqual(results, expected, `Promises.flatten([p1,p2,p3,p4]) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten([p1,p2,p3,p4]) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -2831,7 +2912,7 @@ test("Promises.flatten([p1, p2, p3, p4], null, simplifyOutcomesOpts)", t => {
   Promises.flatten([p1, p2, p3, p4], null, simplifyOutcomesOpts)
     .then(results => {
       const expected = [new Success('p1'), new Failure(p2Error), new Success('p3'), new Failure(p4Error),];
-      t.deepEqual(results, expected, `Promises.flatten([p1,p2,p3,p4]) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten([p1,p2,p3,p4]) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -2840,7 +2921,7 @@ test("Promises.flatten([p1, p2, p3, p4], null, skipSimplifyOutcomesOpts)", t => 
   Promises.flatten([p1, p2, p3, p4], null, skipSimplifyOutcomesOpts)
     .then(results => {
       const expected = [new Success('p1'), new Failure(p2Error), new Success('p3'), new Failure(p4Error),];
-      t.deepEqual(results, expected, `Promises.flatten([p1,p2,p3,p4]) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten([p1,p2,p3,p4]) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -2852,7 +2933,7 @@ test("Promises.flatten([Infinity, p4, 4.5, p3, '3.5', p2, null, p1, undefined, p
     .then(results => {
       const expected = [new Success(Infinity), new Failure(p4Error), new Success(4.5), new Success('p3'), new Success('3.5'), new Failure(p2Error),
         new Success(null), new Success('p1'), new Success(undefined), new Failure(p2Error), new Success({a: 1})];
-      t.deepEqual(results, expected, `Promises.flatten([Infinity, p4, 4.5, p3, '3.5', p2, null, p1, undefined, p2, {a:1}]) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten([Infinity, p4, 4.5, p3, '3.5', p2, null, p1, undefined, p2, {a:1}]) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -2863,7 +2944,7 @@ test("Promises.flatten([Infinity, p4, 4.5, p3, '3.5', p2, null, p1, undefined, p
     .then(results => {
       const expected = [new Success(Infinity), new Failure(p4Error), new Success(4.5), new Success('p3'), new Success('3.5'), new Failure(p2Error),
         new Success(null), new Success('p1'), new Success(undefined), new Failure(p2Error), new Success({a: 1})];
-      t.deepEqual(results, expected, `Promises.flatten([Infinity, p4, 4.5, p3, '3.5', p2, null, p1, undefined, p2, {a:1}]) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten([Infinity, p4, 4.5, p3, '3.5', p2, null, p1, undefined, p2, {a:1}]) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -2874,7 +2955,7 @@ test("Promises.flatten([Infinity, p4, 4.5, p3, '3.5', p2, null, p1, undefined, p
     .then(results => {
       const expected = [new Success(Infinity), new Failure(p4Error), new Success(4.5), new Success('p3'), new Success('3.5'), new Failure(p2Error),
         new Success(null), new Success('p1'), new Success(undefined), new Failure(p2Error), new Success({a: 1})];
-      t.deepEqual(results, expected, `Promises.flatten([Infinity, p4, 4.5, p3, '3.5', p2, null, p1, undefined, p2, {a:1}]) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten([Infinity, p4, 4.5, p3, '3.5', p2, null, p1, undefined, p2, {a:1}]) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -2887,7 +2968,7 @@ test("Promises.flatten([Infinity, [p4, p2, p2], 4.5, p3, '3.5', null, [p1, p3, [
         4.5, 'p3', '3.5', null,
         ['p1', 'p3', ['p1', 'p3']],
         undefined, {a: 1}];
-      t.deepEqual(results, expected, `Promises.flatten([Infinity, p4, 4.5, p3, '3.5', p2, null, p1, undefined, p2, {a:1}]) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten([Infinity, p4, 4.5, p3, '3.5', p2, null, p1, undefined, p2, {a:1}]) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -2899,7 +2980,7 @@ test("Promises.flatten([Infinity, [p4, p2, p2], 4.5, p3, '3.5', null, [p1, p3, [
         4.5, 'p3', '3.5', null,
         ['p1', 'p3', ['p1', 'p3']],
         undefined, {a: 1}];
-      t.deepEqual(results, expected, `Promises.flatten([Infinity, p4, 4.5, p3, '3.5', p2, null, p1, undefined, p2, {a:1}]) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten([Infinity, p4, 4.5, p3, '3.5', p2, null, p1, undefined, p2, {a:1}]) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -2911,7 +2992,7 @@ test("Promises.flatten([Infinity, [p4, p2, p2], 4.5, p3, '3.5', null, [p1, p3, [
         new Success(4.5), new Success('p3'), new Success('3.5'), new Success(null),
         new Success([new Success('p1'), new Success('p3'), new Success([new Success('p1'), new Success('p3')])]),
         new Success(undefined), new Success({a: 1})];
-      t.deepEqual(results, expected, `Promises.flatten([Infinity, p4, 4.5, p3, '3.5', p2, null, p1, undefined, p2, {a:1}]) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten([Infinity, p4, 4.5, p3, '3.5', p2, null, p1, undefined, p2, {a:1}]) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -2921,7 +3002,7 @@ test("Promises.flatten([p1, [p2, p3], p4]])", t => {
   Promises.flatten([p1, [p2, p3], p4])
     .then(results => {
       const expected = [new Success('p1'), new Success([new Failure(p2Error), new Success('p3')]), new Failure(p4Error)];
-      t.deepEqual(results, expected, `Promises.flatten([p1, [p2, p3], p4]) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten([p1, [p2, p3], p4]) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -2930,7 +3011,7 @@ test("Promises.flatten([p1, [p2, p3], p4]], null, simplifyOutcomesOpts)", t => {
   Promises.flatten([p1, [p2, p3], p4], null, simplifyOutcomesOpts)
     .then(results => {
       const expected = [new Success('p1'), new Success([new Failure(p2Error), new Success('p3')]), new Failure(p4Error)];
-      t.deepEqual(results, expected, `Promises.flatten([p1, [p2, p3], p4]) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten([p1, [p2, p3], p4]) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -2939,7 +3020,7 @@ test("Promises.flatten([p1, [p2, p3], p4]], null, skipSimplifyOutcomesOpts)", t 
   Promises.flatten([p1, [p2, p3], p4], null, skipSimplifyOutcomesOpts)
     .then(results => {
       const expected = [new Success('p1'), new Success([new Failure(p2Error), new Success('p3')]), new Failure(p4Error)];
-      t.deepEqual(results, expected, `Promises.flatten([p1, [p2, p3], p4]) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten([p1, [p2, p3], p4]) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -2949,7 +3030,7 @@ test("Promises.flatten([p1, [p2, [p3, p4]]])", t => {
   Promises.flatten([p1, [p2, [p3, p4]]])
     .then(results => {
       const expected = ['p1', [new Failure(p2Error), new Success([new Success('p3'), new Failure(p4Error)])]];
-      t.deepEqual(results, expected, `Promises.flatten([p1, [p2, [p3, p4]]]) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten([p1, [p2, [p3, p4]]]) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -2958,7 +3039,7 @@ test("Promises.flatten([p1, [p2, [p3, p4]]], null, simplifyOutcomesOpts)", t => 
   Promises.flatten([p1, [p2, [p3, p4]]], null, simplifyOutcomesOpts)
     .then(results => {
       const expected = ['p1', [new Failure(p2Error), new Success([new Success('p3'), new Failure(p4Error)])]];
-      t.deepEqual(results, expected, `Promises.flatten([p1, [p2, [p3, p4]]]) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten([p1, [p2, [p3, p4]]]) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -2967,7 +3048,7 @@ test("Promises.flatten([p1, [p2, [p3, p4]]], null, skipSimplifyOutcomesOpts)", t
   Promises.flatten([p1, [p2, [p3, p4]]], null, skipSimplifyOutcomesOpts)
     .then(results => {
       const expected = [new Success('p1'), new Success([new Failure(p2Error), new Success([new Success('p3'), new Failure(p4Error)])])];
-      t.deepEqual(results, expected, `Promises.flatten([p1, [p2, [p3, p4]]]) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten([p1, [p2, [p3, p4]]]) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -2977,7 +3058,7 @@ test("Promises.flatten([p1, [p2, Promise.resolve([p3, p4])]])", t => {
   Promises.flatten([p1, [p2, Promise.resolve([p3, p4])]]).then(
     results => {
       const expected = ['p1', [new Failure(p2Error), new Success([new Success('p3'), new Failure(p4Error)])]];
-      t.deepEqual(results, expected, `Promises.flatten([p1, [p2, Promise.resolve([p3, p4])]]) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten([p1, [p2, Promise.resolve([p3, p4])]]) must resolve to ${stringify(expected)}`);
       t.end();
     }
   );
@@ -2987,7 +3068,7 @@ test("Promises.flatten([p1, [p2, Promise.resolve([p3, p4])]], null, simplifyOutc
   Promises.flatten([p1, [p2, Promise.resolve([p3, p4])]], null, simplifyOutcomesOpts).then(
     results => {
       const expected = ['p1', [new Failure(p2Error), new Success([new Success('p3'), new Failure(p4Error)])]];
-      t.deepEqual(results, expected, `Promises.flatten([p1, [p2, Promise.resolve([p3, p4])]]) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten([p1, [p2, Promise.resolve([p3, p4])]]) must resolve to ${stringify(expected)}`);
       t.end();
     }
   );
@@ -2997,7 +3078,7 @@ test("Promises.flatten([p1, [p2, Promise.resolve([p3, p4])]], null, skipSimplify
   Promises.flatten([p1, [p2, Promise.resolve([p3, p4])]], null, skipSimplifyOutcomesOpts).then(
     results => {
       const expected = [new Success('p1'), new Success([new Failure(p2Error), new Success([new Success('p3'), new Failure(p4Error)])])];
-      t.deepEqual(results, expected, `Promises.flatten([p1, [p2, Promise.resolve([p3, p4])]]) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten([p1, [p2, Promise.resolve([p3, p4])]]) must resolve to ${stringify(expected)}`);
       t.end();
     }
   );
@@ -3008,7 +3089,7 @@ test("Promises.flatten(Promise.resolve([p1, [p2, Promise.resolve([p3, p4])]]))",
   Promises.flatten(Promise.resolve([p1, [p2, Promise.resolve([p3, p4])]]))
     .then(results => {
       const expected = ['p1', [new Failure(p2Error), new Success([new Success('p3'), new Failure(p4Error)])]];
-      t.deepEqual(results, expected, `Promises.flatten(Promise.resolve([p1, [p2, Promise.resolve([p3, p4])]])) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten(Promise.resolve([p1, [p2, Promise.resolve([p3, p4])]])) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -3017,7 +3098,7 @@ test("Promises.flatten(Promise.resolve([p1, [p2, Promise.resolve([p3, p4])]]), n
   Promises.flatten(Promise.resolve([p1, [p2, Promise.resolve([p3, p4])]]), null, simplifyOutcomesOpts)
     .then(results => {
       const expected = ['p1', [new Failure(p2Error), new Success([new Success('p3'), new Failure(p4Error)])]];
-      t.deepEqual(results, expected, `Promises.flatten(Promise.resolve([p1, [p2, Promise.resolve([p3, p4])]])) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten(Promise.resolve([p1, [p2, Promise.resolve([p3, p4])]])) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -3026,7 +3107,7 @@ test("Promises.flatten(Promise.resolve([p1, [p2, Promise.resolve([p3, p4])]]), n
   Promises.flatten(Promise.resolve([p1, [p2, Promise.resolve([p3, p4])]]), null, skipSimplifyOutcomesOpts)
     .then(results => {
       const expected = [new Success('p1'), new Success([new Failure(p2Error), new Success([new Success('p3'), new Failure(p4Error)])])];
-      t.deepEqual(results, expected, `Promises.flatten(Promise.resolve([p1, [p2, Promise.resolve([p3, p4])]])) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten(Promise.resolve([p1, [p2, Promise.resolve([p3, p4])]])) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -3036,7 +3117,7 @@ test("Promises.flatten(Promise.resolve([p1, Promise.resolve([p2, Promise.resolve
   Promises.flatten(Promise.resolve([p1, Promise.resolve([p2, Promise.resolve([p3, p4])])]))
     .then(results => {
       const expected = ['p1', [new Failure(p2Error), new Success([new Success('p3'), new Failure(p4Error)])]];
-      t.deepEqual(results, expected, `Promises.flatten(Promise.resolve([p1, Promise.resolve([p2, Promise.resolve([p3, p4])])])) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten(Promise.resolve([p1, Promise.resolve([p2, Promise.resolve([p3, p4])])])) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -3045,7 +3126,7 @@ test("Promises.flatten(Promise.resolve([p1, Promise.resolve([p2, Promise.resolve
   Promises.flatten(Promise.resolve([p1, Promise.resolve([p2, Promise.resolve([p3, p4])])]), null, simplifyOutcomesOpts)
     .then(results => {
       const expected = ['p1', [new Failure(p2Error), new Success([new Success('p3'), new Failure(p4Error)])]];
-      t.deepEqual(results, expected, `Promises.flatten(Promise.resolve([p1, Promise.resolve([p2, Promise.resolve([p3, p4])])])) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten(Promise.resolve([p1, Promise.resolve([p2, Promise.resolve([p3, p4])])])) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -3054,7 +3135,7 @@ test("Promises.flatten(Promise.resolve([p1, Promise.resolve([p2, Promise.resolve
   Promises.flatten(Promise.resolve([p1, Promise.resolve([p2, Promise.resolve([p3, p4])])]), null, skipSimplifyOutcomesOpts)
     .then(results => {
       const expected = [new Success('p1'), new Success([new Failure(p2Error), new Success([new Success('p3'), new Failure(p4Error)])])];
-      t.deepEqual(results, expected, `Promises.flatten(Promise.resolve([p1, Promise.resolve([p2, Promise.resolve([p3, p4])])])) must be ${stringify(expected)}`);
+      t.deepEqual(results, expected, `Promises.flatten(Promise.resolve([p1, Promise.resolve([p2, Promise.resolve([p3, p4])])])) must resolve to ${stringify(expected)}`);
       t.end();
     });
 });
@@ -3096,9 +3177,9 @@ test("Promises.flatten([d1,d2,d3,d4]) cancelled immediately (i.e. before d1, d2,
       t.ok(err instanceof CancelledError, `Promises.flatten([d1,d2,d3,d4]) rejected error ${stringify(err)} must be instanceof CancelledError`);
       t.notOk(err.completed, `CancelledError.completed must be false`);
       const expectedResolvedOutcomes = [new Success('d1')];
-      t.deepEqual(err.resolvedOutcomes, expectedResolvedOutcomes, `Promises.flatten([d1,d2,d3,d4]) resolvedOutcomes must be ${stringify(expectedResolvedOutcomes)}`);
+      t.deepEqual(err.resolvedOutcomes, expectedResolvedOutcomes, `Promises.flatten([d1,d2,d3,d4]) resolvedOutcomes must resolve to ${stringify(expectedResolvedOutcomes)}`);
       const expectedUnresolvedPromises = [d2, d3, d4];
-      t.deepEqual(err.unresolvedPromises, expectedUnresolvedPromises, `Promises.flatten([d1,d2,d3,d4]) unresolvedPromises must be ${stringify(expectedUnresolvedPromises)}`);
+      t.deepEqual(err.unresolvedPromises, expectedUnresolvedPromises, `Promises.flatten([d1,d2,d3,d4]) unresolvedPromises must resolve to ${stringify(expectedUnresolvedPromises)}`);
       t.end();
     }
   );
@@ -3140,9 +3221,9 @@ test("Promises.flatten([d1,d2,d3,d4]) cancelled during d1 (i.e. before d2, d3 & 
       t.ok(err instanceof CancelledError, `Promises.flatten([d1,d2,d3,d4]) rejected error ${stringify(err)} must be instanceof CancelledError`);
       t.notOk(err.completed, `CancelledError.completed must be false`);
       const expectedResolvedOutcomes = [new Success('d1')];
-      t.deepEqual(err.resolvedOutcomes, expectedResolvedOutcomes, `Promises.flatten([d1,d2,d3,d4]) resolvedOutcomes must be ${stringify(expectedResolvedOutcomes)}`);
+      t.deepEqual(err.resolvedOutcomes, expectedResolvedOutcomes, `Promises.flatten([d1,d2,d3,d4]) resolvedOutcomes must resolve to ${stringify(expectedResolvedOutcomes)}`);
       const expectedUnresolvedPromises = [d2, d3, d4];
-      t.deepEqual(err.unresolvedPromises, expectedUnresolvedPromises, `Promises.flatten([d1,d2,d3,d4]) unresolvedPromises must be ${stringify(expectedUnresolvedPromises)}`);
+      t.deepEqual(err.unresolvedPromises, expectedUnresolvedPromises, `Promises.flatten([d1,d2,d3,d4]) unresolvedPromises must resolve to ${stringify(expectedUnresolvedPromises)}`);
       t.end();
     }
   );
@@ -3182,9 +3263,9 @@ test("Promises.flatten([d1,d2,d3,d4]) cancelled during d2 (i.e. before d3 & d4 r
       t.ok(err instanceof CancelledError, `Promises.flatten([d1,d2,d3,d4]) rejected error ${stringify(err)} must be instanceof CancelledError`);
       t.notOk(err.completed, `CancelledError.completed must be false`);
       const expectedResolvedOutcomes = [new Success('d1'), new Failure(d2Error)];
-      t.deepEqual(err.resolvedOutcomes, expectedResolvedOutcomes, `Promises.flatten([d1,d2,d3,d4]) resolvedOutcomes must be ${stringify(expectedResolvedOutcomes)}`);
+      t.deepEqual(err.resolvedOutcomes, expectedResolvedOutcomes, `Promises.flatten([d1,d2,d3,d4]) resolvedOutcomes must resolve to ${stringify(expectedResolvedOutcomes)}`);
       const expectedUnresolvedPromises = [d3, d4];
-      t.deepEqual(err.unresolvedPromises, expectedUnresolvedPromises, `Promises.flatten([d1,d2,d3,d4]) unresolvedPromises must be ${stringify(expectedUnresolvedPromises)}`);
+      t.deepEqual(err.unresolvedPromises, expectedUnresolvedPromises, `Promises.flatten([d1,d2,d3,d4]) unresolvedPromises must resolve to ${stringify(expectedUnresolvedPromises)}`);
       t.end();
     }
   );
@@ -3224,9 +3305,9 @@ test("Promises.flatten([d1,d2,d3,d4]) cancelled during d3 (i.e. before d4 comple
       t.ok(err instanceof CancelledError, `Promises.flatten([d1,d2,d3,d4]) rejected error ${stringify(err)} must be instanceof CancelledError`);
       t.notOk(err.completed, `CancelledError.completed must be false`);
       const expectedResolvedOutcomes = [new Success('d1'), new Failure(d2Error), new Success('d3')];
-      t.deepEqual(err.resolvedOutcomes, expectedResolvedOutcomes, `Promises.flatten([d1,d2,d3,d4]) resolvedOutcomes must be ${stringify(expectedResolvedOutcomes)}`);
+      t.deepEqual(err.resolvedOutcomes, expectedResolvedOutcomes, `Promises.flatten([d1,d2,d3,d4]) resolvedOutcomes must resolve to ${stringify(expectedResolvedOutcomes)}`);
       const expectedUnresolvedPromises = [d4];
-      t.deepEqual(err.unresolvedPromises, expectedUnresolvedPromises, `Promises.flatten([d1,d2,d3,d4]) unresolvedPromises must be ${stringify(expectedUnresolvedPromises)}`);
+      t.deepEqual(err.unresolvedPromises, expectedUnresolvedPromises, `Promises.flatten([d1,d2,d3,d4]) unresolvedPromises must resolve to ${stringify(expectedUnresolvedPromises)}`);
       t.end();
     }
   );
@@ -3261,7 +3342,7 @@ test("Promises.flatten([d1,d2,d3,d4]) cancelled during d4 will resolve d1, d2, d
       t.ok(d3Cancellable.cancelTimeout(true), `d3Cancellable.cancelTimeout() should have timed-out`);
       t.ok(d4Cancellable.cancelTimeout(true), `d4Cancellable.cancelTimeout() should have timed-out`);
       const expectedOutcomes = [new Success('d1'), new Failure(d2Error), new Success('d3'), new Failure(d4Error)];
-      t.deepEqual(outcomes, expectedOutcomes, `Promises.flatten([d1,d2,d3,d4]) outcomes must be ${stringify(expectedOutcomes)}`);
+      t.deepEqual(outcomes, expectedOutcomes, `Promises.flatten([d1,d2,d3,d4]) outcomes must resolve to ${stringify(expectedOutcomes)}`);
       t.end();
     },
     err => {
