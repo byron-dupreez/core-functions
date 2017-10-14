@@ -13,6 +13,17 @@
     - Completely refactored the logic of the `flatten` function to ALWAYS return a Promise
     - Changed `flatten` function to rely on the fixed `every` function to avoid UnhandledPromiseRejectionWarnings 
       instead of calling `avoidUnhandledPromiseRejectionWarning` itself
+  - Added `defaultFlattenOpts` sample options to use with `flatten` function
+- Changes to `tries` module:
+  - Added `defaultFlattenOpts` sample options to use with `flatten` function
+  - Refactored the logic of the `flatten` function to cache `Success` values & unpacked values instead of `Success` instances
+- Changes to `copying` module:
+  - Added `defaultCopyOpts` sample options to use with `copy` function
+  - Added `defaultCopyNamedPropertiesOpts` sample options to use with `copyNamedProperties` function
+- Changes to `merging` module:
+  - Added `defaultMergeOpts` sample options to use with `merge` function
+- Changes to `type-defs` module:
+  - Added `FlattenOpts` & `TryFlattenOpts` type definitions 
 
 ### 3.0.16
 - Changes to `errors` module:

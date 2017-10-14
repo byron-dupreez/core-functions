@@ -30,6 +30,25 @@ exports.merge = merge;
 // exports.mergeObject = mergeObject;
 
 /**
+ * Sample options to use to alter the behaviour of the `merge` function
+ * @namespace {Object.<string, MergeOpts>}
+ */
+const defaultMergeOpts = {
+  // Merge if deep & destination is mergeable; otherwise keep existing destination and do NOT replace/overwrite it
+  shallowNoReplace: {deep: false, replace: false},
+  deepNoReplace: {deep: true, replace: false},
+  onlyEnumerableNoReplace: {deep: false, onlyEnumerable: true, replace: false},
+  deepOnlyEnumerableNoReplace: {deep: true, onlyEnumerable: true, replace: false},
+
+  // Merge when deep & destination is mergeable; otherwise replace/overwrite existing destination
+  shallowReplace: {deep: false, replace: true},
+  deepReplace: {deep: true, replace: true},
+  onlyEnumerableReplace: {deep: false, onlyEnumerable: true, replace: true},
+  deepOnlyEnumerableReplace: {deep: true, onlyEnumerable: true, replace: true}
+};
+exports.defaultMergeOpts = defaultMergeOpts;
+
+/**
  * Merges the properties of the given 'from' object into the given 'to' object, only replacing same named properties in
  * the 'to' object if opts.replace is true. Executes a deep merge if opts.deep is true, otherwise only does a shallow
  * merge. Returns the updated 'to' object.

@@ -1044,6 +1044,22 @@ test('flatten - with depth undefined (i.e. deep)', t => {
   // compare using stringify, since deepEqual doesn't survive circular structures
   t.deepEqual(stringify(Try.flatten(v)), stringify(x), `flatten(${stringify(v)}) must be ${stringify(x)}`);
 
+  // Circular references 2
+  // -------------------------------------------------------------------------------------------------------------------
+  const v1 = {v:1};
+  const s1v1 = new Success(v1);
+  const s2v1 = new Success(v1);
+  const b = [s1v1, s2v1, [s1v1, s2v1]];
+  v = [s1v1, s2v1, s1v1, b, b];
+  v.push(v);
+
+  const b2 = [v1, v1, [v1, v1]];
+  x = [v1, v1, v1, b2, b2];
+  x.push(x);
+
+  // compare using stringify, since deepEqual doesn't survive circular structures
+  t.deepEqual(stringify(Try.flatten(v)), stringify(x), `flatten(${stringify(v)}) must be ${stringify(x)}`);
+
   t.end();
 });
 
@@ -1163,9 +1179,9 @@ test('flatten - with shallower depths', t => {
 
   x = [new Success([new Success([new Success(1), [new Success(2), new Success(3)]])])];
   n = 0;
-  console.log(`############### v  = ${stringify(v)}`);
-  console.log(`############### v' = ${stringify(Try.flatten(v, n))}`);
-  console.log(`############### x  = ${stringify(x)}`);
+  // console.log(`############### v  = ${stringify(v)}`);
+  // console.log(`############### v' = ${stringify(Try.flatten(v, n))}`);
+  // console.log(`############### x  = ${stringify(x)}`);
   t.deepEqual(Try.flatten(v, n), x, `flatten(${stringify(v)}, ${n}) must be ${stringify(x)}`);
   x = [[new Success([new Success(1), [new Success(2), new Success(3)]])]];
   n = 1;
@@ -1385,6 +1401,8 @@ test('flatten - with shallower depths', t => {
 
   t.end();
 });
+
+
 
 // =====================================================================================================================
 // findFailure - with depth undefined (i.e. deep)
@@ -1872,4 +1890,3 @@ test('findFailure - with shallower depths', t => {
 
   t.end();
 });
-

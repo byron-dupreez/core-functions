@@ -35,6 +35,40 @@ exports.copyPropertyDescriptors = copyPropertyDescriptors;
 exports.copyPropertyDescriptor = copyPropertyDescriptor;
 
 /**
+ * Sample options to use to alter the behaviour of the `copy` function
+ * @namespace {Object.<string, CopyOpts>}
+ */
+const defaultCopyOpts = {
+  shallow: {deep: false}, //deep: false, deepMapKeys: false, deepMapValues: false, deepSets: false},
+  deep: {deep: true},
+  deepMapValues: {deep: true, deepMapValues: true},
+  deepMapKeysAndValues: {deep: true, deepMapKeys: true, deepMapValues: true},
+  onlyEnumerable: {onlyEnumerable: true},
+  deepOnlyEnumerable: {deep: true, onlyEnumerable: true}
+  // onlyValues: {onlyValues: true},
+  // deepOnlyValues: {deep: true, onlyValues: true},
+  // omitAccessors: {omitAccessors: true},
+  // deepOmitAccessors: {deep: true, omitAccessors: true}
+};
+exports.defaultCopyOpts = defaultCopyOpts;
+
+/**
+ * Sample options to use to alter the behaviour of the `copyNamedProperties` function
+ * @namespace {Object.<string, CopyNamedPropertiesOpts>}
+ */
+const defaultCopyNamedPropertiesOpts = {
+  shallow: defaultCopyOpts.shallow, // {deep: false},
+  deep: defaultCopyOpts.deep, // {deep: true},
+  compact: {compact: true},
+  deepCompact: {deep: true, compact: true}
+  // omitIfUndefined: {omitIfUndefined: true},
+  // deepOmitIfUndefined: {deep: true, omitIfUndefined: true},
+  // compactOmitIfUndefined: {compact: true, omitIfUndefined: true},
+  // deepCompactOmitIfUndefined: {deep: true, compact: true, omitIfUndefined: true},
+};
+exports.defaultCopyNamedPropertiesOpts = defaultCopyNamedPropertiesOpts;
+
+/**
  * Creates & returns a copy of the given object by copying its properties into a new object of a similar type if the
  * given object is copyable (e.g. non-null, non-Promise object); otherwise simply returns the given object. Executes a
  * deep copy if `opts.deep` is true; otherwise only does a shallow copy.

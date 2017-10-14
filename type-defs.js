@@ -124,7 +124,7 @@
  */
 
 /**
- * @typedef {Object} CopyOpts - options to use with {@link module:core-functions/objects#copy}
+ * @typedef {Object} CopyOpts - options to use with {@link module:core-functions/copying#copy}
  * @property {boolean|undefined} [deep] - Executes a deep copy if deep is true, otherwise only does a shallow copy (defaults to shallow)
  * @property {boolean|undefined} [deepMapKeys] - Executes a deep copy of any Map's keys if true (AND if `deep` is true), otherwise only does a shallow copy (defaults to shallow)
  * Rationale: Generally don't want to copy a Map's Object keys, since a Map uses reference equality to compare keys
@@ -141,7 +141,7 @@
  */
 
 /**
- * @typedef {CopyOpts} MergeOpts - options to use with {@link module:core-functions/objects#merge}
+ * @typedef {CopyOpts} MergeOpts - options to use with {@link module:core-functions/merging#merge}
  * @property {boolean|undefined} [replace] - whether to replace properties in the `to` object with same named properties in the `from` object or not (defaults to not)
  * @property {IsMergeable|undefined} [isMergeable] - an optional `isMergeable` function to be used to determine whether an object can be the target of a `merge` or not
  * @property {boolean|undefined} [deep] - Executes a deep merge if true, otherwise only does a shallow merge (defaults to shallow)
@@ -149,7 +149,7 @@
  */
 
 /**
- * @typedef {CopyOpts} CopyNamedPropertiesOpts - options to use with {@link module:core-functions/objects#copyNamedProperties}
+ * @typedef {CopyOpts} CopyNamedPropertiesOpts - options to use with {@link module:core-functions/copying#copyNamedProperties}
  * @property {boolean|undefined} [compact] - whether to create a flatter, more-compact destination object, which will use
  * any compound property names as is and eliminate any unnecessary intermediate objects or rather create a more-
  * conventional, less-compact destination object, which will only have simple property names and any & all intermediate objects needed
@@ -210,4 +210,14 @@
 
 /**
  *@typedef {Int8Array|Uint8Array|Uint8ClampedArray|Int16Array|Uint16Array|Int32Array|Uint32Array|Float32Array|Float64Array} TypedArray - A TypedArray subclass instance
+ */
+
+/**
+ * @typedef {Object} FlattenOpts - options to use to use to alter the behaviour of the `flatten` function of the `promises` module
+ * @property {boolean|undefined} [skipSimplifyOutcomes] - whether to skip applying `Try.simplify` to any list of Success and/or Failure outcomes encountered/resolved or not (defaults to NOT skipping, i.e. defaults to simplifying)
+ */
+
+/**
+ * @typedef {Object} TryFlattenOpts - options to use to use to alter the behaviour of the static `flatten` function of the `Try` class
+ * @property {boolean|undefined} [keepFailures] - if true, collects and preserves any Failure outcomes as is; otherwise flattens Failures too and throws the error of the first Failure found (defaults to false)
  */

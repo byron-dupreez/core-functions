@@ -7,6 +7,16 @@ const errorMessages = {
 };
 
 /**
+ * Optional options to use to alter the behaviour of the `flatten` function
+ * @namespace {Object.<string, TryFlattenOpts>}
+ */
+const defaultFlattenOpts = {
+  keepFailures: {keepFailures: true},
+  raiseFailure: {keepFailures: false}
+};
+exports.defaultFlattenOpts = defaultFlattenOpts;
+
+/**
  * Module containing Try, Success & Failure classes modelled after the same named classes from Scala developed by LAMP/EPFL.
  * @module core-functions/tries
  * @author Byron du Preez
@@ -194,9 +204,7 @@ class Try {
    * Failure found (if any and if opts.keepFailures is false).
    * @param {*|*[]|Outcome|Outcomes} value - the value to be flattened
    * @param {number|undefined} [depth] - the optional maximum depth to which to flatten recursively (defaults to MAX_SAFE_INTEGER if undefined)
-   * @param {Object|undefined} [opts] - optional options to use to alter the behaviour
-   * @param {boolean|undefined} [opts.keepFailures] - if true, collects and preserves any Failure outcomes as is;
-   * otherwise flattens Failures too and throws the error of the first Failure found (defaults to false)
+   * @param {TryFlattenOpts|undefined} [opts] - optional options to use to alter the behaviour of this static `flatten` function
    * @returns {*|*[]} a single successful value or an array of zero or more successful values or throws an error
    * @throws {Error} the error of the first Failure found (if any and opts.keepFailures is false)
    */
@@ -205,31 +213,37 @@ class Try {
     const TryType = opts && opts.keepFailures ? Success : Try;
     const history = new WeakMap();
 
-    function collect(value, depth) {
-      const isArray = Array.isArray(value);
-      const v = isArray ? new Array(value.length) : value;
+    function unpack(value, depth) {
+      const isObject = value && typeof value === 'object';
 
       // Avoid circular references
-      if (value && typeof value === 'object') {
-        if (history.has(value))
-          return history.get(value);
-
-        history.set(value, v);
+      if (isObject && history.has(value)) {
+        return history.get(value);
       }
 
-      if (value instanceof TryType) {
-        const vv = value.get();
+      const isTryType = value instanceof TryType;
+      const isArray = Array.isArray(value);
+      const v = isTryType ? value.get() : isArray ? new Array(value.length) : value;
+
+      if (isObject) history.set(value, v);
+
+      if (isTryType) {
         // Recurse deeper if maximum depth has not been reached yet
-        return depth > 0 ? collect(vv, depth - 1) : vv;
+        if (depth > 0) {
+          const u = unpack(v, depth - 1);
+          if (isObject) history.set(value, u); // rewrite history with deeper result
+          return u;
+        }
+        return v;
       }
 
       if (isArray) {
         // Recurse deeper if maximum depth has not been reached yet & if its still worthwhile to do so
-        const mustTraverse = depth > 0 && value.some(e => (e instanceof TryType) || Array.isArray(e));
+        const mustTraverse = depth > 0 && value.some(e => e instanceof TryType || Array.isArray(e));
         for (let i = 0; i < value.length; ++i) {
           const e = value[i];
-          const vv = e instanceof TryType ? e.get() : e;
-          v[i] = mustTraverse ? collect(vv, depth - 1) : vv;
+          const ev = e instanceof TryType ? e.get() : e;
+          v[i] = mustTraverse ? unpack(ev, depth - 1) : ev;
         }
         return v;
       }
@@ -237,7 +251,7 @@ class Try {
       return v;
     }
 
-    return collect(value, maxDepth);
+    return unpack(value, maxDepth);
   }
 
   /**

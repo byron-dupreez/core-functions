@@ -34,6 +34,16 @@ exports.wrapMethod = wrapMethod;
 exports.wrapNamedMethod = wrapNamedMethod;
 
 /**
+ * Sample options to use to alter the behaviour of the `flatten` function
+ * @namespace {Object.<string,FlattenOpts}
+ */
+const defaultFlattenOpts = {
+  simplifyOutcomes: {skipSimplifyOutcomes: false},
+  skipSimplifyOutcomes: {skipSimplifyOutcomes: true}
+};
+exports.defaultFlattenOpts = defaultFlattenOpts;
+
+/**
  * An Error subclass thrown to cancel/short-circuit a promise that is waiting for a list of promises to resolve (see
  * {@link every}) or for a chained list of promise-returning function calls with inputs to resolve (see {@link chain}).
  * @property (Success|Failure)[]} resolvedOutcomes - a list of resolved outcomes
@@ -534,8 +544,7 @@ function one(promise) {
  *
  * @param {Promise|Promise[]|*} [value] - the value to be flattened
  * @param {Object|Cancellable|*} [cancellable] - an arbitrary object onto which a `cancel` method will be installed
- * @param {Object|undefined} [opts] - optional options to use to alter the behaviour of this flatten function
- * @param {Object|undefined} [opts.skipSimplifyOutcomes] - whether to skip applying `Try.simplify` to any list of outcomes or not (defaults to simplifying with `Try.simplify`)
+ * @param {FlattenOpts|undefined} [opts] - optional options to use to alter the behaviour of this flatten function
  * @param {BasicLogger|undefined} [logger] - an optional alternative logger to use instead of the default `console` logger
  * @returns {Promise.<*|Outcomes|CancelledError>} a single promise of the resolved value or a rejected error or the given non-promise value or a single promise of one or
  * more non-promise values/outcomes (if not cancelled); or a rejected promise with a `CancelledError` (if cancelled)
@@ -543,22 +552,22 @@ function one(promise) {
 function flatten(value, cancellable, opts, logger) {
   const simplifyOutcomes = !opts || !opts.skipSimplifyOutcomes;
 
-  function splat(value) {
-    return isPromiseLike(value) ? value.then(splat) :
-      value instanceof Success ? value.map(splat) :
+  function join(value) {
+    return isPromiseLike(value) ? value.then(join) :
+      value instanceof Success ? value.map(join) :
         Array.isArray(value) ?
           value.some(v => isPromiseLike(v) || v instanceof Success) ?
-            every(value.map(splat), cancellable, logger).then(os => simplifyOutcomes ? Try.simplify(os) : os) :
+            every(value.map(join), cancellable, logger).then(os => simplifyOutcomes ? Try.simplify(os) : os) :
             value :
           value;
   }
 
-  return value instanceof Promise ? value.then(splat) :
-    isThenable(value) ? toPromise(value).then(splat) :
-      value instanceof Try ? value.toPromise().then(splat) :
+  return value instanceof Promise ? value.then(join) :
+    isThenable(value) ? toPromise(value).then(join) :
+      value instanceof Try ? value.toPromise().then(join) :
         Array.isArray(value) ?
           value.some(v => isPromiseLike(v) || v instanceof Success) ?
-            every(value.map(splat), cancellable, logger).then(os => simplifyOutcomes ? Try.simplify(os) : os) :
+            every(value.map(join), cancellable, logger).then(os => simplifyOutcomes ? Try.simplify(os) : os) :
             Promise.resolve(value) :
           Promise.resolve(value);
 }
