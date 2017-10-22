@@ -1,5 +1,9 @@
 ## Changes
 
+### 3.0.18
+- Changes to `tries` module:
+  - Changed `describeSuccessAndFailureCounts` function to suppress clauses with counts of zero
+
 ### 3.0.17
 - Changes to `promises` module:
   - Changed the `avoidUnhandledPromiseRejectionWarning` function to log each error and its stack trace at WARN-level

@@ -666,7 +666,12 @@ test('countSuccess, countFailure, count & describeSuccessAndFailureCounts - with
     const isTryDesc = strict ? 'o => o instanceof Try' : 'o => !!o';
     t.equal(Try.count(outcomes, isTry), expectedSuccessCount + expectedFailureCount, `count(outcomes, ${isTryDesc}) must be ${expectedSuccessCount + expectedFailureCount}`);
 
-    const expected = `${expectedSuccessCount} success${expectedSuccessCount !== 1 ? 'es' : ''} & ${expectedFailureCount} failure${expectedFailureCount !== 1 ? 's' : ''}`;
+    const expected = expectedSuccessCount > 0 ?
+      expectedFailureCount > 0 ?
+        `${expectedSuccessCount} success${expectedSuccessCount !== 1 ? 'es' : ''} & ${expectedFailureCount} failure${expectedFailureCount !== 1 ? 's' : ''}` :
+        `${expectedSuccessCount} success${expectedSuccessCount !== 1 ? 'es' : ''}` :
+      `${expectedFailureCount} failure${expectedFailureCount !== 1 ? 's' : ''}`;
+
     t.equal(Try.describeSuccessAndFailureCounts(outcomes, strict), expected, `describeSuccessAndFailureCounts(outcomes, ${strict ? '':'!'}strict) must be '${expected}'`);
   }
 
@@ -748,7 +753,12 @@ test('countSuccess, countFailure, count & describeSuccessAndFailureCounts - with
     const isTryDesc = strict ? 'o => o instanceof Try' : 'o => !!o';
     t.equal(Try.count(outcomes, isTry), expectedSuccessCount + expectedFailureCount, `count(outcomes, ${isTryDesc}) must be ${expectedSuccessCount + expectedFailureCount}`);
 
-    const expected = `${expectedSuccessCount} success${expectedSuccessCount !== 1 ? 'es' : ''} & ${expectedFailureCount} failure${expectedFailureCount !== 1 ? 's' : ''}`;
+    const expected = expectedSuccessCount > 0 ?
+      expectedFailureCount > 0 ?
+        `${expectedSuccessCount} success${expectedSuccessCount !== 1 ? 'es' : ''} & ${expectedFailureCount} failure${expectedFailureCount !== 1 ? 's' : ''}` :
+        `${expectedSuccessCount} success${expectedSuccessCount !== 1 ? 'es' : ''}` :
+      `${expectedFailureCount} failure${expectedFailureCount !== 1 ? 's' : ''}`;
+
     t.equal(Try.describeSuccessAndFailureCounts(outcomes, strict), expected, `describeSuccessAndFailureCounts(outcomes, ${strict ? '':'!'}strict) must be '${expected}'`);
   }
 

@@ -193,7 +193,13 @@ class Try {
   static describeSuccessAndFailureCounts(outcomes, strict) {
     const successCount = Try.countSuccess(outcomes, strict);
     const failureCount = Try.countFailure(outcomes);
-    return `${successCount} success${successCount !== 1 ? 'es' : ''} & ${failureCount} failure${failureCount !== 1 ? 's' : ''}`;
+
+    const successes = successCount > 0 ? `${successCount} success${successCount !== 1 ? 'es' : ''}` : undefined;
+    const failures = `${failureCount} failure${failureCount !== 1 ? 's' : ''}`;
+
+    return successCount > 0 ?
+      failureCount > 0 ? `${successes} & ${failures}` : successes :
+      failures;
   }
 
   /**
