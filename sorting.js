@@ -12,7 +12,7 @@ const Dates = require('./dates');
  * @module core-functions/sorting
  * @author Byron du Preez
  */
-exports._ = '_'; //IDE workaround
+exports._$_ = '_$_'; //IDE workaround
 exports.compareUndefinedOrNull = compareUndefinedOrNull;
 exports.compareNumbers = compareNumbers;
 exports.compareStrings = compareStrings;

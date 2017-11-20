@@ -5,7 +5,7 @@
  * @module core-functions/any
  * @author Byron du Preez
  */
-exports._ = '_'; //IDE workaround
+exports._$_ = '_$_'; //IDE workaround
 exports.defined = defined;
 exports.notDefined = notDefined;
 

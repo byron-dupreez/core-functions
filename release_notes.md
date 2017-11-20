@@ -1,5 +1,9 @@
 ## Changes
 
+### 3.0.19
+- Renamed dummy first exports (`exports._ = '_'; //IDE workaround`) of most modules to (`exports._$_ = '_$_';`) to avoid 
+  potential future collisions with `lodash` & `underscore`
+
 ### 3.0.18
 - Changes to `tries` module:
   - Changed `describeSuccessAndFailureCounts` function to suppress clauses with counts of zero

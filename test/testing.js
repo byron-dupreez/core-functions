@@ -4,7 +4,7 @@
  * Utilities for unit testing with tape
  * @author Byron du Preez
  */
-exports._ = '_'; //IDE workaround
+exports._$_ = '_$_'; //IDE workaround
 exports.okNotOk = okNotOk;
 exports.checkOkNotOk = checkOkNotOk;
 exports.checkMethodOkNotOk = checkMethodOkNotOk;

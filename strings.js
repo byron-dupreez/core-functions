@@ -9,7 +9,7 @@ const promiseInspectRegex = /^(Promise \{)([\s\n\r]+)(.*)([\s\n\r]+)(})$/;
  * @module core-functions/strings
  * @author Byron du Preez
  */
-exports._ = '_'; //IDE workaround
+exports._$_ = '_$_'; //IDE workaround
 exports.isString = isString;
 exports.isBlank = isBlank;
 exports.isNotBlank = isNotBlank;

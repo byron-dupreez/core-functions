@@ -11,7 +11,7 @@ const Failure = tries.Failure;
  * @module core-functions/promises
  * @author Byron du Preez
  */
-exports._ = '_'; //IDE workaround
+exports._$_ = '_$_'; //IDE workaround
 exports.isPromise = isPromise;
 exports.isPromiseLike = isPromiseLike;
 exports.toPromise = toPromise;

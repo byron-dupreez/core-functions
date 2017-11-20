@@ -5,7 +5,7 @@
  * @module core-functions/booleans
  * @author Byron du Preez
  */
-exports._ = '_'; //IDE workaround
+exports._$_ = '_$_'; //IDE workaround
 exports.isBoolean = isBoolean;
 exports.isTrueOrFalse = isTrueOrFalse;
 

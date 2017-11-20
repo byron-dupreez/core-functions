@@ -3,7 +3,7 @@
  * @module core-functions/arrays
  * @author Byron du Preez
  */
-exports._ = '_'; //IDE workaround
+exports._$_ = '_$_'; //IDE workaround
 exports.distinct = distinct;
 exports.isDistinct = isDistinct;
 exports.isArrayOfType = isArrayOfType;
