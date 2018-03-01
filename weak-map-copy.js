@@ -1,5 +1,7 @@
 'use strict';
 
+const isInstanceOf = require('./objects').isInstanceOf;
+
 /**
  * Module containing a WeakMap subclass to be used for creating "copies" of existing WeakMaps.
  * @module core-functions/weak-map-copy
@@ -30,7 +32,7 @@ class WeakMapCopy extends WeakMap {
 
   has(key) {
     if (WeakMap.prototype.has.call(this, key)) {
-      return !(WeakMap.prototype.get.call(this, key) instanceof Deleted);
+      return !isInstanceOf(WeakMap.prototype.get.call(this, key), Deleted);
     }
     // Cache original value in this copy for consistency of later possible re-get of same value
     const originalHasValue = this.original.has(key);
@@ -41,7 +43,7 @@ class WeakMapCopy extends WeakMap {
   get(key) {
     if (WeakMap.prototype.has.call(this, key)) {
       const value = WeakMap.prototype.get.call(this, key);
-      return !(value instanceof Deleted) ? value : undefined;
+      return !isInstanceOf(value, Deleted) ? value : undefined;
     }
     // Cache original value in this copy for consistency of later possible re-get of same value
     const origValue = this.original.get(key);
@@ -53,7 +55,7 @@ class WeakMapCopy extends WeakMap {
   delete(key) {
     if (WeakMap.prototype.has.call(this, key)) {
       const value = WeakMap.prototype.get.call(this, key);
-      if (!(value instanceof Deleted)) {
+      if (!isInstanceOf(value, Deleted)) {
         WeakMap.prototype.delete.call(this, key);
         // Simulate deletion by caching DELETED, which will avoid a later `get` pulling a value from original
         this.set(key, DELETED);

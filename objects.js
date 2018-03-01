@@ -5,6 +5,7 @@ const trim = strings.trim;
 const isNotBlank = strings.isNotBlank;
 
 const any = require('./any');
+const toType = any.toType;
 
 const propertyIsEnumerable = Object.prototype.propertyIsEnumerable;
 
@@ -26,6 +27,7 @@ exports.hasOwnPropertyWithKeys = hasOwnPropertyWithKeys;
 exports.hasOwnPropertyWithCompoundName = hasOwnPropertyWithCompoundName;
 exports.toKeyValuePairs = toKeyValuePairs;
 exports.getOwnPropertyNamesRecursively = getOwnPropertyNamesRecursively;
+exports.isInstanceOf = isInstanceOf;
 
 /** @deprecated use {@linkcode core-functions/any#valueOf} instead */
 exports.valueOf = any.valueOf;
@@ -341,4 +343,35 @@ function getOwnPropertyNamesRecursively(object, opts) {
   }
 
   return collect(object, '');
+}
+
+/**
+ * Returns true if the given object is "probably" an instance of the given type, without relying solely on the broken
+ * `instanceof` operator. When `instanceof` returns false or if a string type name is passed, then this method falls
+ * back on using `any.toType` to match the object's type against the given type.
+ * @param {Object} object - the object instance to check
+ * @param {Function|string} type - the constructor function or name of the type against which to compare
+ * @return {boolean} true if "probably" an instance
+ */
+function isInstanceOf(object, type) {
+  if (!object || typeof object !== 'object' || !type) {
+    return false;
+  }
+
+  function isInstanceOfType(object, type) {
+    if (object instanceof type || toType(object) === type.name) return true;
+    const prototype = Object.getPrototypeOf(object);
+    return !prototype || prototype === Object.prototype ? type.name === 'Object' :
+      isInstanceOfType(prototype, type);
+  }
+
+  function isInstanceOfTypeName(object, typeName) {
+    if (toType(object) === typeName) return true;
+    const prototype = Object.getPrototypeOf(object);
+    return !prototype || prototype === Object.prototype ? typeName === 'Object' :
+      isInstanceOfTypeName(prototype, typeName);
+  }
+
+  return typeof type === 'function' ? isInstanceOfType(object, type) :
+    typeof type === 'string' ? isInstanceOfTypeName(object, type) : false;
 }

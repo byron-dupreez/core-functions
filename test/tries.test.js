@@ -30,6 +30,9 @@ const err2Regex = /Crash/;
 const failure = new Failure(err);
 const failure2 = new Failure(err2);
 
+const toType = require('../any').toType;
+const isInstanceOf = require('../objects').isInstanceOf;
+
 function avoidUnhandledPromiseRejectionWarning(err) {
   // Avoid irrelevant: (node:18304) UnhandledPromiseRejectionWarning: Unhandled promise rejection (rejection id: ...): ...
 }
@@ -96,7 +99,7 @@ test('new Try()', t => {
   t.equal(tried.map(throwErr), tried, `${tried}.map(throwErr) must still be tried`);
 
   // mapping with only a failure function
-  t.equal(tried.map(undefined, e => value), tried, `${tried}.map(undefined, e => 42) must still be tried`);
+  t.equal(tried.map(undefined, () => value), tried, `${tried}.map(undefined, e => 42) must still be tried`);
   t.equal(tried.map(undefined, e => throwError(e)), tried, `${tried}.map(undefined, e => throwError(e)) must still be tried`);
 
   // mapping without any functions
@@ -109,7 +112,7 @@ test('new Try()', t => {
   t.equal(tried.map(123, 456), tried, `${tried}.map(123, 456) must still be tried`);
 
   // recovering with a function
-  t.equal(tried.recover(e => value), tried, `${tried}.recover(e => 42) must still be tried`);
+  t.equal(tried.recover(() => value), tried, `${tried}.recover(e => 42) must still be tried`);
   t.equal(tried.recover(e => throwError(e)), tried, `${tried}.recover(e => throwError(e)) must still be tried`);
 
   // recovering without a function
@@ -119,9 +122,9 @@ test('new Try()', t => {
   t.equal(tried.recover(123), tried, `${tried}.recover(123) must still be tried`);
 
   // mapping with both functions
-  t.equal(tried.map(v => v * 2, e => value), tried, `${tried}.map(v => v * 2, e => 42) must still be tried`);
+  t.equal(tried.map(v => v * 2, () => value), tried, `${tried}.map(v => v * 2, e => 42) must still be tried`);
   t.equal(tried.map(v => v * 2, e => throwError(e)), tried, `${tried}.map(v => v * 2, e => throwError(e)) must still be tried`);
-  t.equal(tried.map(throwErr, e => value), tried, `${tried}.map(throwErr, e => 42) must still be tried`);
+  t.equal(tried.map(throwErr, () => value), tried, `${tried}.map(throwErr, e => 42) must still be tried`);
   t.equal(tried.map(throwErr, e => throwError(e)), tried, `${tried}.map(throwErr, e => throwError(e)) must still be tried`);
 
   t.equal(tried.forEach(throwErr), undefined, `${tried}.forEach(throwErr) must be undefined`);
@@ -206,8 +209,8 @@ test('new Success()', t => {
   t.deepEqual(success2.map(throwErr2), new Failure(err2), `${success2}.map(throwErr2) must be ${new Failure(err2)}`);
 
   // mapping with only a failure function
-  t.equal(success.map(undefined, e => value), success, `${success}.map(undefined, e => 42) must be success`);
-  t.equal(success2.map(undefined, e => value), success2, `${success2}.map(undefined, e => 42) must be success2`);
+  t.equal(success.map(undefined, () => value), success, `${success}.map(undefined, e => 42) must be success`);
+  t.equal(success2.map(undefined, () => value), success2, `${success2}.map(undefined, e => 42) must be success2`);
   t.equal(success.map(undefined, e => throwError(e)), success, `${success}.map(undefined, e => throwError(e)) must be success`);
   t.equal(success2.map(undefined, e => throwError(e)), success2, `${success2}.map(undefined, e => throwError(e)) must be success2`);
 
@@ -221,9 +224,9 @@ test('new Success()', t => {
   t.equal(success.map(123, 456), success, `${success}.map(123, 456) must still be success`);
 
   // recovering with a function
-  t.equal(success.recover(e => value2), success, `${success}.recover(e => ${value2}) must be success`);
+  t.equal(success.recover(() => value2), success, `${success}.recover(e => ${value2}) must be success`);
   t.equal(success.recover(e => throwError(e)), success, `${success}.recover(e => throwError(e)) must be success`);
-  t.equal(success2.recover(e => value), success2, `${success2}.recover(e => ${value}) must be success2`);
+  t.equal(success2.recover(() => value), success2, `${success2}.recover(e => ${value}) must be success2`);
   t.equal(success2.recover(e => throwError(e)), success2, `${success2}.recover(e => throwError(e)) must be success2`);
 
   // recovering without a function
@@ -233,13 +236,13 @@ test('new Success()', t => {
   t.equal(success.recover(123), success, `${success}.recover(123) must still be success`);
 
   // mapping with both functions
-  t.deepEqual(success.map(v => v * 2, e => value2), new Success(value * 2), `${success}.map(v => v * 2, e => ${value2}) must be ${new Success(value * 2)}`);
+  t.deepEqual(success.map(v => v * 2, () => value2), new Success(value * 2), `${success}.map(v => v * 2, e => ${value2}) must be ${new Success(value * 2)}`);
   t.deepEqual(success.map(v => v + 'Xyz', e => throwError(e)), new Success(value + 'Xyz'), `${success}.map(v => v + 'Xyz', e => throwError(e)) must be ${new Success(value + 'Xyz')}`);
-  t.deepEqual(success.map(throwErr, e => value2), new Failure(err), `${success}.map(throwErr, e => ${value2}) must be ${new Failure(err)}`);
+  t.deepEqual(success.map(throwErr, () => value2), new Failure(err), `${success}.map(throwErr, e => ${value2}) must be ${new Failure(err)}`);
   t.deepEqual(success.map(throwErr2, e => throwError(e)), new Failure(err2), `${success}.map(throwErr2, e => throwError(e)) must be ${new Failure(err2)}`);
-  t.deepEqual(success2.map(v => v + 2, e => value2), new Success(value2 + 2), `${success2}.map(v => v + 2, e => ${value2}) must be ${new Success(value2 + 2)}`);
+  t.deepEqual(success2.map(v => v + 2, () => value2), new Success(value2 + 2), `${success2}.map(v => v + 2, e => ${value2}) must be ${new Success(value2 + 2)}`);
   t.deepEqual(success2.map(v => v + 'Xyz', e => throwError(e)), new Success(value2 + 'Xyz'), `${success2}.map(v => v + 'Xyz', e => throwError(e)) must be ${new Success(value2 + 'Xyz')}`);
-  t.deepEqual(success2.map(throwErr, e => value), new Failure(err), `${success2}.map(throwErr, e => ${value}) must be ${new Failure(err)}`);
+  t.deepEqual(success2.map(throwErr, () => value), new Failure(err), `${success2}.map(throwErr, e => ${value}) must be ${new Failure(err)}`);
   t.deepEqual(success2.map(throwErr2, e => throwError(e)), new Failure(err2), `${success2}.map(throwErr2, e => throwError(e)) must be ${new Failure(err2)}`);
 
   t.throws(() => success.forEach(throwErr), errRegex, `${success}.forEach(throwErr) must throw err`);
@@ -338,7 +341,7 @@ test('new Failure()', t => {
   // mapping with only a failure function
   t.deepEqual(failure.map(undefined, returnA1), new Success({a: 1}), `${failure}.map(undefined, returnA1) must be ${new Success({a: 1})}`);
   t.deepEqual(failure.map(undefined, throwErr2), new Failure(err2), `${failure}.map(undefined, throwErr2) must be ${new Failure(err2)}`);
-  t.deepEqual(failure2.map(undefined, e => value), new Success(value), `${failure2}.map(undefined, e => ${value}) must be ${new Success(value)}`);
+  t.deepEqual(failure2.map(undefined, () => value), new Success(value), `${failure2}.map(undefined, e => ${value}) must be ${new Success(value)}`);
   t.deepEqual(failure2.map(undefined, throwErr), new Failure(err), `${failure2}.map(undefined, throwErr) must be ${new Failure(err)}`);
 
   // mapping without any functions
@@ -353,7 +356,7 @@ test('new Failure()', t => {
   // recovering with a function
   t.deepEqual(failure.recover(returnA1), new Success({a: 1}), `${failure}.recover(returnA1) must be ${new Success({a: 1})}`);
   t.deepEqual(failure.recover(throwErr2), new Failure(err2), `${failure}.recover(throwErr2) must be ${new Failure(err2)}`);
-  t.deepEqual(failure2.recover(e => value), new Success(value), `${failure2}.recover(e => ${value}) must be ${new Success(value)}`);
+  t.deepEqual(failure2.recover(() => value), new Success(value), `${failure2}.recover(e => ${value}) must be ${new Success(value)}`);
   t.deepEqual(failure2.recover(throwErr), new Failure(err), `${failure2}.recover(throwErr) must be ${new Failure(err)}`);
 
   // recovering without a function
@@ -363,13 +366,13 @@ test('new Failure()', t => {
   t.equal(failure.recover(123), failure, `${failure}.recover(123) must still be failure`);
 
   // mapping with both functions
-  t.deepEqual(failure.map(v => v * 2, e => value), new Success(value), `${failure}.map(v => v * 2, e => ${value}) must be ${new Success(value)}`);
+  t.deepEqual(failure.map(v => v * 2, () => value), new Success(value), `${failure}.map(v => v * 2, e => ${value}) must be ${new Success(value)}`);
   t.deepEqual(failure.map(v => v + 'Xyz', throwErr2), new Failure(err2), `${failure}.map(v => v + 'Xyz', e => {throw err2}) must be ${new Failure(err2)}`);
-  t.deepEqual(failure.map(throwErr, e => value2), new Success(value2), `${failure}.map(throwErr, e => ${value2}) must be ${new Success(value2)}`);
+  t.deepEqual(failure.map(throwErr, () => value2), new Success(value2), `${failure}.map(throwErr, e => ${value2}) must be ${new Success(value2)}`);
   t.deepEqual(failure.map(throwErr2, e => throwError(e)), new Failure(err), `${failure}.map(throwErr2, e => throwError(e)) must be ${new Failure(err)}`);
-  t.deepEqual(failure2.map(v => v + 2, e => value2), new Success(value2), `${failure2}.map(v => v + 2, e => ${value2}) must be ${new Success(value2)}`);
+  t.deepEqual(failure2.map(v => v + 2, () => value2), new Success(value2), `${failure2}.map(v => v + 2, e => ${value2}) must be ${new Success(value2)}`);
   t.deepEqual(failure2.map(v => v + 'Xyz', e => throwError(e)), new Failure(err2), `${failure2}.map(v => v + 'Xyz', e => throwError(e)) must be ${new Failure(err2)}`);
-  t.deepEqual(failure2.map(throwErr, e => value * 3), new Success(value * 3), `${failure2}.map(throwErr, e => ${value * 3}) must be ${new Success(value * 3)}`);
+  t.deepEqual(failure2.map(throwErr, () => value * 3), new Success(value * 3), `${failure2}.map(throwErr, e => ${value * 3}) must be ${new Success(value * 3)}`);
   t.deepEqual(failure2.map(throwErr2, e => throwError(e)), new Failure(err2), `${failure2}.map(throwErr2, e => throwError(e)) must be ${new Failure(err2)}`);
 
   t.equal(failure.forEach(throwErr2), undefined, `${failure}.forEach(throwErr) must do nothing`);
@@ -1897,6 +1900,64 @@ test('findFailure - with shallower depths', t => {
   x = new Failure(e3);
   n = 5;
   t.deepEqual(Try.findFailure(v, n), x, `findFailure(${stringify(v)}, ${n}) must be ${stringify(x)}`);
+
+  t.end();
+});
+
+test(`toType`, t => {
+  function check(value, expected) {
+    t.equals(toType(value), expected, `toType(${JSON.stringify(value)}) must be ${expected}`);
+  }
+  check(new Try(), 'Try');
+  check(new Success(123), 'Success');
+  check(new Failure(new TypeError('TE')), 'Failure');
+
+  t.end();
+});
+
+
+test(`isInstanceOf`, t => {
+
+  function check(object, type, expected) {
+    const typeName = type.name ? type.name : `"${type}"`;
+    t.equals(isInstanceOf(object, type), expected, `isInstanceOf(${JSON.stringify(object)}, ${typeName}) must be ${expected}`);
+  }
+
+  const try1 = new Try();
+
+  check(try1, Object, true);
+  check(try1, Try, true);
+  check(try1, Success, false);
+  check(try1, Failure, false);
+
+  check(try1, 'Object', true);
+  check(try1, 'Try', true);
+  check(try1, 'Success', false);
+  check(try1, 'Failure', false);
+
+  const success = new Success(123);
+
+  check(success, Object, true);
+  check(success, Try, true);
+  check(success, Success, true);
+  check(success, Failure, false);
+
+  check(success, 'Object', true);
+  check(success, 'Try', true);
+  check(success, 'Success', true);
+  check(success, 'Failure', false);
+
+  const failure = new Failure(new TypeError('TE'));
+
+  check(failure, Object, true);
+  check(failure, Try, true);
+  check(failure, Success, false);
+  check(failure, Failure, true);
+
+  check(failure, 'Object', true);
+  check(failure, 'Try', true);
+  check(failure, 'Success', false);
+  check(failure, 'Failure', true);
 
   t.end();
 });

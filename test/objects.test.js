@@ -12,6 +12,7 @@ const toKeyValuePairs = Objects.toKeyValuePairs;
 const getOwnPropertyNamesRecursively = Objects.getOwnPropertyNamesRecursively;
 const getPropertyValueByCompoundName = Objects.getPropertyValueByCompoundName;
 const hasOwnPropertyWithCompoundName = Objects.hasOwnPropertyWithCompoundName;
+const isInstanceOf = Objects.isInstanceOf;
 
 const strings = require('../strings');
 const stringify = strings.stringify;
@@ -167,6 +168,79 @@ test('hasOwnPropertyWithCompoundName', t => {
   const p = Object.create(o);
   t.equal(hasOwnPropertyWithCompoundName(p, 'a'), false, 'p.a must not exist');
   t.equals(p.a, o.a, 'p.a must be o.a');
+
+  t.end();
+});
+
+test(`isInstanceOf`, t => {
+
+  function check(object, type, expected) {
+    const typeName = type.name ? type.name : `"${type}"`;
+    t.equals(isInstanceOf(object, type), expected, `isInstanceOf(${JSON.stringify(object)}, ${typeName}) must be ${expected}`);
+  }
+
+  check(null, Object, false);
+  check(undefined, Object, false);
+
+  check(1, Object, false);
+  check('abc', Object, false);
+  check(true, Object, false);
+  check(false, Object, false);
+
+  check({}, Object, true);
+  check({}, 'Object', true);
+
+  check({a:1}, Object, true);
+  check({a:1}, 'Object', true);
+
+  check([], Object, true);
+  check([], Array, true);
+  check([], Number, false);
+  check([], 'Object', true);
+  check([], 'Array', true);
+  check([], 'Number', false);
+
+  const error = new Error();
+
+  check(error, Object, true);
+  check(error, Error, true);
+  check(error, TypeError, false);
+  check(error, ReferenceError, false);
+  check(error, String, false);
+
+  check(error, 'Object', true);
+  check(error, 'Error', true);
+  check(error, 'TypeError', false);
+  check(error, 'ReferenceError', false);
+  check(error, 'String', false);
+
+  const typeError = new TypeError();
+
+  check(typeError, Object, true);
+  check(typeError, Error, true);
+  check(typeError, TypeError, true);
+  check(typeError, ReferenceError, false);
+  check(typeError, String, false);
+
+  check(typeError, 'Object', true);
+  check(typeError, 'Error', true);
+  check(typeError, 'TypeError', true);
+  check(typeError, 'ReferenceError', false);
+  check(typeError, 'String', false);
+
+  const referenceError = new ReferenceError();
+
+  check(referenceError, Object, true);
+  check(referenceError, Error, true);
+  check(referenceError, ReferenceError, true);
+  check(referenceError, TypeError, false);
+  check(referenceError, String, false);
+
+  check(referenceError, 'Object', true);
+  check(referenceError, 'Error', true);
+  check(referenceError, 'ReferenceError', true);
+  check(referenceError, 'TypeError', false);
+  check(referenceError, 'String', false);
 
   t.end();
 });

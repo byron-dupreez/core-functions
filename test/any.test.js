@@ -11,6 +11,7 @@ const any = require('../any');
 const defined = any.defined;
 const notDefined = any.notDefined;
 const valueOf = any.valueOf;
+const toType = any.toType;
 
 const strings = require('../strings');
 const stringify = strings.stringify;
@@ -186,6 +187,38 @@ test('valueOf', t => {
   check([], []);
   check(['a'], ['a']);
   check(['a', 1], ['a', 1]);
+
+  t.end();
+});
+
+test('toType', t => {
+  function check(value, expected) {
+    t.equals(toType(value), expected, `toType(${JSON.stringify(value)}) must be ${expected}`);
+  }
+
+  check(undefined, 'Undefined');
+  check(null, 'Null');
+
+  check({}, 'Object');
+  check({a:1}, 'Object');
+
+  check(new Error('Boom'), 'Error');
+  check(new ReferenceError('Type ... Boom'), 'ReferenceError');
+  check(new TypeError('Type ... Boom'), 'TypeError');
+
+  check([], 'Array');
+  check([1,2,3], 'Array');
+
+  check(true, 'Boolean');
+  check(false, 'Boolean');
+
+  check('', 'String');
+  check('abc', 'String');
+
+  check(0, 'Number');
+  check(123, 'Number');
+  check(-123, 'Number');
+  check(NaN, 'Number');
 
   t.end();
 });

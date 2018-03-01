@@ -1,5 +1,7 @@
 'use strict';
 
+const isInstanceOf = require('./objects').isInstanceOf;
+
 exports._$_ = '_$_'; //IDE workaround
 
 const errorMessages = {
@@ -30,7 +32,7 @@ exports.defaultFlattenOpts = defaultFlattenOpts;
 class Try {
   constructor() {
     // Automatically flatten if any given argument is already a Try
-    if (arguments.length > 0 && (arguments[0] instanceof Try)) return arguments[0];
+    if (arguments.length > 0 && isInstanceOf(arguments[0], Try)) return arguments[0];
   }
 
   /**
@@ -43,7 +45,7 @@ class Try {
   static attempt(f) {
     try {
       const value = typeof f === 'function' ? f() : f;
-      return value instanceof Try ? value : new Success(value);
+      return isInstanceOf(value, Try) ? value : new Success(value);
     } catch (err) {
       return new Failure(err);
     }
@@ -150,7 +152,7 @@ class Try {
    * @returns {Array.<*>|Outcomes} a simplified list of Success values (if all were Success outcomes) or the given list
    */
   static simplify(outcomes) {
-    return outcomes.every(o => o instanceof Success) ? outcomes.map(o => o.value) : outcomes;
+    return outcomes.every(o => isInstanceOf(o, Success)) ? outcomes.map(o => o.value) : outcomes;
   }
 
   /**
@@ -171,7 +173,7 @@ class Try {
    * @returns {number} the number of Success or non-Failure outcomes
    */
   static countSuccess(outcomes, strict) {
-    const isSuccess = strict ? o => o instanceof Success : o => !(o instanceof Failure);
+    const isSuccess = strict ? o => isInstanceOf(o, Success) : o => !isInstanceOf(o, Failure);
     return outcomes.reduce((acc, o) => acc + (isSuccess(o) ? 1 : 0), 0);
   }
 
@@ -181,7 +183,7 @@ class Try {
    * @returns {number} the number of Failure outcomes
    */
   static countFailure(outcomes) {
-    return outcomes.reduce((acc, o) => acc + (o instanceof Failure ? 1 : 0), 0);
+    return outcomes.reduce((acc, o) => acc + (isInstanceOf(o, Failure) ? 1 : 0), 0);
   }
 
   /**
@@ -227,7 +229,7 @@ class Try {
         return history.get(value);
       }
 
-      const isTryType = value instanceof TryType;
+      const isTryType = isInstanceOf(value, TryType);
       const isArray = Array.isArray(value);
       const v = isTryType ? value.get() : isArray ? new Array(value.length) : value;
 
@@ -245,10 +247,10 @@ class Try {
 
       if (isArray) {
         // Recurse deeper if maximum depth has not been reached yet & if its still worthwhile to do so
-        const mustTraverse = depth > 0 && value.some(e => e instanceof TryType || Array.isArray(e));
+        const mustTraverse = depth > 0 && value.some(e => isInstanceOf(e, TryType) || Array.isArray(e));
         for (let i = 0; i < value.length; ++i) {
           const e = value[i];
-          const ev = e instanceof TryType ? e.get() : e;
+          const ev = isInstanceOf(e, TryType) ? e.get() : e;
           v[i] = mustTraverse ? unpack(ev, depth - 1) : ev;
         }
         return v;
@@ -279,10 +281,10 @@ class Try {
         history.set(value, value);
       }
 
-      if (value instanceof Failure)
+      if (isInstanceOf(value, Failure))
         return value;
 
-      if (value instanceof Success) {
+      if (isInstanceOf(value, Success)) {
         // Search deeper if maximum depth has not been reached yet
         return depth > 0 ? find(value.value, depth - 1) : undefined;
       }
@@ -290,15 +292,15 @@ class Try {
       if (Array.isArray(value)) {
         // Recurse deeper if maximum depth has not been reached yet & if its still worthwhile to do so (otherwise just
         // return undefined)
-        const f = value.find(e => e instanceof Failure);
-        // const f = depth > 0 ? value.find(e => e instanceof Failure) : undefined;
+        const f = value.find(e => isInstanceOf(e, Failure));
+        // const f = depth > 0 ? value.find(e => isInstanceOf(e, Failure)) : undefined;
         if (f)
           return f;
 
         // Search deeper if maximum depth has not been reached yet & if its still worthwhile to do so
-        if (depth > 0 && value.some(e => (e instanceof Success) || Array.isArray(e))) {
+        if (depth > 0 && value.some(e => isInstanceOf(e, Success) || Array.isArray(e))) {
           for (let e of value) {
-            const f = find(e instanceof Success ? e.value : e, depth - 1);
+            const f = find(isInstanceOf(e, Success) ? e.value : e, depth - 1);
             if (f)
               return f;
           }
@@ -327,7 +329,7 @@ Try.errorMessages = errorMessages;
 class Success extends Try {
   constructor(value) {
     // Automatically flatten if value is already a Try
-    if (value instanceof Try) return value;
+    if (isInstanceOf(value, Try)) return value;
     super();
     // Set an enumerable, non-configurable, read-only value property to the given value
     Object.defineProperty(this, 'value', {value: value, enumerable: true});
@@ -382,7 +384,7 @@ exports.Success = Success;
 class Failure extends Try {
   constructor(error) {
     // Automatically flatten if error is already a Try
-    if (error instanceof Try) return error;
+    if (isInstanceOf(error, Try)) return error;
     super();
     // Set an enumerable, non-configurable, read-only error property to the given error
     Object.defineProperty(this, 'error', {value: error, enumerable: true});

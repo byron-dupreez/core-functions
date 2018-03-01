@@ -11,6 +11,9 @@ exports.notDefined = notDefined;
 
 // noinspection JSDeprecatedSymbols
 exports.valueOf = valueOf;
+exports.toType = toType;
+
+const objectToString = Object.prototype.toString;
 
 /**
  * Determines whether the given value is defined (i.e. NOT undefined and NOT null) or not.
@@ -40,3 +43,17 @@ function valueOf(value) {
   return value && typeof value.valueOf === 'function' ? value.valueOf() : value;
 }
 
+/**
+ * Returns the type of the given value that would be reported by either `.constructor.name` or `Object.prototype.toString`.
+ * Note that primitive numbers will return 'Number', primitive strings will return 'String' & primitive booleans will
+ * return 'Boolean'.
+ * @param {*} value - the value for which to resolve its type
+ * @return {string} a string representing the value's type, e.g. 'Object', 'Error', 'Number', 'String', ...
+ */
+function toType(value) {
+  if (value && typeof value === 'object' && value.constructor && value.constructor.name) {
+    return value.constructor.name;
+  }
+  const t = objectToString.call(value);
+  return t.substring(t.indexOf(' ') + 1, t.length - 1);
+}

@@ -1,5 +1,7 @@
 'use strict';
 
+const isInstanceOf = require('./objects').isInstanceOf;
+
 const tries = require('./tries');
 const Try = tries.Try;
 const Success = tries.Success;
@@ -554,9 +556,9 @@ function flatten(value, cancellable, opts, logger) {
 
   function join(value) {
     return isPromiseLike(value) ? value.then(join) :
-      value instanceof Success ? value.map(join) :
+      isInstanceOf(value, Success) ? value.map(join) :
         Array.isArray(value) ?
-          value.some(v => isPromiseLike(v) || v instanceof Success) ?
+          value.some(v => isPromiseLike(v) || isInstanceOf(v, Success)) ?
             every(value.map(join), cancellable, logger).then(os => simplifyOutcomes ? Try.simplify(os) : os) :
             value :
           value;
@@ -564,9 +566,9 @@ function flatten(value, cancellable, opts, logger) {
 
   return value instanceof Promise ? value.then(join) :
     isThenable(value) ? toPromise(value).then(join) :
-      value instanceof Try ? value.toPromise().then(join) :
+      isInstanceOf(value, Try) ? value.toPromise().then(join) :
         Array.isArray(value) ?
-          value.some(v => isPromiseLike(v) || v instanceof Success) ?
+          value.some(v => isPromiseLike(v) || isInstanceOf(v, Success)) ?
             every(value.map(join), cancellable, logger).then(os => simplifyOutcomes ? Try.simplify(os) : os) :
             Promise.resolve(value) :
           Promise.resolve(value);

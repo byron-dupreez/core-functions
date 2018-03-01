@@ -1,5 +1,7 @@
 "use strict";
 
+const isInstanceOf = require('./objects').isInstanceOf;
+
 const strings = require('./strings');
 const isNotBlank = strings.isNotBlank;
 const trim = strings.trim;
@@ -131,6 +133,13 @@ class NotFound extends AppError {
   }
 }
 
+/** A MethodNotAllowed error (HTTP status 405) */
+class MethodNotAllowed extends AppError {
+  constructor(message, code, cause) {
+    super(message, code, 405, cause);
+  }
+}
+
 /** A RequestTimeout error (HTTP status 408) */
 class RequestTimeout extends AppError {
   constructor(message, code, cause) {
@@ -191,10 +200,11 @@ class GatewayTimeout extends AppError {
  */
 function toAppError(error, message, code) {
   // Special case - error is already an AppError and no message and code were provided or they are the same values
-  if (error instanceof AppError && (!message || error.message === message) && (!code || error.code === code)) {
+  const instanceOfAppError = isInstanceOf(error, AppError);
+  if (instanceOfAppError && (!message || error.message === message) && (!code || error.code === code)) {
     return error;
   }
-  const httpStatus = error instanceof AppError ? error.httpStatus : getHttpStatus(error);
+  const httpStatus = instanceOfAppError ? error.httpStatus : getHttpStatus(error);
   if (isNotBlank(httpStatus)) {
     switch (httpStatus) {
       case 400:
@@ -205,6 +215,8 @@ function toAppError(error, message, code) {
         return new Forbidden(message, code, error);
       case 404:
         return new NotFound(message, code, error);
+      case 405:
+        return new MethodNotAllowed(message, code, error);
       case 408:
         return new RequestTimeout(message, code, error);
       case 429:
@@ -390,7 +402,7 @@ function toMessage(message, cause) {
  */
 function toCauseMessage(cause, finalisedMessage) {
   const causeMessage =
-    cause instanceof AppError && cause.cause ?
+    isInstanceOf(cause, AppError) && cause.cause ?
       cause.cause : // if AppError, use underlying cause if any
       cause instanceof Error ?
         cause.toString() : // if Error, use error.toString()
@@ -410,6 +422,7 @@ exports.BadRequest = BadRequest;
 exports.Unauthorized = Unauthorized;
 exports.Forbidden = Forbidden;
 exports.NotFound = NotFound;
+exports.MethodNotAllowed = MethodNotAllowed;
 exports.RequestTimeout = RequestTimeout;
 exports.TooManyRequests = TooManyRequests;
 

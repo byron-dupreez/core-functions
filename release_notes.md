@@ -1,5 +1,11 @@
 ## Changes
 
+### 3.0.21
+- Added `toType` function to `any` module
+- Added `isInstanceOf` function to `objects` module
+- Replaced all of the `instanceof` checks against custom classes with calls to `isInstanceOf`
+- Added `MethodNotAllowed` class to `app-errors` module
+
 ### 3.0.20
 - Updated usage notes and tested with Node version number in `README.md`
 
