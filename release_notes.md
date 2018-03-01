@@ -1,5 +1,8 @@
 ## Changes
 
+### 3.0.22
+- Replaced two `instanceof` usages in `arrays` module with calls to `isInstanceOf`
+
 ### 3.0.21
 - Added `toType` function to `any` module
 - Added `isInstanceOf` function to `objects` module

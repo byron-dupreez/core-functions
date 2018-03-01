@@ -1,3 +1,7 @@
+'use strict';
+
+const isInstanceOf = require('./objects').isInstanceOf;
+
 /**
  * Utilities for working with arrays.
  * @module core-functions/arrays
@@ -52,14 +56,14 @@ function isArrayOfType(value, type, strict) {
     if (!strict) {
       // Use non-strict matching
       const nonStrictType = type === String ? "string" : type === Number ? "number" : type === Boolean ? "boolean" : type;
-      return typeof nonStrictType === 'function' ? value.every(elem => elem instanceof nonStrictType) :
+      return typeof nonStrictType === 'function' ? value.every(elem => isInstanceOf(elem, nonStrictType)) :
         nonStrictType === 'string' ? value.every(elem => typeof elem === 'string' || elem instanceof String) :
           nonStrictType === 'number' ? value.every(elem => typeof elem === 'number' || elem instanceof Number) :
             nonStrictType === 'boolean' ? value.every(elem => typeof elem === 'boolean' || elem instanceof Boolean) :
               value.every(elem => typeof elem === nonStrictType);
     } else {
       // Use strict matching
-      return typeOfType === 'function' ? value.every(elem => elem instanceof type) :
+      return typeOfType === 'function' ? value.every(elem => isInstanceOf(elem, type)) :
         value.every(elem => typeof elem === type);
     }
   }
