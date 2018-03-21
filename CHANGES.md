@@ -1,5 +1,9 @@
 ## Changes
 
+### 3.0.23
+- Added `.npmignore`
+- Renamed `release_notes.md` to `CHANGES.md`
+
 ### 3.0.22
 - Replaced two `instanceof` usages in `arrays` module with calls to `isInstanceOf`
 
