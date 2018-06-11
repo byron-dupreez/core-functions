@@ -221,3 +221,9 @@
  * @typedef {Object} TryFlattenOpts - options to use to use to alter the behaviour of the static `flatten` function of the `Try` class
  * @property {boolean|undefined} [keepFailures] - if true, collects and preserves any Failure outcomes as is; otherwise flattens Failures too and throws the error of the first Failure found (defaults to false)
  */
+
+/**
+ * @typedef {Object} WrapOpts - optional options to use with the promisify functions (i.e. `wrap` & `wrapMethod` functions of the promises module)
+ * @property {number|undefined} [timeoutMs] - the optional number of milliseconds to wait before timing out the
+ *           returned promise to avoid never-ending promise issues when the callback is never invoked (defaults to 60s)
+ */

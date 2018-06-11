@@ -7,6 +7,7 @@ const Try = tries.Try;
 const Success = tries.Success;
 const Failure = tries.Failure;
 
+const TimeoutError = require('./errors').TimeoutError;
 
 /**
  * Module containing Promise utility functions.
@@ -34,6 +35,19 @@ exports.avoidUnhandledPromiseRejectionWarnings = avoidUnhandledPromiseRejectionW
 exports.wrapMethod = wrapMethod;
 /** @deprecated */
 exports.wrapNamedMethod = wrapNamedMethod;
+
+/**
+ * The default number of milliseconds to wait for a wrapped function/method call to complete before timing out.
+ * @type {number}
+ */
+const defaultWrappedCallTimeoutInMs = 120000; // defaults to 2 minutes
+
+/**
+ * Default options to use with the `wrap` & `wrapMethod` functions.
+ * @type {{timeoutMs: number}}
+ */
+const defaultWrapOpts = {timeoutMs: defaultWrappedCallTimeoutInMs};
+exports.defaultWrapOpts = defaultWrapOpts;
 
 /**
  * Sample options to use to alter the behaviour of the `flatten` function
@@ -155,8 +169,14 @@ function toPromise(promiseLike) {
  * Wraps and converts the given callback-last Node-style function into a Promise-returning function, which when invoked
  * must be passed all of the wrapped function's arguments other than its last callback argument.
  *
- * NB: This function must be passed a Node-style function that accepts as its last parameter a Node-style callback that
- * in turn accepts 2 parameters: error; and data.
+ * NB: This function must be passed a Node-style function that accepts as its last parameter a Node-style callback
+ * that in turn accepts 2 (or more) parameters:
+ * 1. An optional error (1st parameter), which indicates failure;
+ * 2. An optional value (2nd parameter), which indicates success when error is not defined; and
+ * 3. Optionally more success values (3rd to Nth parameters, where N is the total number of parameters passed).
+ * NB: If the 1st parameter is null and more than 2 parameters are passed to the Node-style callback then the returned
+ * promise will resolve with an array containing the 2nd to Nth parameters instead of simply resolving with the 2nd
+ * parameter in order to preserve the 3rd to Nth parameters.
  *
  * Borrowed and slightly tweaked from "You don't know JavaScript - Async & Performance" (thanks Kyle Simpson)
  * (https://github.com/getify/You-Dont-Know-JS/blob/master/async%20%26%20performance/README.md)
@@ -238,11 +258,15 @@ function toPromise(promiseLike) {
  *   NOTE: Prefer the more flexible OPTION 1 or 2 over the less flexible OPTION 3 or 4
  *
  * @param {Function} fn - a Node-callback style function to "promisify"
+ * @param {WrapOpts} [opts] - optional options to use to configure the wrapping (defaults to defaultWrapOpts)
  * @returns {function(...args: *): Promise.<R>} a function, which when invoked will return a new Promise that will
- * resolve or reject based on the outcome of the callback
+ *          resolve or reject based on the outcome of the callback
  * @template R
  */
-function wrap(fn) {
+function wrap(fn, opts = defaultWrapOpts) {
+  if (typeof fn !== 'function') throw new TypeError(`Promises.wrap(fn) - fn must be a function`);
+  const timeoutMs = opts && opts.timeoutMs || defaultWrappedCallTimeoutInMs;
+
   return function () {
     const self = this;
     //var args = [].slice.call( arguments );
@@ -253,13 +277,38 @@ function wrap(fn) {
       args[i] = arguments[i];
     }
     return new Promise((resolve, reject) => {
-        args[len] = (err, v) => {
-          if (err) reject(err);
-          else resolve(v);
-        };
+      let done = false;
+      let timedOut = false;
+
+      const timeout = setTimeout(() => {
+        if (!done) {
+          timedOut = true;
+          reject(new TimeoutError(`Timed out while waiting ${timeoutMs} ms for callback from wrapped '${fn.name}' function`));
+        }
+      }, timeoutMs);
+
+      args[len] = (err, v, ...rest) => {
+        if (!timedOut) {
+          done = true;
+          try {
+            clearTimeout(timeout);
+          } catch (e) {
+            console.error(`Failed to clear timeout for wrapped '${fn.name}' function`, e);
+          }
+          finally {
+            if (err) reject(err);
+            else resolve(rest.length <= 0 ? v : [v].concat(rest));
+          }
+        }
+      };
+
+      try {
         fn.apply(self, args);
+      } catch (err) {
+        console.error(`Wrapped '${fn.name}' function threw:`, err);
+        reject(err); // for backward compatibility
       }
-    );
+    });
   };
 }
 
@@ -293,11 +342,16 @@ function wrap(fn) {
  *
  * @param {Object} obj - the object on which to execute the given method
  * @param {Function} method - a Node-callback style method (of the given object) to promisify
+ * @param {WrapOpts} [opts] - optional options to use to configure the wrapping (defaults to defaultWrapOpts)
  * @returns {function(...args: *): Promise.<R>} a function, which when invoked will return a new Promise that will
  * resolve or reject based on the outcome of the callback
  * @template R
  */
-function wrapMethod(obj, method) {
+function wrapMethod(obj, method, opts = defaultWrapOpts) {
+  if (!obj || typeof obj !== 'object') throw new TypeError(`Promises.wrapMethod(obj, method) - obj must be a non-null object`);
+  if (typeof method !== 'function') throw new TypeError(`Promises.wrapMethod(obj, method) - method must be a function`);
+  const timeoutMs = opts && opts.timeoutMs || defaultWrappedCallTimeoutInMs;
+
   return function () {
     //const args = [].slice.call( arguments );
     // potentially faster than slice
@@ -307,13 +361,38 @@ function wrapMethod(obj, method) {
       args[i] = arguments[i];
     }
     return new Promise((resolve, reject) => {
-        args[len] = (err, v) => {
-          if (err) reject(err);
-          else resolve(v);
-        };
+      let done = false;
+      let timedOut = false;
+
+      const timeout = setTimeout(() => {
+        if (!done) {
+          timedOut = true;
+          reject(new TimeoutError(`Timed out while waiting ${timeoutMs} ms for callback from wrapped '${method.name}' method`));
+        }
+      }, timeoutMs);
+
+      args[len] = (err, v, ...rest) => {
+        if (!timedOut) {
+          done = true;
+          try {
+            clearTimeout(timeout);
+          } catch (e) {
+            console.error(`Failed to clear timeout for wrapped '${method.name}' method`, e);
+          }
+          finally {
+            if (err) reject(err);
+            else resolve(rest.length <= 0 ? v : [v].concat(rest));
+          }
+        }
+      };
+
+      try {
         method.apply(obj, args);
+      } catch (err) {
+        console.error(`Wrapped '${method.name}' method threw:`, err);
+        reject(err); // for backward compatibility
       }
-    );
+    });
   }
 }
 
@@ -323,11 +402,15 @@ function wrapMethod(obj, method) {
  * function.
  * @param {Object} obj - the object on which to execute the given method
  * @param {string} methodName - the name of a Node callback-last style method (of the given object) to promisify
+ * @param {WrapOpts} [opts] - optional options to use to configure the wrapping (defaults to {timeoutMs: 60000})
  * @returns {function(...args: *): Promise.<R>}
  * @template R
  */
-function wrapNamedMethod(obj, methodName) {
-  return wrapMethod(obj, obj[methodName]);
+function wrapNamedMethod(obj, methodName, opts = defaultWrapOpts) {
+  if (!obj || typeof obj !== 'object') throw new TypeError(`Promises.wrapNamedMethod(obj, methodName) - obj must be a non-null object`);
+  const method = obj[methodName];
+  if (typeof method !== 'function') throw new TypeError(`Promises.wrapNamedMethod(obj, methodName) - obj[methodName] must be a function`);
+  return wrapMethod(obj, method, opts);
 }
 
 /**

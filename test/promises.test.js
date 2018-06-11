@@ -12,6 +12,8 @@ const tries = require('../tries');
 const Success = tries.Success;
 const Failure = tries.Failure;
 
+const TimeoutError = require('../errors').TimeoutError;
+
 const Promises = require('../promises');
 const CancelledError = Promises.CancelledError;
 const DelayCancelledError = Promises.DelayCancelledError;
@@ -37,9 +39,23 @@ function fallibleAsync(fail) {
   return Promise.resolve('ok');
 }
 
+process.on('uncaughtException', err => {
+  console.error(`FATAL - uncaughtException`, err);
+});
+
 function nodeStyleFn(fail, callback) {
   // console.log(`In nodeStyleFn: this = ${JSON.stringify(this)}`);
   // const this1 = this;
+
+  // NB - Not installing a substitute for a missing/non-function callback triggers "TypeError: callback is not a function", which brings everything to a halt (unless handle uncaughtException)!
+  if (typeof callback !== 'function') {
+    callback = (e) => {
+      if (e) {
+        console.error(`Substitute for missing callback caught error (${e})`);
+        throw e; //NB - throwing an error from within a callback brings everything to a halt too (unless handle uncaughtException)!
+      }
+    }
+  }
 
   const fn = () => {
     // console.log(`In nodeStyleFn fn: this = ${JSON.stringify(this)} (this is this1? ${this === this1})`);
@@ -48,6 +64,23 @@ function nodeStyleFn(fail, callback) {
       callback(error);
     } else {
       callback(null, `ok (${this})`);
+    }
+  };
+
+  setTimeout(fn, 10); // Simulate an async function call
+}
+
+function nodeStyle3ArgFn(fail, callback) {
+  // console.log(`In nodeStyle3ArgFn: this = ${JSON.stringify(this)}`);
+  // const this1 = this;
+
+  const fn = () => {
+    // console.log(`In nodeStyle3ArgFn fn: this = ${JSON.stringify(this)} (this is this1? ${this === this1})`);
+    if (fail) {
+      error.n = `(${this})`;
+      callback(error);
+    } else {
+      callback(null, `ok 2nd (${this})`, `ok 3rd (${this})`);
     }
   };
 
@@ -207,7 +240,7 @@ test('Promises.isPromiseLike', t => {
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Promises.wrap with node-style function
+// Promises.wrap with node-style function (with 2 callback arguments)
 // ---------------------------------------------------------------------------------------------------------------------
 
 test('Promises.wrap with node-style function that calls back with an error', t => {
@@ -219,6 +252,7 @@ test('Promises.wrap with node-style function that calls back with an error', t =
     })
     .catch(err => {
       t.pass(`Promises.wrap(nodeStyleFn)(true).catch should have got error (${err} ${err.n})`);
+      t.notOk(err instanceof TimeoutError, `Promises.wrap(nodeStyleFn)(true).catch should NOT have got TimeoutError`);
       t.end();
     });
 });
@@ -228,11 +262,92 @@ test('Promises.wrap with node-style function that calls back with a successful r
   promiseReturningFn(false)
     .then(result => {
       t.pass(`Promises.wrap(nodeStyleFn)(false).then should have got result (${result})`);
+      t.ok(!Array.isArray(result), `Promises.wrap(nodeStyleFn)(false).then should have got NON-ARRAY result (${result})`);
       t.end();
     })
     .catch(err => {
       t.fail(`Promises.wrap(nodeStyleFn)(false).catch should NOT have got error (${err} ${err.n})`);
       t.end(err);
+    });
+});
+
+test('Promises.wrap with node-style function that times out before call back', t => {
+  const promiseReturningFn = Promises.wrap(nodeStyleFn, {timeoutMs: 1});
+  promiseReturningFn(false)
+    .then(result => {
+      t.fail(`Promises.wrap(nodeStyleFn)(true).then should NOT have got result (${result})`);
+      t.end();
+    })
+    .catch(err => {
+      t.pass(`Promises.wrap(nodeStyleFn)(true).catch should have got error (${err})`);
+      t.ok(err instanceof TimeoutError, `Promises.wrap(nodeStyleFn)(true).catch should have got TimeoutError`);
+      t.end();
+    });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Promises.wrap with node-style function (with 3 callback arguments)
+// ---------------------------------------------------------------------------------------------------------------------
+
+test('Promises.wrap with node-style function that calls back with 3 arguments - with an error', t => {
+  const promiseReturningFn = Promises.wrap(nodeStyle3ArgFn);
+  promiseReturningFn(true)
+    .then(result => {
+      t.fail(`Promises.wrap(nodeStyle3ArgFn)(true).then should NOT have got result (${result})`);
+      t.end();
+    })
+    .catch(err => {
+      t.pass(`Promises.wrap(nodeStyle3ArgFn)(true).catch should have got error (${err} ${err.n})`);
+      t.notOk(err instanceof TimeoutError, `Promises.wrap(nodeStyleArg3Fn)(true).catch should NOT have got TimeoutError`);
+      t.end();
+    });
+});
+
+test('Promises.wrap with node-style function that calls back with 3 arguments - with no error and 2 successful results', t => {
+  const promiseReturningFn = Promises.wrap(nodeStyle3ArgFn);
+  promiseReturningFn(false)
+    .then(result => {
+      t.pass(`Promises.wrap(nodeStyle3ArgFn)(false).then must execute with result (${result})`);
+      t.ok(Array.isArray(result), `Promises.wrap(nodeStyle3ArgFn)(false).then - must have an ARRAY result (${result})`);
+      t.equal(result.length, 2, `Promises.wrap(nodeStyle3ArgFn)(false).then - result.length (${result.length}) must be 2`);
+      t.end();
+    })
+    .catch(err => {
+      t.fail(`Promises.wrap(nodeStyle3ArgFn)(false).catch must NOT execute with error (${err} ${err.n})`);
+      t.end(err);
+    });
+});
+
+test('Promises.wrap with node-style function that times out before calling back with 3 arguments', t => {
+  const promiseReturningFn = Promises.wrap(nodeStyle3ArgFn, {timeoutMs: 1});
+  promiseReturningFn(false)
+    .then(result => {
+      t.fail(`Promises.wrap(nodeStyle3ArgFn)(true).then should NOT have got result (${result})`);
+      t.end();
+    })
+    .catch(err => {
+      t.pass(`Promises.wrap(nodeStyle3ArgFn)(true).catch should have got error (${err})`);
+      t.ok(err instanceof TimeoutError, `Promises.wrap(nodeStyle3ArgFn)(true).catch should have got TimeoutError`);
+      t.end();
+    });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Promises.wrap with BADLY INVOKED node-style function (with 2 callback arguments)
+// ---------------------------------------------------------------------------------------------------------------------
+
+test('Promises.wrap with BADLY INVOKED, but DEFENSIVE node-style function that substitutes the non-function callback must trigger a timeout', t => {
+  const promiseReturningFn = Promises.wrap(nodeStyleFn, {timeoutMs: 20});
+  const wrongParameter = {wrong: true};
+  promiseReturningFn(true, wrongParameter)
+    .then(result => {
+      t.fail(`Promises.wrap(nodeStyleFn)(true).then should NOT have got result (${result})`);
+      t.end();
+    })
+    .catch(err => {
+      t.pass(`Promises.wrap(nodeStyleFn)(true).catch should have got error (${err} ${err.n})`);
+      t.ok(err instanceof TimeoutError, `Promises.wrap(nodeStyleFn)(true).catch should have got TimeoutError`);
+      t.end();
     });
 });
 

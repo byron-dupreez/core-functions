@@ -1,5 +1,15 @@
 ## Changes
 
+### 3.0.24
+- Changes to `promises` module:
+  - Changed `wrap` & `wrapMethod` functions to handle successful callbacks with more than 2 arguments by resolving the 
+    promise with an array containing all of the arguments other than the first. Note that successful callbacks with only 
+    2 arguments will still return the 2nd argument as before (instead of an array containing only the 2nd argument).
+  - Changed `wrap` & `wrapMethod` functions to timeout and reject their promises if they are still pending after a 
+    configurable number of milliseconds - to avoid cases where the wrapped function does NOT call the callback.
+    - Added new optional `opts` last argument to `wrap` & `wrapMethod` functions to enable configuration of the timeout 
+      time in milliseconds
+ 
 ### 3.0.23
 - Added `.npmignore`
 - Renamed `release_notes.md` to `CHANGES.md`
