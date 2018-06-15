@@ -294,8 +294,7 @@ function wrap(fn, opts = defaultWrapOpts) {
             clearTimeout(timeout);
           } catch (e) {
             console.error(`Failed to clear timeout for wrapped '${fn.name}' function`, e);
-          }
-          finally {
+          } finally {
             if (err) reject(err);
             else resolve(rest.length <= 0 ? v : [v].concat(rest));
           }
@@ -378,8 +377,7 @@ function wrapMethod(obj, method, opts = defaultWrapOpts) {
             clearTimeout(timeout);
           } catch (e) {
             console.error(`Failed to clear timeout for wrapped '${method.name}' method`, e);
-          }
-          finally {
+          } finally {
             if (err) reject(err);
             else resolve(rest.length <= 0 ? v : [v].concat(rest));
           }
