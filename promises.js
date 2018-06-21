@@ -28,8 +28,17 @@ exports.flatten = flatten;
 exports.chain = chain;
 exports.installCancel = installCancel;
 exports.installCancelTimeout = installCancelTimeout;
-exports.avoidUnhandledPromiseRejectionWarning = avoidUnhandledPromiseRejectionWarning;
-exports.avoidUnhandledPromiseRejectionWarnings = avoidUnhandledPromiseRejectionWarnings;
+
+exports.handleUnhandledRejection = handleUnhandledRejection;
+exports.handleUnhandledRejections = handleUnhandledRejections;
+exports.ignoreUnhandledRejection = ignoreUnhandledRejection;
+exports.ignoreUnhandledRejections = ignoreUnhandledRejections;
+
+// Legacy names
+/** @deprecated use handleUnhandledRejection instead */
+exports.avoidUnhandledPromiseRejectionWarning = handleUnhandledRejection;
+/** @deprecated use handleUnhandledRejections instead */
+exports.avoidUnhandledPromiseRejectionWarnings = handleUnhandledRejections;
 
 /** @deprecated */
 exports.wrapMethod = wrapMethod;
@@ -58,6 +67,8 @@ const defaultFlattenOpts = {
   skipSimplifyOutcomes: {skipSimplifyOutcomes: true}
 };
 exports.defaultFlattenOpts = defaultFlattenOpts;
+
+const noop = () => undefined;
 
 /**
  * An Error subclass thrown to cancel/short-circuit a promise that is waiting for a list of promises to resolve (see
@@ -548,7 +559,7 @@ function every(promises, cancellable, logger) {
   function throwCancelledError(i) {
     const unresolvedPromises = promises.slice(i + 1);
     // Attach `catch` clauses to the remaining unresolved promises to avoid unneeded warnings, since we will probably never do anything more with them
-    avoidUnhandledPromiseRejectionWarnings(unresolvedPromises, logger);
+    handleUnhandledRejections(unresolvedPromises, logger);
     throw new CancelledError(outcomes.slice(0, i + 1), unresolvedPromises);
   }
 
@@ -783,30 +794,60 @@ function installCancelTimeout(cancellable, cancelTimeout) {
 }
 
 /**
- * Attaches an arbitrary `catch` clause to the given promise to avoid an UnhandledPromiseRejectionWarning.
+ * Handles any unhandled rejections by attaching an error logging `catch` clause to the given promise.
  * @param {Promise|PromiseLike|*} promise - a promise to which to attach an arbitrary `catch` clause
  * @param {BasicLogger|undefined} [logger] - an optional alternative logger to use instead of the default `console` logger
+ * @returns {Promise|PromiseLike|*} the given promise for convenient chaining
  */
-function avoidUnhandledPromiseRejectionWarning(promise, logger) {
+function handleUnhandledRejection(promise, logger) {
   if (promise && promise.catch) {
     promise.catch(err => {
       // Avoid unneeded warnings: e.g. (node:18304) UnhandledPromiseRejectionWarning: Unhandled promise rejection (rejection id: ...): ...
-      const msg = 'Avoiding UnhandledPromiseRejectionWarning -';
-      if (!logger || logger.warn)
-        (logger || console).warn(msg, err);
+      const msg = 'Avoiding unhandled rejection:';
+      if (!logger || logger.error)
+        (logger || console).error(msg, err);
       else
-        (logger || console).log('WARN', msg, err);
+        (logger.log ? logger : console).log('ERROR', msg, err);
     });
   }
+  return promise;
 }
 
 /**
- * Attaches an arbitrary `catch` clause to each of the given promises to avoid UnhandledPromiseRejectionWarnings.
+ * Handles any unhandled rejections by attaching an error logging `catch` clause to each of the given promises.
  * @param {Array.<Promise|PromiseLike|*>} promises - an array of promise to which to attach arbitrary `catch` clauses
  * @param {BasicLogger|undefined} [logger] - an optional alternative logger to use instead of the default `console` logger
+ * @returns {Array.<Promise|PromiseLike|*>} the given array of promises for convenient chaining
  */
-function avoidUnhandledPromiseRejectionWarnings(promises, logger) {
+function handleUnhandledRejections(promises, logger) {
   if (Array.isArray(promises)) {
-    promises.forEach(p => avoidUnhandledPromiseRejectionWarning(p, logger));
+    promises.forEach(p => handleUnhandledRejection(p, logger));
   }
+  return promises;
+}
+
+/**
+ * Ignores any unhandled rejections by attaching a no-operation `catch` clause to the given promise.
+ * NB: ONLY use if this if you have already logged the promise's rejection.
+ * @param {Promise|PromiseLike|*} promise - a promise to which to attach a no-op `catch` clause
+ * @returns {Promise|PromiseLike|*} the given promise for convenient chaining
+ */
+function ignoreUnhandledRejection(promise) {
+  if (promise && promise.catch) {
+    promise.catch(noop);
+  }
+  return promise;
+}
+
+/**
+ * Ignores any unhandled rejections by attaching a no-operation `catch` clause to each of the given promises.
+ * NB: ONLY use if this if you have already logged the promises' rejections.
+ * @param {Array.<Promise|PromiseLike|*>} promises - an array of promise to which to attach `catch` clauses
+ * @returns {Array.<Promise|PromiseLike|*>} the given array of promises for convenient chaining
+ */
+function ignoreUnhandledRejections(promises) {
+  if (Array.isArray(promises)) {
+    promises.forEach(p => ignoreUnhandledRejection(p));
+  }
+  return promises;
 }

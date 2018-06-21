@@ -17,6 +17,8 @@ const TimeoutError = require('../errors').TimeoutError;
 const Promises = require('../promises');
 const CancelledError = Promises.CancelledError;
 const DelayCancelledError = Promises.DelayCancelledError;
+const handleUnhandledRejection = Promises.handleUnhandledRejection;
+// const ignoreUnhandledRejection = Promises.ignoreUnhandledRejection;
 
 const Strings = require('../strings');
 const stringify = Strings.stringify;
@@ -33,8 +35,7 @@ function fallible(fail) {
 function fallibleAsync(fail) {
   if (fail) {
     const promise = Promise.reject(error);
-    Promises.avoidUnhandledPromiseRejectionWarning(promise);
-    return promise;
+    return handleUnhandledRejection(promise);
   }
   return Promise.resolve('ok');
 }
@@ -131,14 +132,12 @@ class Abc {
 const p1 = Promise.resolve('p1');
 
 const p2Error = new Error('p2 error');
-const p2 = Promise.reject(p2Error);
-Promises.avoidUnhandledPromiseRejectionWarning(p2);
+const p2 = handleUnhandledRejection(Promise.reject(p2Error));
 
 const p3 = Promise.resolve('p3');
 
 const p4Error = new Error('p4 error');
-const p4 = Promise.reject(p4Error);
-Promises.avoidUnhandledPromiseRejectionWarning(p4);
+const p4 = handleUnhandledRejection(Promise.reject(p4Error));
 
 const t1 = genThenable(null, 't1', false, 1);
 
@@ -1030,7 +1029,7 @@ test('Promises.allOrOne', t => {
         t.end();
       });
     })
-    .catch(Promises.avoidUnhandledPromiseRejectionWarning);
+    .catch(handleUnhandledRejection);
 
 });
 

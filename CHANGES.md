@@ -1,5 +1,14 @@
 ## Changes
 
+### 3.0.25
+- Changes to `promises` module:
+  - Added `handleUnhandledRejection` & `handleUnhandledRejections` functions based on 
+    `avoidUnhandledPromiseRejectionWarning` & `avoidUnhandledPromiseRejectionWarnings` functions
+  - Changed `avoidUnhandledPromiseRejectionWarning/s` functions to be deprecated synonyms for 
+    `handleUnhandledRejection/s` functions
+  - Added `ignoreUnhandledRejection` & `ignoreUnhandledRejections` functions that suppress unhandled rejections without 
+    logging 
+
 ### 3.0.24
 - Changes to `promises` module:
   - Changed `wrap` & `wrapMethod` functions to handle successful callbacks with more than 2 arguments by resolving the 

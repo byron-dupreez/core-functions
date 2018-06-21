@@ -33,7 +33,7 @@ const failure2 = new Failure(err2);
 const toType = require('../any').toType;
 const isInstanceOf = require('../objects').isInstanceOf;
 
-function avoidUnhandledPromiseRejectionWarning(err) {
+function handleUnhandledRejection(err) {
   // Avoid irrelevant: (node:18304) UnhandledPromiseRejectionWarning: Unhandled promise rejection (rejection id: ...): ...
 }
 
@@ -549,7 +549,7 @@ test('Try.try', t => {
   t.deepEqual(Try.try(f), new Success(v), `Try.try(${stringify(f)}) must be ${new Success(stringify(v))}`);
 
   v = Promise.reject(new Error("Crunch"));
-  v.catch(avoidUnhandledPromiseRejectionWarning);
+  v.catch(handleUnhandledRejection);
   f = function never() {
     return v;
   };
